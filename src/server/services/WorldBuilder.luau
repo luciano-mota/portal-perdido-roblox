@@ -52,12 +52,16 @@ function WorldBuilder.build()
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "EntradaDeLumen"
 	spawn.Size = Vector3.new(12, 1, 12)
-	spawn.Position = Vector3.new(0, 0.5, 45)
+	spawn.Position = Vector3.new(0, 0.5, 20)
 	spawn.Anchored = true
 	spawn.Neutral = true
 	spawn.Material = Enum.Material.Slate
 	spawn.Color = Color3.fromRGB(115, 156, 182)
 	spawn.Parent = world
+
+	-- Caminho central deixa a entrada, a mentora e o portal visíveis sem árvores na câmera.
+	local path = createPart(world, "CaminhoDeLumen", Vector3.new(9, 0.3, 69), Vector3.new(0, -0.8, -13), Enum.Material.Slate, Color3.fromRGB(143, 148, 154))
+	path.CanCollide = true
 
 	-- Anel do portal: pilares e travessa estilizados com partes simples.
 	createPart(world, "PortalPilarEsquerdo", Vector3.new(5, 24, 5), Vector3.new(-10, 12, -38), Enum.Material.Slate, Color3.fromRGB(109, 116, 135))
@@ -69,7 +73,7 @@ function WorldBuilder.build()
 
 	for index = 1, 12 do
 		local angle = (index / 12) * math.pi * 2
-		local radius = 55 + (index % 3) * 15
+		local radius = 72 + (index % 3) * 12
 		local x = math.cos(angle) * radius
 		local z = math.sin(angle) * radius
 		local height = 11 + (index % 3) * 3

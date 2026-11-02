@@ -32,6 +32,17 @@ function WorldBuilder.build()
 		return
 	end
 
+	-- O modelo Baseplate padrão cobre a ilha e tem um spawn concorrente.
+	-- Remover apenas esses objetos padrões quando criamos nosso blockout.
+	local templateBaseplate = Workspace:FindFirstChild("Baseplate")
+	if templateBaseplate and templateBaseplate:IsA("BasePart") then
+		templateBaseplate:Destroy()
+	end
+	local templateSpawn = Workspace:FindFirstChild("SpawnLocation")
+	if templateSpawn and templateSpawn:IsA("SpawnLocation") then
+		templateSpawn:Destroy()
+	end
+
 	local world = Instance.new("Folder")
 	world.Name = "PortalPerdidoBlockout"
 	world.Parent = Workspace

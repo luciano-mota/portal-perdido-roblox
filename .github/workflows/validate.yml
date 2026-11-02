@@ -18,8 +18,12 @@ jobs:
           test -f src/server/GameServer.server.luau
           test -f src/client/GameClient.client.luau
           test -f src/server/services/ClassService.luau
+          test -f src/server/services/QuestService.luau
+          test -f src/server/services/EnemyService.luau
+          test -f src/server/services/WorldBuilder.luau
           test -f src/shared/Config/Classes.luau
           test -f docs/ARCHITECTURE.md
+          test -f docs/PLAYTEST.md
           echo "Project structure OK"
 
       - name: Install Rojo 7.7.1

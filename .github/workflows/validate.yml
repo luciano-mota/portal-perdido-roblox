@@ -1,0 +1,20 @@
+name: Validate project
+on:
+  push:
+    branches: [main, "feature/**", develop]
+  pull_request:
+
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Rojo project JSON
+        run: python3 -m json.tool default.project.json > /dev/null
+      - name: Validate required files
+        run: |
+          test -f src/server/init.server.luau
+          test -f src/client/init.client.luau
+          test -f src/shared/Config/Classes.luau
+          test -f docs/ARCHITECTURE.md
+          echo "Project structure OK"

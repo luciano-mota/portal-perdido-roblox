@@ -41,6 +41,8 @@ local function onTalk(player: Player, mentor: BasePart)
 
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then return end
 	if root == nil or not root:IsA("BasePart") or (root.Position - mentor.Position).Magnitude > 16 then
 		return
 	end

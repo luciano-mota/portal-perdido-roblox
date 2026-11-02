@@ -46,13 +46,12 @@ end
 
 local function registerPlayer(player: Player)
 	player.CharacterAdded:Connect(function(character: Model)
-		-- Em respawn, manter a classe escolhida durante esta sessão.
+		-- Read the selection after the Humanoid exists: the client can select
+		-- during character construction, before applyHealth can find it.
+		local humanoid = character:WaitForChild("Humanoid", 10)
 		local classId = player:GetAttribute("ClassId")
-		if typeof(classId) == "string" then
-			local humanoid = character:WaitForChild("Humanoid", 10)
-			if humanoid and humanoid:IsA("Humanoid") then
-				applyHealth(character, classId)
-			end
+		if humanoid and humanoid:IsA("Humanoid") and typeof(classId) == "string" then
+			applyHealth(character, classId)
 		end
 	end)
 end

@@ -48,3 +48,10 @@ Deixe `rojo serve` ativo. No Roblox Studio, conecte o plugin Rojo ao servidor lo
 - Não executar scripts de terceiros não auditados, nem conceder autorizações amplas.
 - Em conflitos entre código local e Git remoto, interromper e analisar o diff em vez de sobrescrever.
 - O objetivo de lançamento rápido **não substitui** a validação dos bloqueadores P0.
+
+## Interpretação dos diagnósticos (sessão 02/11/2026)
+
+- Um PlayerModule pode estar em `StarterPlayer.PlayerModule` no sistema atual de controles. Não concluir que controles estão ausentes apenas porque `PlayerScripts.PlayerModule` não existe; não requerer APIs internas de versões antigas. Referência: [StarterPlayer / CreateDefaultPlayerModule](https://create.roblox.com/docs/reference/engine/classes/StarterPlayer#CreateDefaultPlayerModule).
+- `FocusedTextBox=none` não exclui consumo de entrada pelo chat/CoreGui: foi observado `Processed=true` ao abrir o chat. Comparar com o teste em viewport, `MenuOpen`, `MoveDirection` e `AfterInput Delta`.
+- Logs de movimento contam somente as primeiras 12 entradas de cada sessão; reiniciar Play se precisar de outra sequência.
+- Resultado e limitações desta operação estão em [PLAYTEST.md](PLAYTEST.md#sessão-mcp--02112026). A issue #31 permanece aberta até reproduzir o relato original ou confirmar o contexto com o operador.

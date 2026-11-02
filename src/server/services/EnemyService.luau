@@ -5,11 +5,12 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local EnemyService = {}
-local ORIGIN = Vector3.new(-4, 2, -8)
+local ORIGIN = Vector3.new(0, 2, -22)
 local MAX_HEALTH = 100
 local ATTACK_RANGE = 18
 local AGGRO_RANGE = 30
 local ENEMY_HIT_RANGE = 7
+local LEASH_RANGE = 24
 local ENEMY_SPEED = 6
 local ENEMY_DAMAGE = 7
 local RESPAWN_SECONDS = 7
@@ -166,7 +167,7 @@ function EnemyService.init(attackRemote: RemoteEvent, questService: any)
 		local nearestDistance = AGGRO_RANGE
 		for _, player in Players:GetPlayers() do
 			local root, humanoid = validPlayerRoot(player)
-			if root and humanoid then
+			if root and humanoid and player:GetAttribute("ClassId") ~= nil and (root.Position - ORIGIN).Magnitude <= LEASH_RANGE then
 				local distance = (root.Position - enemy.Position).Magnitude
 				if distance < nearestDistance then
 					nearestPlayer = player
@@ -174,6 +175,13 @@ function EnemyService.init(attackRemote: RemoteEvent, questService: any)
 					nearestRoot = root
 					nearestDistance = distance
 				end
+			end
+		end
+
+		if not nearestPlayer then
+			local home = ORIGIN - enemy.Position
+			if home.Magnitude > 0.1 then
+				enemy.Position += home.Unit * math.min(ENEMY_SPEED * step, home.Magnitude)
 			end
 		end
 

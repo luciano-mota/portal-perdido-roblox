@@ -61,3 +61,56 @@ Registrar capturas do mapa, HUD, NPC, HP do Sentinela, estado de missão conclu�
 - [ ] Moedas só aparecem após escolha de classe.
 
 Se o Rojo já estiver em execução, atualize o Git **fora do modo Play**, pare e reinicie o Play Test para gerar novamente o cenário via `WorldBuilder`. Se o servidor Rojo ficar com arquivos antigos, reinicie `rojo serve` e reconecte o plugin.
+
+## Sessão MCP — 02/11/2026
+
+**Base:** `08acf5c5fe30f7b2538eff2f501c7246459f577a`, branch `feature/cpp-001-003-bootstrap`, PR #30. Os ajustes abaixo foram sincronizados pelo Rojo e testados no Studio antes do commit desta seção. Lugar local confirmado pelo operador: `Template_95206881_AutoRecovery_0.rbxl`, PlaceId/GameId 0. Nada publicado.
+
+### Resultado observado
+
+| Caso | Resultado / evidência |
+| --- | --- |
+| Play real com personagem | PASSOU. Inicialização do servidor, UI e mundo gerado; não foi usado Run. |
+| Movimento desktop | PASSOU. W/A/S/D produziram deslocamentos; Espaço levou a `Freefall`, com aumento de Y ~6,45 studs. Logs em [output.json](evidence/2026-11-02/output.json). |
+| Física do avatar | WalkSpeed 16, JumpPower 50, JumpHeight 7,2, PlatformStand=false, Sit=false, RootAnchored=false. |
+| Entrada consumida | Ao abrir o chat com `/`, W chegou como `Processed=true`, sem deslocamento. `GetFocusedTextBox()` retornou nil: não usar esse campo isoladamente para excluir consumo pelo CoreGui. Antes de abrir o chat, W chegou como `Processed=false` e moveu o avatar. |
+| Controles padrão | `PlayerModule` presente em `StarterPlayer.PlayerModule` nesta versão do Studio. Ausência em PlayerScripts, sozinha, NÃO é falha. Não foi instalado/forkado controle customizado. |
+| Três classes | PASSOU. Botões Guardian/Explorer/Artificer selecionaram a classe e fecharam o modal. MaxHealth observado: 150/110/100. Tentativas de trocar Explorer para Guardian e para classe inválida não alteraram a escolha. |
+| Guardião | Missão completa com E/Q no desktop: ACTIVE → READY em 4 golpes de 33; COMPLETED e 25 moedas com Ilyra. Repetir diálogo manteve 25. Repetido em servidor com dois jogadores. |
+| Explorador | Missão completa com E e botão ATACAR: 3 golpes de 40; recompensa 25. Recriação do avatar manteve Explorer, MaxHealth 110 e moedas 25. |
+| Artífice / emulador | Missão completa com botão ATACAR: 4 golpes de 30; recompensa 25, repetição manteve 25. ProximityPrompt acionado por `InputHoldBegin`/`InputHoldEnd` no cliente, preservando validação de distância do servidor. Clique automatizado no balão nativo não foi confiável. |
+| Celular / iPhone XR | TouchEnabled=true, PreferredInput=Touch, viewport 801×413 e área útil 801×355. Modal final escalado a 0,9457; botões com altura ~49 px úteis. Movimento por arrasto do direcional levou Z de 19,5079 a 12,2278. |
+| HUD touch | ATACAR em (661,169), tamanho 120×56; salto nativo em (706,265), 70×70: sem interseção. Moedas dentro do painel superior, fora do direcional. [Captura final](evidence/2026-11-02/mobile-hud-final.jpg). |
+| Perseguição / área segura | Após retornar a Ilyra, Sentinela voltou a (0,2,-22); Artífice permaneceu com 100 HP, sem spawn camping. Respawn do inimigo observado com Health=100. |
+| Dois jogadores reais | PASSOU. Servidor local separado e dois clientes conectados (Player1 e Player2), com classe e missão independentes. [Captura](evidence/2026-11-02/two-player-server.jpg). |
+| Crédito compartilhado | Player1 Guardian finalizou o inimigo e recebeu READY e depois 25 moedas. Player2 Explorer permaneceu ACTIVE/0 moedas; conversar sem golpe final não premiou. Comportamento limitado ao autor do golpe final, conforme arquitetura atual. |
+| Cooldown / dano falso | 15 disparos diretos de AttackEnemy no alcance, enviando 100000 como argumento, reduziram o HP de 100 para 67: apenas um golpe Guardian aceito. Ataques sem classe e fora do alcance mantiveram HP=100. |
+| Morte / respawn multiplayer | Player1 morto pelo teste reapareceu com Guardian, MaxHealth/Health=150, COMPLETED e Coins=25. Repetição da entrega antes da morte não duplicou moedas. |
+| Reiniciar servidor | Moedas voltaram a 0. Persistência continua NÃO implementada. |
+| Output | Nenhum stack trace Luau ou infinite yield observado. Aviso de conteúdo pendente, detalhado abaixo. |
+| Build | `rojo build` com Rojo 7.7.1 e `git diff --check` passaram. Runtime testado no Studio; build isolado não é prova de gameplay. |
+
+### Alterações desta sessão
+
+- HUD responsivo considera a área útil do ScreenGui; adapta-se a mudanças de câmera, tamanho e tipo de entrada. Fundo opaco melhora leitura; removido glifo que aparecia como quadrado na fonte.
+- ATACAR touch fica acima do salto nativo, com retorno visual do cooldown e bloqueio local de repetição/morte. Validação autoritativa permanece no servidor.
+- Sentinela inicia mais distante, ignora jogadores sem classe e retorna à origem quando não há jogador elegível dentro de 24 studs da origem. Evita perseguir até a entrada/Ilyra.
+- ClassService lê a classe depois que o Humanoid existe no CharacterAdded; elimina a janela em que uma seleção durante construção do personagem podia perder a saúde de classe.
+- QuestService rejeita interação de personagem morto.
+- MovementDebug agora registra estado, MoveDirection, MenuIsOpen, localização do PlayerModule e deslocamento 0,35 s após entrada; continua exclusivo do Studio e limitado a 12 entradas.
+
+### Pendências e limites
+
+- **#31 continua aberta.** O travamento original com viewport em foco não se reproduziu. Consumo de entrada pelo chat foi observado, mas não há evidência suficiente para declarar que foi a causa do relato original. Nenhum reset arbitrário de WalkSpeed, âncora ou controles foi adicionado.
+- `ContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type` ocorre desde a primeira inspeção em Edit e reaparece nos testes. `MarketplaceService:GetProductInfoAsync` identificou `Pop Close Sound`, AssetTypeId=3 (áudio). Não há referência em src/, scripts sincronizados ou propriedades de mídia inspecionadas do jogo. Origem ainda não localizada; não foi silenciado nem declarado corrigido. Investigar componentes/plugins do Studio separadamente, sem editar conta.
+- Emulação não substitui teste em aparelho físico, medição de FPS/memória ou redes móveis. Não foi realizado perfil de desempenho. Mapa permanece blockout provisório.
+- Interação por toque físico no ProximityPrompt precisa confirmação manual: a missão no emulador usou a API de input do próprio prompt, sem alterar atributos de missão/moedas ou invocar QuestService diretamente.
+- Nenhum teste completo de habilidades avançadas, persistência ou monetização; esses sistemas não existem nesta entrega. Não publicar nem ativar compras sem aprovação.
+
+### Capturas
+
+- [Seleção das três classes, layout final](evidence/2026-11-02/mobile-classes.jpg)
+- [HUD final no celular](evidence/2026-11-02/mobile-hud-final.jpg)
+- [Artífice com missão concluída e 25 moedas](evidence/2026-11-02/mobile-artificer-completed.jpg) — anterior ao ajuste final de opacidade/glifo do HUD.
+- [Servidor com dois jogadores após respawn](evidence/2026-11-02/two-player-server.jpg)
+- [Output capturado por MCP](evidence/2026-11-02/output.json)

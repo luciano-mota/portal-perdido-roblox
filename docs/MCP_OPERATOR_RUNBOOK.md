@@ -4,8 +4,11 @@ Este guia é para o **agente de IA conectado localmente** ao Roblox Studio no co
 
 ## Contexto
 
+**Direção visual vigente:** fantasia semirrealista (ver `docs/ART_DIRECTION_SEMIREALISTIC.md`). A seção histórica sobre movimentação descreve o diagnóstico anterior; `docs/PLAYTEST.md` já documenta testes com WASD e missão aprovados no Studio. Não refazer controles sem reproduzir um defeito.
+
+
 - Projeto: As Crônicas do Portal Perdido (LCM Dev Tech)
-- Repositório privado: `luciano-mota/portal-perdido-roblox`
+- Repositório GitHub (verificar visibilidade antes de publicar assets proprietários): `luciano-mota/portal-perdido-roblox`
 - Branch de trabalho: `feature/cpp-001-003-bootstrap`
 - PR: #30
 - Bloqueador P0: #31 (movimentação)

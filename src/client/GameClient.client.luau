@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -236,5 +237,69 @@ UserInputService.InputBegan:Connect(function(input: InputObject, processed: bool
 		attack()
 	end
 end)
+
+
+-- Diagnóstico somente no Studio: identifica se o teclado chega ao cliente,
+-- se a interface/chat consome os eventos e se o Humanoid pode caminhar.
+-- Não altera os controles Roblox nem executa no jogo publicado.
+if RunService:IsStudio() then
+	local movementKeys = {
+		[Enum.KeyCode.W] = true,
+		[Enum.KeyCode.A] = true,
+		[Enum.KeyCode.S] = true,
+		[Enum.KeyCode.D] = true,
+		[Enum.KeyCode.Space] = true,
+	}
+
+	local function describeCharacter(): string
+		local character = player.Character
+		if not character then
+			return "Character=ausente"
+		end
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not humanoid then
+			return "Humanoid=ausente"
+		end
+		local rootAnchored = if root and root:IsA("BasePart") then tostring(root.Anchored) else "sem root"
+		local position = if root and root:IsA("BasePart") then tostring(root.Position) else "sem root"
+		return string.format(
+			"WalkSpeed=%.1f JumpPower=%.1f JumpHeight=%.1f PlatformStand=%s Sit=%s RootAnchored=%s Position=%s",
+			humanoid.WalkSpeed,
+			humanoid.JumpPower,
+			humanoid.JumpHeight,
+			tostring(humanoid.PlatformStand),
+			tostring(humanoid.Sit),
+			rootAnchored,
+			position
+		)
+	end
+
+	local function inspectSpawn()
+		task.delay(2, function()
+			print("[PortalPerdido][MovementDebug] Spawn:", describeCharacter())
+		end)
+	end
+	player.CharacterAdded:Connect(inspectSpawn)
+	if player.Character then
+		inspectSpawn()
+	end
+
+	local inputLogs = 0
+	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+		if not movementKeys[input.KeyCode] or inputLogs >= 12 then
+			return
+		end
+		inputLogs += 1
+		local focused = UserInputService:GetFocusedTextBox()
+		warn(
+			"[PortalPerdido][MovementDebug]",
+			"Key=" .. input.KeyCode.Name,
+			"Processed=" .. tostring(processed),
+			"FocusedTextBox=" .. (if focused then focused:GetFullName() else "none"),
+			describeCharacter()
+		)
+	end)
+end
 
 refreshHud()

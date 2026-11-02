@@ -1,6 +1,6 @@
 # As Crônicas do Portal Perdido
 
-Aventura cooperativa original de fantasia estilizada 3D para Roblox, desenvolvida pela LCM Dev Tech.
+Aventura cooperativa original de fantasia semirrealista 3D para Roblox, desenvolvida pela LCM Dev Tech.
 
 **Capítulo 1 — A Travessia** · **Status: protótipo técnico em evolução**.
 
@@ -12,7 +12,7 @@ Aventura cooperativa original de fantasia estilizada 3D para Roblox, desenvolvid
 4. No Studio, abra o plugin Rojo, conecte ao servidor local (porta 34872) e pressione **Play**.
 5. Escolha Guardião, Explorador ou Artífice, procure a mentora Ilyra, aceite a missão, derrote o Sentinela de Musgo pressionando **Q** ou **ATACAR** e retorne para receber 25 moedas de teste.
 
-Veja [o roteiro de testes](docs/PLAYTEST.md) e [o guia de instalação](docs/SETUP_WINDOWS.md).
+Veja [o roteiro de testes](docs/PLAYTEST.md), [o guia de instalação](docs/SETUP_WINDOWS.md), [o plano técnico do Capítulo 1](docs/TECHNICAL_PLAN_CHAPTER_01.md) e [a nova direção de arte semirrealista](docs/ART_DIRECTION_SEMIREALISTIC.md).
 
 ## Funcionalidades desta versão (não validadas no Studio)
 

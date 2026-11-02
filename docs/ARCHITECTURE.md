@@ -1,31 +1,43 @@
-# Arquitetura inicial
+# Arquitetura do Portal Perdido — protótipo inicial
 
 ## Objetivo
 
-Construir uma vertical slice enxuta do Capítulo 1 com segurança básica e evolução modular.
+Validar uma **vertical slice**: escolher classe, atravessar o Vale de Lúmen, iniciar a primeira missão com Ilyra, derrotar um Sentinela de Musgo e voltar para receber moedas.
 
 ## Runtime
 
-- **Cliente**: apresentação, controles e pedidos de ações.
-- **Servidor**: única autoridade para classes, estados, progressão, inventário, dano e compras.
-- **Shared**: configurações e tipos públicos.
-- **DataStoreService**: previsto para CPP-004, ainda não implementado.
-- **MarketplaceService**: previsto para CPP-019/020, ainda não implementado.
+- **Cliente:** interface, botão de ataque, tecla Q e apresentação de objetivos. Envia apenas pedidos por `RemoteEvent`.
+- **Servidor:** valida classe, distância, cooldown, vida do inimigo, derrota, estados da missão e pagamento de moedas de teste.
+- **Shared:** configurações legíveis pelo cliente.
+- **DataStoreService:** planejado para CPP-004, **não implementado**.
+- **MarketplaceService:** planejado para CPP-019 e CPP-020, **não implementado**.
 
-## MVP executável atual
+## Serviços
 
-Ao executar Play no Roblox Studio com a sincronização Rojo, o servidor monta um *blockout* de Vale de Lúmen e a interface permite selecionar 3 classes. A escolha chega por RemoteEvent, passa por allowlist e cooldown e vira um atributo replicado do Player.
+- `ClassService`: allowlist de classes, escolha fixa por sessão e saúde inicial.
+- `WorldBuilder`: monta blockout provisório, remove apenas Baseplate e SpawnLocation padrões, cria um spawn no Vale.
+- `QuestService`: estados NOT_STARTED → ACTIVE → READY → COMPLETED. Define moedas somente no servidor.
+- `EnemyService`: 1 inimigo compartilhado, perseguição simples, ataque ao Humanoid e combate validado pelo servidor.
 
-Os arquivos de mundo temporário existem para teste de integração. A versão final terá assets e cenários construídos no Studio.
+## Contratos remotos
 
-## Evolução planejada
-
-1. CPP-004: dados versionados, carregamento e UpdateAsync.
-2. CPP-011/012: serviços de classe e combate com validação de alcance/cooldown.
-3. CPP-009: máquina de estados de missões e eventos de objetivo.
-4. CPP-020: ProcessReceipt com idempotência durável.
-5. CPP-023/024: testes mobile e cenários adversariais de RemoteEvents.
+- `GameRemotes.ChooseClass(classId: string)`: valida o valor no servidor, permite uma escolha por sessão.
+- `GameRemotes.AttackEnemy()`: o servidor identifica o personagem, verifica classe, alcance, cooldown e calcula o dano, sem confiar em parâmetros de alvo/dano enviados pelo cliente.
 
 ## Segurança
 
-Nunca confiar em preço, dano, inventário, experiência, moeda ou conclusões de missão enviados pelo cliente. Não usar RemoteEvents para aceitar recompensas arbitrárias. Evitar dependências e modelos livres não auditados.
+Nunca confiar em preço, dano, inventário, experiência, moeda ou conclusão de missão enviados pelo cliente. Os remotes têm controle de frequência e as moedas são concedidas somente na transição READY → COMPLETED.
+
+**Limites desta versão:** nenhuma proteção anti-exploit está completa; é preciso validar line-of-sight, IA, PVP, persistência e ferramentas de telemetria em entregas futuras.
+
+## Evolução priorizada
+
+1. **Play Test com Studio e Rojo**: validar seleção, diálogo, Q/touch, vida, respawn e recompensa.
+2. **CPP-004**: persistência versionada com proteção para save e retry.
+3. **CPP-011/012/013**: classes com habilidades, animações, mais criaturas e indicadores de combate.
+4. **CPP-009/014**: cinco missões e chefão do capítulo.
+5. **CPP-019/020**: monetização opcional, somente com concessão durável e `ProcessReceipt` idempotente para consumíveis.
+
+## Definição de pronto
+
+O GitHub Actions testa apenas estrutura e construção do arquivo Roblox via Rojo. A aprovação de gameplay requer testes dentro do Studio. Não declarar tarefa concluída antes desses testes.

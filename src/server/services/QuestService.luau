@@ -93,8 +93,8 @@ function QuestService.init()
 	model.Name = "PortalQuestGuide"
 	model.Parent = Workspace
 
-	local body = makePart(model, "Ilyra", Vector3.new(3, 5, 2), Vector3.new(10, 1.5, 29), Color3.fromRGB(76, 111, 164))
-	makePart(model, "Cabeca", Vector3.new(2.7, 2.7, 2.7), Vector3.new(10, 5.3, 29), Color3.fromRGB(235, 193, 151))
+	local body = makePart(model, "Ilyra", Vector3.new(3, 5, 2), Vector3.new(10, 1.5, 12), Color3.fromRGB(76, 111, 164))
+	makePart(model, "Cabeca", Vector3.new(2.7, 2.7, 2.7), Vector3.new(10, 5.3, 12), Color3.fromRGB(235, 193, 151))
 
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "MentorName"

@@ -125,8 +125,24 @@ questPanel.Parent = screen
 makeCorner(questPanel, 12)
 
 local maxPanel = Instance.new("UISizeConstraint")
-maxPanel.MaxSize = Vector2.new(610, 96)
+maxPanel.MaxSize = Vector2.new(510, 96)
 maxPanel.Parent = questPanel
+
+local function updateQuestPanelPosition()
+	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+	if viewport and viewport.X >= 760 then
+		questPanel.Position = UDim2.fromScale(0.68, 0.025)
+		questPanel.Size = UDim2.new(0.74, 0, 0, 96)
+	else
+		questPanel.Position = UDim2.fromScale(0.5, 0.025)
+		questPanel.Size = UDim2.new(0.92, 0, 0, 96)
+	end
+end
+
+if workspace.CurrentCamera then
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateQuestPanelPosition)
+end
+updateQuestPanelPosition()
 
 local objectiveLabel = Instance.new("TextLabel")
 objectiveLabel.Name = "Objective"

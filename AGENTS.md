@@ -2,7 +2,7 @@
 
 ## Identidade e objetivo
 
-Projeto privado da LCM Dev Tech: **As Crônicas do Portal Perdido**, aventura cooperativa original de fantasia estilizada 3D para Roblox. Capítulo 1: A Travessia, em Vale de Lúmen.
+Projeto privado da LCM Dev Tech: **As Crônicas do Portal Perdido**, aventura cooperativa original de fantasia semirrealista 3D para Roblox. Capítulo 1: A Travessia, em Vale de Lúmen.
 
 ## Escopo imediato
 
@@ -37,4 +37,4 @@ Construir a menor **vertical slice** que possa ser testada: entrada no mapa, sel
 
 ## Contexto
 
-Ler `docs/ARCHITECTURE.md`, `docs/STORY_CHAPTER_01.md` e `docs/SETUP_WINDOWS.md` antes das ações. Comunicar claramente o que foi **implementado**, **testado no Studio** e **apenas planejado**.
+Ler `docs/TECHNICAL_PLAN_CHAPTER_01.md`, `docs/ART_DIRECTION_SEMIREALISTIC.md`, `docs/ARCHITECTURE.md`, `docs/STORY_CHAPTER_01.md` e `docs/SETUP_WINDOWS.md` antes das ações. A prioridade artística é melhorar visuais sem quebrar a vertical slice já testada, com desempenho mobile mensurado. Comunicar claramente o que foi **implementado**, **testado no Studio** e **apenas planejado**.

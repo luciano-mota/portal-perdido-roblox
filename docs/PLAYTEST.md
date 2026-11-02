@@ -50,3 +50,14 @@ No Roblox Studio, abrir o projeto Baseplate, plugin Rojo > **Connect** > **Play*
 ## Evidências
 
 Registrar capturas do mapa, HUD, NPC, HP do Sentinela, estado de missão concluída e erros do Output. **Não fechar cards sem validar no Studio.**
+
+## Verificação de interface (02/11/2026)
+
+- [ ] Modal exibe **título**, depois descrição, depois os botões **Guardião / Explorador / Artífice**, nessa ordem.
+- [ ] Em tela desktop de cerca de 1136×628, modal fica à direita do chat nativo aberto, sem sobreposição importante.
+- [ ] HUD da missão não cobre o chat nativo no desktop.
+- [ ] No celular, modal permanece centralizado e sem botões cortados.
+- [ ] Ao iniciar, a câmera não fica colada em tronco de árvore; caminho, mentora e portal devem ficar visíveis.
+- [ ] Moedas só aparecem após escolha de classe.
+
+Se o Rojo já estiver em execução, atualize o Git **fora do modo Play**, pare e reinicie o Play Test para gerar novamente o cenário via `WorldBuilder`. Se o servidor Rojo ficar com arquivos antigos, reinicie `rojo serve` e reconecte o plugin.

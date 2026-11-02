@@ -114,3 +114,15 @@ Se o Rojo já estiver em execução, atualize o Git **fora do modo Play**, pare 
 - [Artífice com missão concluída e 25 moedas](evidence/2026-11-02/mobile-artificer-completed.jpg) — anterior ao ajuste final de opacidade/glifo do HUD.
 - [Servidor com dois jogadores após respawn](evidence/2026-11-02/two-player-server.jpg)
 - [Output capturado por MCP](evidence/2026-11-02/output.json)
+
+## Complemento visual — 02/11/2026
+
+Solicitação do operador: efeitos semirrealistas mantendo a história e os cenários iniciais. Direção canônica e distinção entre conteúdo entregue/planejado em [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md).
+
+- PASSOU no Studio: perfil touch manteve atmosfera e correção de cor, com Bloom, SunRays, DepthOfField e PortalPerdidoBloom desativados.
+- PASSOU no Studio: perfil KeyboardAndMouse ativou somente o bloom discreto do projeto; efeitos herdados permaneceram desativados.
+- PASSOU: nova execução de `WorldBuilder.build()` manteve **1 Atmosphere e 58 BaseParts**, sem duplicar efeitos ou geometria.
+- PASSOU: movimento W continuou funcionando após a mudança; deslocamento observado de ~5,79 studs em 0,35 s, `Processed=false`, `MenuOpen=false`. Seleção de Guardião e aceite da missão com Ilyra no emulador continuaram funcionando.
+- Nenhum stack trace novo ou infinite yield; o aviso externo de asset 203785492 permanece pendente. Build Rojo e verificação de whitespace passaram.
+- Capturas: [desktop semirrealista](evidence/2026-11-02/semireal-desktop.jpg), [mobile semirrealista](evidence/2026-11-02/semireal-mobile.jpg).
+- Limites: sem benchmark de GPU/FPS, sem teste em celular físico e sem nova construção de floresta/templo/chefe. A suíte completa da missão/multiplayer acima foi executada antes desta alteração de iluminação; depois dela houve apenas os testes pontuais descritos neste complemento.

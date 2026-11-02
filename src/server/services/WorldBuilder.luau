@@ -1,6 +1,7 @@
 --!strict
 -- Blockout temporário para Play Test. Substituir por mapa criado no Studio.
 local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
 
 local WorldBuilder = {}
 
@@ -27,7 +28,58 @@ local function createPart(
 	return part
 end
 
+-- Iluminação natural leve, sem texturas remotas ou luzes por árvore.
+local function configureLighting()
+	Lighting.ClockTime = 15.6
+	Lighting.GeographicLatitude = 35
+	Lighting.Brightness = 2.2
+	Lighting.ExposureCompensation = 0.05
+	Lighting.Ambient = Color3.fromRGB(78, 88, 105)
+	Lighting.OutdoorAmbient = Color3.fromRGB(115, 130, 145)
+	Lighting.EnvironmentDiffuseScale = 0.45
+	Lighting.EnvironmentSpecularScale = 0.6
+	Lighting.ShadowSoftness = 0.4
+
+	-- O template já inclui pós-processamento; neutralizar antes de aplicar
+	-- o perfil para não somar bloom/névoa e prejudicar a leitura no celular.
+	for _, effect in Lighting:GetChildren() do
+		if effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("DepthOfFieldEffect") or effect:IsA("BlurEffect") then
+			effect.Enabled = false
+		end
+	end
+
+	local atmosphere = Lighting:FindFirstChild("PortalPerdidoAtmosphere") or Lighting:FindFirstChildOfClass("Atmosphere")
+	if not atmosphere or not atmosphere:IsA("Atmosphere") then
+		atmosphere = Instance.new("Atmosphere")
+		atmosphere.Name = "PortalPerdidoAtmosphere"
+		atmosphere.Parent = Lighting
+	end
+	if atmosphere:IsA("Atmosphere") then
+		atmosphere.Name = "PortalPerdidoAtmosphere"
+		atmosphere.Density = 0.24
+		atmosphere.Offset = 0.15
+		atmosphere.Color = Color3.fromRGB(199, 216, 235)
+		atmosphere.Decay = Color3.fromRGB(116, 139, 165)
+		atmosphere.Haze = 1.1
+		atmosphere.Glare = 0.06
+	end
+
+	local grade = Lighting:FindFirstChild("PortalPerdidoColor")
+	if not grade or not grade:IsA("ColorCorrectionEffect") then
+		grade = Instance.new("ColorCorrectionEffect")
+		grade.Name = "PortalPerdidoColor"
+		grade.Parent = Lighting
+	end
+	if grade:IsA("ColorCorrectionEffect") then
+		grade.Brightness = 0
+		grade.Contrast = 0.08
+		grade.Saturation = -0.08
+		grade.TintColor = Color3.fromRGB(255, 247, 235)
+	end
+end
+
 function WorldBuilder.build()
+	configureLighting()
 	if Workspace:FindFirstChild("PortalPerdidoBlockout") then
 		return
 	end

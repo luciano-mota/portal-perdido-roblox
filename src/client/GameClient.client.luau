@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
+local Lighting = game:GetService("Lighting")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -178,12 +179,22 @@ controlsLabel.TextSize = 11
 controlsLabel.TextWrapped = true
 controlsLabel.Parent = questPanel
 
+-- Brilho discreto do portal no desktop; desligado na entrada touch.
+-- O perfil mobile mantém apenas atmosfera e correção de cor, sem desfoque.
+local bloom = Instance.new("BloomEffect")
+bloom.Name = "PortalPerdidoBloom"
+bloom.Intensity = 0.14
+bloom.Size = 18
+bloom.Threshold = 1.7
+bloom.Parent = Lighting
+
 local function updateLayout()
 	local camera = workspace.CurrentCamera
 	if not camera then return end
 	local viewport = camera.ViewportSize
 	local available = screen.AbsoluteSize
 	local touch = UserInputService.PreferredInput == Enum.PreferredInput.Touch
+	bloom.Enabled = not touch
 	cardScale.Scale = math.min(1, (available.X - 24) / 420, (available.Y - 24) / 350)
 	card.Position = UDim2.fromScale(if viewport.X >= 1000 then 0.68 else 0.5, 0.5)
 	questPanel.Position = UDim2.fromScale(if viewport.X >= 1000 then 0.68 else 0.5, 0.025)

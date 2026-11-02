@@ -30,27 +30,57 @@ end
 local card = Instance.new("Frame")
 card.Name = "ClassSelection"
 card.AnchorPoint = Vector2.new(0.5, 0.5)
-card.Position = UDim2.fromScale(0.5, 0.5)
-card.Size = UDim2.fromScale(0.78, 0.58)
+card.Position = UDim2.fromScale(0.5, 0.53)
+card.Size = UDim2.fromScale(0.90, 0.64)
 card.BackgroundColor3 = Color3.fromRGB(23, 35, 55)
 card.BorderSizePixel = 0
 card.Parent = screen
 makeCorner(card, 14)
 
 local sizeConstraint = Instance.new("UISizeConstraint")
-sizeConstraint.MaxSize = Vector2.new(440, 360)
-sizeConstraint.MinSize = Vector2.new(240, 220)
+sizeConstraint.MaxSize = Vector2.new(420, 350)
+sizeConstraint.MinSize = Vector2.new(250, 280)
 sizeConstraint.Parent = card
 
 local stack = Instance.new("UIListLayout")
+stack.SortOrder = Enum.SortOrder.LayoutOrder
 stack.HorizontalAlignment = Enum.HorizontalAlignment.Center
 stack.VerticalAlignment = Enum.VerticalAlignment.Center
-stack.Padding = UDim.new(0, 8)
+stack.Padding = UDim.new(0, 10)
+
+local panelStroke = Instance.new("UIStroke")
+panelStroke.Color = Color3.fromRGB(67, 171, 178)
+panelStroke.Thickness = 2
+panelStroke.Transparency = 0.45
+panelStroke.Parent = card
+
+local panelPadding = Instance.new("UIPadding")
+panelPadding.PaddingTop = UDim.new(0, 14)
+panelPadding.PaddingBottom = UDim.new(0, 14)
+panelPadding.PaddingLeft = UDim.new(0, 10)
+panelPadding.PaddingRight = UDim.new(0, 10)
+panelPadding.Parent = card
+
+local function updatePanelPosition()
+	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+	if viewport and viewport.X >= 760 then
+		-- Deixa o menu de classes fora da área ocupada pelo chat nativo aberto.
+		card.Position = UDim2.fromScale(0.68, 0.52)
+	else
+		card.Position = UDim2.fromScale(0.5, 0.53)
+	end
+end
+
+if workspace.CurrentCamera then
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updatePanelPosition)
+end
+updatePanelPosition()
 stack.Parent = card
 
-local function textLine(content: string, height: number, size: number): TextLabel
+local function textLine(content: string, height: number, size: number, order: number): TextLabel
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
+	label.LayoutOrder = order
 	label.Size = UDim2.new(0.92, 0, 0, height)
 	label.Text = content
 	label.Font = Enum.Font.GothamBold
@@ -61,14 +91,15 @@ local function textLine(content: string, height: number, size: number): TextLabe
 	return label
 end
 
-textLine("AS CRÔNICAS DO PORTAL PERDIDO", 40, 18)
-textLine("Você despertou em Aetherion. Escolha sua classe.", 35, 13)
+textLine("AS CRÔNICAS DO PORTAL PERDIDO", 44, 17, 1)
+textLine("Você despertou em Aetherion. Escolha sua classe.", 38, 13, 2)
 
-for _, classId in { "Guardian", "Explorer", "Artificer" } do
+for order, classId in { "Guardian", "Explorer", "Artificer" } do
 	local definition = Classes[classId]
 	local button = Instance.new("TextButton")
 	button.Name = "Choose" .. classId
-	button.Size = UDim2.new(0.92, 0, 0, 49)
+	button.LayoutOrder = order + 2
+	button.Size = UDim2.new(0.92, 0, 0, 52)
 	button.BackgroundColor3 = Color3.fromRGB(30, 117, 127)
 	button.TextColor3 = Color3.fromRGB(255, 255, 255)
 	button.TextWrapped = true
@@ -151,6 +182,7 @@ local function refreshHud()
 	card.Visible = not selected
 	questPanel.Visible = selected
 	attackButton.Visible = selected
+	coinsLabel.Visible = selected
 
 	local questState = player:GetAttribute("QuestState")
 	if questState == "ACTIVE" then

@@ -19,7 +19,8 @@
       "StarterPlayerScripts": {
         "GameClient": {
           "$path": "src/client/GameClient.client.luau"
-        }
+        },
+        "$className": "StarterPlayerScripts"
       }
     }
   }

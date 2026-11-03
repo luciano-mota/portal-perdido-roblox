@@ -27,7 +27,7 @@ Atualizado em 03/11/2026. Fonte de verdade do andamento: commits/PR #30 e `DEVEL
 | 5 | Publicar como **experiência privada** (sem acesso público) para habilitar DataStore real, compras de teste e telemetria | **Usuário** (decisão de conta) | — |
 | 6 | Persistência real: salvar/recarregar classe, missão, moedas e conclusão em duas sessões; falha de rede | Claude | 5 |
 | 7 | Aparelho móvel físico: FPS, memória, toque, legibilidade | **Usuário** (aparelho) + Claude (ajustes) | 5 |
-| 8 | Página da experiência: ícone, 3 thumbnails, descrição, questionário de maturidade, gêneros | Claude prepara; **usuário** envia | 5 |
+| 8 | Página da experiência: ícone, 3 thumbnails, descrição, questionário de maturidade, gêneros; Game Settings → Avatar **R15 Only** (taxa DevEx 18+) | Claude prepara; **usuário** envia | 5 |
 
 ### P1 — monetização e retenção (pode avançar em paralelo ao P0, vendas desligadas)
 
@@ -39,6 +39,8 @@ Atualizado em 03/11/2026. Fonte de verdade do andamento: commits/PR #30 e `DEVEL
 | 12 | Criar passes/produtos na conta e definir preços finais | **Usuário** (Robux/conta) |
 | 13 | Insígnias gratuitas (concluir capítulo, derrotar chefe sem cair, explorador de segredos) | Claude prepara; **usuário** cria |
 | 14 | Telemetria de funil (início, classe, cada missão, chefe, conclusão, loja) via AnalyticsService | Claude |
+| 15 | Servidor privado pago + convite ao Roblox Plus (até 750 R$ por novo assinante) | Claude implementa; **usuário** define preço |
+| 16 | Ativar Managed Pricing no Creator Hub (preço regional automático) | **Usuário** |
 
 ### P2 — depois do beta
 

@@ -187,6 +187,56 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 			return m
 		end
 	end
+	if boss then
+		local template=game:GetService("ServerStorage"):FindFirstChild("RootGuardianTemplate")
+		if template and template:IsA("Model") then
+			-- Malha gerada (assets/characters/models/root-guardian-generated-v1.rbxm): frente em −Z,
+			-- pivô no centro da caixa, 8,3 studs de altura antes da escala.
+			local BOSS_SCALE=1.5
+			local visual=template:Clone()
+			visual:ScaleTo(BOSS_SCALE)
+			local _,size=visual:GetBoundingBox()
+			-- A base de pedras modelada sob os pés fica afundada no piso da arena, para não "deslizar"
+			-- junto quando o chefe anda. O piso é medido (o mundo é construído antes dos inimigos).
+			-- Só o cenário conta: no reaparecimento (40 s) um jogador pode estar no centro da arena.
+			local params=RaycastParams.new() params.FilterType=Enum.RaycastFilterType.Include
+			params.FilterDescendantsInstances={workspace:FindFirstChild("PortalChapter") or workspace.Terrain,workspace.Terrain}
+			local hit=workspace:Raycast(position+Vector3.new(0,4,0),Vector3.new(0,-40,0),params)
+			local floorY=if hit then hit.Position.Y else position.Y-6.4
+			local center=CFrame.new(position.X,floorY+size.Y/2-0.85,position.Z)
+			visual:PivotTo(center)
+			local function local_(offset: Vector3): CFrame return center*CFrame.new(offset*BOSS_SCALE) end
+			-- Núcleo e olhos neon: o EnemyService recolore peças "Core"/"Eye" ao entrar na fase 2.
+			-- Offsets medidos por raycast no template (peito ≈ z −1,1; máscara ≈ z −0,75).
+			Art.part(m,"Core",Vector3.new(1.0,0.95,0.3)*BOSS_SCALE,local_(Vector3.new(0,0.62,-1.02)),cyan,Enum.Material.Neon,Enum.PartType.Ball)
+			for _,side in {-1,1} do
+				Art.part(m,"Eye",Vector3.new(0.3,0.15,0.08)*BOSS_SCALE,local_(Vector3.new(side*0.3,2.72,-0.74)),cyan,Enum.Material.Neon)
+			end
+			local light=Instance.new("PointLight") light.Color=cyan light.Range=14 light.Brightness=1.4 light.Shadows=false light.Parent=m:FindFirstChild("Core")
+			local joints={Head={"Neck",-0.4},LeftArm={"LeftShoulder",0.38},RightArm={"RightShoulder",0.38},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4}}
+			local headPart: BasePart?=nil
+			for _,piece in visual:GetChildren() do
+				if piece:IsA("BasePart") then
+					piece.CanCollide=false piece.CanTouch=false piece.CanQuery=false
+					piece.Parent=m
+					local config=joints[piece.Name]
+					if config then
+						articulated(root,piece,CFrame.new(piece.Position+Vector3.new(0,piece.Size.Y*config[2],0)),config[1])
+						if piece.Name=="Head" then headPart=piece end
+					else attach(root,piece) end
+				end
+			end
+			visual:Destroy()
+			for _,piece in m:GetChildren() do
+				if piece:IsA("BasePart") and piece~=root and (piece.Name=="Core" or piece.Name=="Eye") then
+					if piece.Name=="Eye" and headPart then attach(headPart,piece) else attach(root,piece) end
+				end
+			end
+			m:SetAttribute("GeneratedCreature",true)
+			m.Parent=parent
+			return m
+		end
+	end
 	if kind == "Wisp" then
 		p("Core",Vector3.new(1.6,2.1,1.6),Vector3.zero,color,Enum.Material.Neon,Enum.PartType.Ball)
 		for i=1,5 do

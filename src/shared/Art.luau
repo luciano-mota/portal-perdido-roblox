@@ -2,6 +2,7 @@
 -- Kit procedural original. Sem modelos externos ou scripts de Toolbox.
 local Face=require(script.Parent.FacePresentation)
 local Art = {}
+Art.ApprovedTemplates = {IlyraTemplate = true}
 local stone = Color3.fromRGB(119, 124, 134)
 local bark = Color3.fromRGB(86, 72, 59)
 local gold = Color3.fromRGB(191, 157, 99)
@@ -68,6 +69,33 @@ function Art.label(parent: BasePart, title: string, subtitle: string?, color: Co
 end
 
 function Art.npc(parent: Instance, position: Vector3): Model
+	local template=game:GetService("ServerStorage"):FindFirstChild("IlyraTemplate")
+	-- Aprovação versionada no código: revisão visual de 03/11/2026 (ver docs/ILYRA_VISUAL_REVIEW.md).
+	-- O atributo ArtApproved do .rbxm continua aceito para aprovações futuras feitas no Studio.
+	local approved=template~=nil and (Art.ApprovedTemplates[template.Name]==true or template:GetAttribute("ArtApproved")==true)
+	if template and template:IsA("Model") and approved then
+		local npc=template:Clone()
+		local root=npc:FindFirstChild("HumanoidRootPart")
+		if root and root:IsA("BasePart") then
+			npc.Name="Ilyra" npc.PrimaryPart=root
+			for _,item in npc:GetDescendants() do
+				if item:IsA("LuaSourceContainer") then item:Destroy()
+				elseif item:IsA("BasePart") then item.Anchored=false item.CanCollide=false item.CanTouch=false item.Massless=true end
+			end
+			root.Anchored=true
+			local h=npc:FindFirstChildOfClass("Humanoid")
+			if h then h.DisplayDistanceType=Enum.HumanoidDisplayDistanceType.None h.AutoRotate=false end
+			npc:PivotTo(CFrame.new(position)*CFrame.Angles(0,math.pi,0))
+			local box,size=npc:GetBoundingBox()
+			npc:PivotTo(npc:GetPivot()+Vector3.new(0,position.Y-(box.Position.Y-size.Y/2),0))
+			npc:SetAttribute("PresentationKind","Ilyra")
+			npc:SetAttribute("GeneratedNPC",true)
+			Art.label(root,"ILYRA","Guardiã do Vale",nil,4)
+			npc.Parent=parent
+			return npc
+		end
+		npc:Destroy()
+	end
 	local m = Instance.new("Model")
 	m.Name = "Ilyra"
 	local function p(name: string, size: Vector3, offset: Vector3, color: Color3, material: Enum.Material?, shape: Enum.PartType?)
@@ -362,7 +390,8 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 		equip("Harness",Vector3.new(0.3,2.2,0.1),CFrame.new(0.4,0,-0.65)*CFrame.Angles(0,0,-0.5),gold,Enum.Material.Metal)
 	end
 	if character:GetAttribute("PortalGeneratedRig") then
-		local baked={TravelBelt=true,BeltBuckle=true,TravelPouch=true,TravelScarf=true,LeatherBaldric=true,ShortCloak=true,Mantle=true,Crest=true,WovenStole=true,RunicClasp=true,Harness=true}
+		-- Peças já modeladas nos rigs gerados (cinto, capa, armadura do Guardião); armas e foco continuam.
+		local baked={TravelBelt=true,BeltBuckle=true,TravelPouch=true,TravelScarf=true,LeatherBaldric=true,ShortCloak=true,Mantle=true,Crest=true,WovenStole=true,RunicClasp=true,Harness=true,Breastplate=true,Pauldrons=true,PlateTrim=true}
 		for _,piece in folder:GetChildren() do if baked[piece.Name] then piece:Destroy() end end
 	end
 	folder.Parent=character

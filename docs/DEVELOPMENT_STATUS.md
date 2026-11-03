@@ -125,3 +125,26 @@ Vista do vale comparada em RenderSettings.QualityLevel Level01 e Level21, sem mo
 Após essa configuração, Play com Guardião confirmou Ilyra → Sentinela → quest 3 e 25 moedas, sem novo erro do jogo. A passagem cooperativa completa precedeu somente essa troca de iluminação; não houve mudança adicional de combate.
 
 Pendências atuais: realismo/modelagem/animação final, teste humano de naturalidade e duração, aparelho móvel físico e persistência real. Escala de seis jogadores está implementada, mas a execução completa foi testada com dois.
+
+## Regressão G0 e personagens humanizados — 03/11/2026
+
+Branch feature/cpp-001-003-bootstrap sobre ba19522. Backup do lugar antes das mudanças: `~/Projetos/portal-perdido-backups/portal-perdido-g0-backup-20261103.rbxl`.
+
+**G0 aprovado no Studio para as três classes**, cada uma em Play separado com interface real (pular prólogo e escolher classe por clique), teclas reais (W/Espaço, E, Q, R) e navegação do personagem:
+
+| Classe | HP | Ilyra → missão 2 | Sentinela | Missão/moedas | Erros Luau |
+| --- | --- | --- | --- | --- | --- |
+| Guardião (avatar padrão, antes do template) | 150 | sim | 0 HP | 3 / 25 | 0 |
+| Explorador | 110 | sim | 0 HP | 3 / 25 | 0 |
+| Artífice | 100 | sim | 0 HP | 3 / 25 | 0 |
+| Guardião humanizado | 150 | sim | 0 HP | 3 / 25 | 0 |
+
+- Animações nativas voltaram a carregar (`PortalFallbackActive=false`, faixas do Animator tocando); o HTTP 403 de 02/11 não se repetiu nesta sessão.
+- Único aviso: `rbxassetid://203785492` (já documentado, origem externa).
+
+Mudanças:
+- Ilyra humanizada aprovada e ativa (ver `ILYRA_VISUAL_REVIEW.md`): sinal dos ombros corrigido, gesto de fala, retrato do diálogo enquadrando o rosto.
+- Guardião humanizado gerado, exportado e integrado (ver `GUARDIAN_RIG_QA.md`).
+- Modelos de revisão que apareciam no caminho do spawn movidos para `ServerStorage.ReviewArchive` (mudança apenas na cena do Studio).
+
+Pendente: captura visual do Guardião em jogo (o renderizador do Studio entrou em estado branco após a geração), passagem completa do capítulo com os novos modelos, aparelho móvel físico e persistência publicada.

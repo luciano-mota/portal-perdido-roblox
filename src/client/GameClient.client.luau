@@ -106,7 +106,10 @@ local function setPortrait(show: boolean)
 			local clone=npc:Clone()
 			for _, v in clone:GetDescendants() do if v:IsA("BillboardGui") or v:IsA("ProximityPrompt") then v:Destroy() elseif v:IsA("BasePart") then v.LocalTransparencyModifier=0 end end
 			clone:PivotTo(CFrame.identity) clone.Parent=scene
-			local camera=Instance.new("Camera") camera.CFrame=CFrame.lookAt(Vector3.new(0,2.8,-6),Vector3.new(0,2.6,0)) camera.FieldOfView=33 camera.Parent=portrait portrait.CurrentCamera=camera portraitReady=true
+			-- Enquadra rosto e ombros: funciona tanto para a Ilyra gerada quanto para a provisória.
+			local head=clone:FindFirstChild("Head",true)
+			local focus=if head and head:IsA("BasePart") then head.Position-Vector3.new(0,0.3,0) else Vector3.new(0,2.6,0)
+			local camera=Instance.new("Camera") camera.CFrame=CFrame.lookAt(focus+Vector3.new(0.35,0.15,-3.4),focus) camera.FieldOfView=30 camera.Parent=portrait portrait.CurrentCamera=camera portraitReady=true
 		end
 	end
 end

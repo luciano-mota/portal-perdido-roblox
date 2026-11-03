@@ -5,7 +5,9 @@
     "ServerStorage": {
       "ExplorerTemplate": { "$path": "assets/characters/models/explorer-generated-v1.rbxm" },
       "SentinelTemplate": { "$path": "assets/characters/models/sentinel-generated-v1.rbxm" },
-      "ArtificerTemplate": { "$path": "assets/characters/models/artificer-generated-v1.rbxm" }
+      "ArtificerTemplate": { "$path": "assets/characters/models/artificer-generated-v1.rbxm" },
+      "IlyraTemplate": { "$path": "assets/characters/models/ilyra-generated-v1.rbxm" },
+      "GuardianTemplate": { "$path": "assets/characters/models/guardian-generated-v1.rbxm" }
     },
     "ReplicatedStorage": {
       "Shared": {

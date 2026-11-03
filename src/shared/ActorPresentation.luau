@@ -12,7 +12,7 @@ local function register(model: Model)
 	local joints={}
 	local eyes={}
 	for _,item in model:GetDescendants() do
-		if item:IsA("Motor6D") then table.insert(joints,item) end
+		if item:IsA("Motor6D") or item:IsA("AnimationConstraint") then table.insert(joints,item) end
 		if kind=="Ilyra" and item:IsA("BasePart") and (item.Name=="Eye" or item.Name=="Iris" or item.Name=="Pupil") then table.insert(eyes,item) end
 	end
 	actors[model]={root=model.PrimaryPart,kind=kind,joints=joints,eyes=eyes,last=model.PrimaryPart.Position,phase=0,stride=0}
@@ -63,6 +63,15 @@ function Presentation.init()
 							pose=CFrame.Angles(math.sin(now*(if talking then 2.1 else 1.1))*0.035,yaw,0)
 						elseif name=="LeftShoulder" then pose=CFrame.Angles(-0.06-(if talking then 0.22+math.sin(now*1.8)*0.11 else math.sin(now*1.3)*0.025),0,-0.04)
 						elseif name=="RightShoulder" then pose=CFrame.Angles(math.sin(now*1.3)*0.015,0,0) end
+						if model:GetAttribute("GeneratedNPC") then
+							-- Rig gerado vem em A-pose: Z positivo no ombro esquerdo (negativo no direito) baixa o braço.
+							-- Validado no Play de 03/11/2026: 1,12 rad deixa os braços ao lado do corpo.
+							local breathe=math.sin(now*1.3)*0.02
+							if name=="LeftShoulder" then pose=CFrame.Angles(if talking then 0.3+math.sin(now*1.8)*0.08 else 0.04+breathe,0,1.12)
+							elseif name=="RightShoulder" then pose=CFrame.Angles(if talking then 0.12 else 0.03-breathe,0,-1.12)
+							elseif name=="LeftElbow" then pose=CFrame.Angles(if talking then 0.75+math.sin(now*1.8)*0.15 else 0.22,0,0)
+							elseif name=="RightElbow" then pose=CFrame.Angles(if talking then 0.4 else 0.18,0,0) end
+						end
 					elseif name:find("Hip") then
 						local rear=if name:find("Rear") then -1 else 1
 						pose=CFrame.Angles(math.sin(actor.phase)*actor.stride*side*rear*0.48,0,0)

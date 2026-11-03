@@ -8,7 +8,7 @@ Atualizado em 03/11/2026. Fonte de verdade do andamento: commits/PR #30 e `DEVEL
 | --- | --- |
 | Ciclo jogável (G0) | **Aprovado no Studio** para as três classes. |
 | Capítulo completo (G3) | **Concluível solo** no Studio com Guardião humanizado e chefe gerado (missões, inscrições, selos, chefe 2 fases, fragmento, conclusão). Dupla testada antes da arte nova. |
-| Personagens | Ilyra, Guardião, Explorador, Artífice, Sentinela e chefe **humanizados/gerados**. Predador de Espinhos e Eco do Vazio ainda procedurais. |
+| Personagens | Ilyra, três classes e **todas as sete criaturas** humanizadas/geradas (03/11). |
 | Abertura | Sem avatar padrão nem bonecos antigos (corrigido hoje). |
 | Persistência (G1) | Protocolo testado com adapter; **sem DataStore real** (lugar não publicado). |
 | Mobile / desempenho (G4) | Emulador e desktop medidos; **sem aparelho físico**. |
@@ -20,7 +20,7 @@ Atualizado em 03/11/2026. Fonte de verdade do andamento: commits/PR #30 e `DEVEL
 
 | # | Item | Quem | Depende de |
 | --- | --- | --- | --- |
-| 1 | Predador de Espinhos e Eco do Vazio gerados e articulados | Claude | — |
+| 1 | ~~Predador de Espinhos e Eco do Vazio gerados e articulados~~ **feito 03/11** | Claude | — |
 | 2 | Equilíbrio do chefe: automação morreu 2–3 vezes; revisar dano da fase 2, aviso das marcas e lembrete da fonte do templo antes do limiar | Claude + teste humano | 1 |
 | 3 | Passagem completa jogada por pessoa (desktop) com anotação de tempo, mortes e pontos confusos | **Usuário** | 1–2 |
 | 4 | Cooperação 2+ jogadores com os modelos novos (Studio: Test → Clients and Servers) | **Usuário** abre; Claude analisa | 1 |

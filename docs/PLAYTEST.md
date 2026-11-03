@@ -126,3 +126,34 @@ Solicitação do operador: efeitos semirrealistas mantendo a história e os cen�
 - Nenhum stack trace novo ou infinite yield; o aviso externo de asset 203785492 permanece pendente. Build Rojo e verificação de whitespace passaram.
 - Capturas: [desktop semirrealista](evidence/2026-11-02/semireal-desktop.jpg), [mobile semirrealista](evidence/2026-11-02/semireal-mobile.jpg).
 - Limites: sem benchmark de GPU/FPS, sem teste em celular físico e sem nova construção de floresta/templo/chefe. A suíte completa da missão/multiplayer acima foi executada antes desta alteração de iluminação; depois dela houve apenas os testes pontuais descritos neste complemento.
+
+
+## Expansão do capítulo — Artífice e mobile (02/11/2026)
+
+Base Git: 877609b, mais alterações desta sessão de HUD e contingência. Local confirmado: Template_95206881_AutoRecovery_0.rbxl, PlaceId=0. Não publicado, sem compras.
+
+| Cenário | Resultado observado |
+| --- | --- |
+| Ilyra → Sentinela | Quest 3, 25 moedas; personagem Artífice 100 HP. |
+| Três inscrições | Guardas derrotados por Q/R; prompts registraram 3/3, quest 4, 65 moedas. |
+| Fonte e templo | Checkpoint Temple; três selos na ordem correta, quest 5 e 100 moedas. |
+| Chefe atual | 1800 HP, fase 2 em 648 HP e derrota em 0; ataques Q/R e movimento A/D. |
+| Fragmento e epílogo | BossDefeated=true, QuestIndex=6, HasFragment=true, Coins=200, checkpoint Village; conclusão exibida. |
+| Repetição de coleta | Permaneceu em 200 moedas. |
+| Output | Sem erro Luau do jogo identificado nesta passagem; erros externos de asset delivery continuam. |
+| Emulador Galaxy A06 | HUD/classe/diálogo/chefe/conclusão renderizados. Entrada por ferramentas de mouse/teclado e InputHold; toque físico não validado. |
+| Desempenho em combate | 600 frames: média 59,99 FPS, mediana 60,01, percentil lento 55,55; desktop com emulação, não aparelho físico. |
+
+![Seleção ampliada para toque](evidence/2026-11-02-chapter/mobile-class-selection-49px.jpg)
+
+Seleção acima já inclui revisão posterior de vegetação e layout; os botões têm tamanho lógico 416×49. Confirmados TouchEnabled=true, PreferredInput=KeyboardAndMouse e HUD 390×76 após uso de Q, preservando disposição touch.
+
+![Diálogo no celular](evidence/2026-11-02-chapter/mobile-hud-avatar-fixed.jpg)
+
+![Chefe atual em fase 2](evidence/2026-11-02-chapter/mobile-artificer-boss-phase2.jpg)
+
+A captura de fase 2 é anterior à correção de estabilidade do layout: o teclado havia selecionado a disposição desktop no emulador. Não representa aprovação de ergonomia dessa condição.
+
+![Conclusão com Artífice](evidence/2026-11-02-chapter/mobile-artificer-chapter-complete.jpg)
+
+A conclusão acima comprova o fluxo de epílogo, mas precede o ajuste final de espaçamento do texto. Ver DEVELOPMENT_STATUS.md para alterações posteriores e limites. Novo Play após a vegetação não apresentou erro Luau; falta repetir cooperação e benchmark aquecido. Não aprovar realismo final, duração, persistência real ou mobile físico por estas evidências.

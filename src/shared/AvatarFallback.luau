@@ -25,7 +25,7 @@ end
 local function shell(body: MeshPart,player: Player,connections: {RBXScriptConnection})
 	if body:FindFirstChild("PortalFallbackSurface") then return end
 	local m=Instance.new("Model") m.Name="PortalFallbackSurface" m.Parent=body
-	local class=Classes[player:GetAttribute("ClassId") or "Guardian"]
+	local class=Classes[player:GetAttribute("ClassId") or "Guardian"] or Classes.Guardian
 	local tint=body.Color
 	if tint.R>0.85 and tint.G>0.7 and tint.B<0.3 then tint=Color3.fromRGB(209,176,143) end
 	if string.find(body.Name,"Torso") then tint=Color3.fromRGB(43,65,82)
@@ -50,32 +50,43 @@ local function shell(body: MeshPart,player: Player,connections: {RBXScriptConnec
 end
 
 local function bind(player: Player,character: Model)
-	task.delay(5,function()
-		if not character.Parent then return end
-		local humanoid=character:FindFirstChildOfClass("Humanoid")
-		if not humanoid then return end
+	task.spawn(function()
+		local humanoid=character:WaitForChild("Humanoid",10)
+		if not humanoid or not humanoid:IsA("Humanoid") or not character.Parent then return end
 		local actor={player=player,humanoid=humanoid,joints={},animate=false,connections={},phase=0,stride=0,poses={},combat=false}
-		local failedMeshes=0
-		for _, item in character:GetChildren() do
-			if item:IsA("MeshPart") and failed(item.MeshId) then shell(item,player,actor.connections) failedMeshes+=1 end
-		end
-		local failedAnimations=0
-		for _, item in character:GetDescendants() do
-			if item:IsA("Animation") and failed(item.AnimationId) then failedAnimations+=1 end
-			if item:IsA("Motor6D") or item:IsA("AnimationConstraint") then table.insert(actor.joints,item) end
-		end
-		local hasLoadedTrack=false
-		local animator=humanoid:FindFirstChildOfClass("Animator")
-		if animator then for _, track in animator:GetPlayingAnimationTracks() do if track.Length>0 then hasLoadedTrack=true end end end
-		actor.animate=failedAnimations>0 and not hasLoadedTrack
 		actors[character]=actor
-		if actor.animate and player==Players.LocalPlayer then
+		-- O estado de download pode mudar depois do primeiro prazo. Reavaliar também
+		-- restaura a apresentação nativa se os assets voltarem a carregar.
+		task.wait(5)
+		local warned=false
+		while character.Parent and actors[character]==actor do
+			local failedMeshes=0
+			for _,item in character:GetChildren() do
+				if item:IsA("MeshPart") and failed(item.MeshId) then shell(item,player,actor.connections) failedMeshes+=1 end
+			end
+			local failedAnimations=0
+			local joints={}
+			for _,item in character:GetDescendants() do
+				if item:IsA("Animation") and failed(item.AnimationId) then failedAnimations+=1 end
+				if item:IsA("Motor6D") or item:IsA("AnimationConstraint") then table.insert(joints,item) end
+			end
+			actor.joints=joints
+			local loaded=false
+			local animator=humanoid:FindFirstChildOfClass("Animator")
+			if animator then for _,track in animator:GetPlayingAnimationTracks() do if track.Length>0 then loaded=true end end end
+			local needsMotion=failedAnimations>0 and not loaded
 			local animate=character:FindFirstChild("Animate")
-			if animate and animate:IsA("LocalScript") then animate.Enabled=false end
-		end
-		if failedMeshes>0 or actor.animate then
-			character:SetAttribute("PortalFallbackActive",true)
-			warn("[PortalPerdido][AssetFallback]",player.Name,"malhas indisponíveis="..failedMeshes,"animação de contingência="..tostring(actor.animate))
+			if player==Players.LocalPlayer and animate and animate:IsA("LocalScript") then
+				if needsMotion and animate.Enabled then actor.disabledAnimate=animate animate.Enabled=false
+				elseif not needsMotion and actor.disabledAnimate==animate then animate.Enabled=true actor.disabledAnimate=nil end
+			end
+			actor.animate=needsMotion
+			character:SetAttribute("PortalFallbackActive",failedMeshes>0 or needsMotion)
+			if (failedMeshes>0 or needsMotion) and not warned then
+				warned=true
+				warn("[PortalPerdido][AssetFallback]",player.Name,"malhas indisponíveis="..failedMeshes,"animação de contingência="..tostring(needsMotion))
+			end
+			task.wait(3)
 		end
 	end)
 end

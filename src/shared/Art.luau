@@ -151,20 +151,36 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 end
 
 function Art.tree(parent: Instance, position: Vector3, seed: number, forest: boolean?)
-	local rng = Random.new(seed)
-	local height = rng:NextNumber(14,23)
-	local trunkTop = position+Vector3.new(rng:NextNumber(-2,2),height,0)
-	Art.segment(parent,"Trunk",position,trunkTop,2.1,bark,Enum.Material.Wood,true)
-	for i=1,3 do
-		local a=i*math.pi*2/3+seed
-		local endPoint = trunkTop+Vector3.new(math.cos(a)*5,-4,math.sin(a)*5)
-		Art.segment(parent,"Branch",trunkTop-Vector3.new(0,7,0),endPoint,0.7,bark,Enum.Material.Wood)
-		Art.part(parent,"Canopy",Vector3.new(13,8,12),CFrame.new(endPoint+Vector3.new(0,2,0))*CFrame.Angles(0,a,0),if forest then Color3.fromRGB(54,89+i*7,68) else Color3.fromRGB(76,112+i*6,76),Enum.Material.Grass,Enum.PartType.Ball)
+	local rng=Random.new(seed)
+	local m=Instance.new("Model") m.Name="LumenOak"
+	local height=rng:NextNumber(17,26)
+	local lean=Vector3.new(rng:NextNumber(-2.5,2.5),0,rng:NextNumber(-1.5,1.5))
+	local mid=position+Vector3.new(0,height*0.48,0)+lean*0.35
+	local crown=position+Vector3.new(0,height*0.83,0)+lean
+	Art.segment(m,"LowerTrunk",position,mid,2.3,bark,Enum.Material.Wood,true)
+	Art.segment(m,"UpperTrunk",mid,crown,1.55,bark:Lerp(Color3.fromRGB(110,99,79),0.2),Enum.Material.Wood,true)
+	-- Ramos e copas em alturas diferentes: silhueta assimétrica com vazios de céu.
+	for i=1,7 do
+		local angle=i*2.39996+seed
+		local radius=rng:NextNumber(3,7)
+		local endPoint=crown+Vector3.new(math.cos(angle)*radius,rng:NextNumber(-3,4),math.sin(angle)*radius)
+		local branchBase=mid:Lerp(crown,rng:NextNumber(0.1,0.75))
+		Art.segment(m,"Branch",branchBase,endPoint,0.42+rng:NextNumber()*0.28,bark,Enum.Material.Wood)
+		local tint=if forest then Color3.fromRGB(58,83,51) else Color3.fromRGB(77,101,56)
+		tint=tint:Lerp(Color3.fromRGB(115,132,69),rng:NextNumber(0.05,0.33))
+		local size=Vector3.new(rng:NextNumber(5,8),rng:NextNumber(3,4.8),rng:NextNumber(5,8))
+		Art.part(m,"LeafCluster",size,CFrame.new(endPoint)*CFrame.Angles(rng:NextNumber(-0.45,0.45),angle,rng:NextNumber(-0.3,0.3)),tint,Enum.Material.Grass,Enum.PartType.Ball)
+		if i%2==1 then
+			local tip=endPoint+Vector3.new(math.cos(angle)*2.5,1.3,math.sin(angle)*2.5)
+			Art.segment(m,"Twig",endPoint,tip,0.18,bark,Enum.Material.Wood)
+			Art.part(m,"OuterLeaves",size*0.53,CFrame.new(tip)*CFrame.Angles(0,angle,0.4),tint,Enum.Material.Grass,Enum.PartType.Ball)
+		end
 	end
-	for i=1,3 do
-		local a=i*math.pi*2/3
-		Art.segment(parent,"SurfaceRoot",position+Vector3.new(0,1,0),position+Vector3.new(math.cos(a)*3.4,0.1,math.sin(a)*3.4),0.6,bark,Enum.Material.Wood)
+	for i=1,4 do
+		local a=i*math.pi/2+seed
+		Art.segment(m,"SurfaceRoot",position+Vector3.new(0,0.7,0),position+Vector3.new(math.cos(a)*rng:NextNumber(2.5,4.2),0.1,math.sin(a)*3.2),0.5,bark,Enum.Material.Wood)
 	end
+	m.Parent=parent
 end
 
 function Art.portal(parent: Instance, position: Vector3, radius: number): Model

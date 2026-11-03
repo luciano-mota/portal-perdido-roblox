@@ -1,48 +1,40 @@
 # As Crônicas do Portal Perdido
 
-Aventura cooperativa original de fantasia semirrealista 3D para Roblox, desenvolvida pela LCM Dev Tech.
+Aventura cooperativa original de fantasia 3D para Roblox, desenvolvida pela LCM Dev Tech.
 
-**Capítulo 1 — A Travessia** · **Status: protótipo técnico em evolução**.
+**Capítulo 1 — A Travessia · versão jogável em desenvolvimento, não publicada.**
 
 ## Começar no Windows
 
 1. Instale Roblox Studio e Rojo 7.7.1.
-2. Abra uma experiência **Baseplate** no Studio, preferencialmente privada.
-3. No diretório do repositório, execute `C:\tools\rojo\rojo.exe serve`.
-4. No Studio, abra o plugin Rojo, conecte ao servidor local (porta 34872) e pressione **Play**.
-5. Escolha Guardião, Explorador ou Artífice, procure a mentora Ilyra, aceite a missão, derrote o Sentinela de Musgo pressionando **Q** ou **ATACAR** e retorne para receber 25 moedas de teste.
+2. Abra uma experiência Baseplate local ou privada.
+3. Execute `C:\tools\rojo\rojo.exe serve` neste repositório.
+4. Conecte o plugin Rojo à porta 34872 e pressione Play.
+5. Assista ou pule o prólogo, escolha Guardião Astral, Explorador ou Artífice e converse com Ilyra.
+6. Derrote o Sentinela, recupere três inscrições, ative os selos Aurora → Raiz → Estrela e atravesse o limiar. Vença as duas fases do Guardião e recolha o Fragmento da Aurora.
 
-Veja [o roteiro de testes](docs/PLAYTEST.md), [o guia de instalação](docs/SETUP_WINDOWS.md), [o plano técnico do Capítulo 1](docs/TECHNICAL_PLAN_CHAPTER_01.md) e [a nova direção de arte semirrealista](docs/ART_DIRECTION_SEMIREALISTIC.md).
+Q / ATACAR: ataque. R / habilidade: poder de classe. Shift / ESQUIVA: deslocamento. J / DIÁRIO: progresso e áudio. WASD e salto usam os controles nativos do Roblox; no celular, use joystick e botões de toque.
 
-## Funcionalidades desta versão (não validadas no Studio)
+## Implementado
 
-- Blockout gerado por script do Vale de Lúmen: ilha, árvores, ruínas, portal e spawn.
-- Interface de seleção de 3 classes e atributo replicado.
-- NPC Ilyra com ProximityPrompt, missão de combate e recompensa.
-- Sentinela de Musgo, perseguição simples, ataques e ressurgimento.
-- Combate autoritativo no servidor com alcance, classe e cooldown.
-- HUD simplificado, ataque por tecla **Q** ou botão touch.
-- Validação estrutural e de build Rojo via GitHub Actions.
+- Prólogo, cinco missões encadeadas, diálogos, puzzle e epílogo. Recompensa total do capítulo: 200 moedas; concessões validadas e idempotentes no servidor.
+- Três classes, armas visíveis, habilidades, esquiva, poses de ataque e contingência de passadas compatível com Motor6D e AnimationConstraint.
+- Vila, floresta, inscrições, templo, arena, fontes de recuperação, checkpoints e sete encontros de três espécies mais o chefe em duas fases.
+- Interface adaptada ao toque, diário, retratos e áudio local com opção de silenciar.
+- Perfil versionado, retries e lease de sessão. **No Studio, usa memória temporária explicitamente; persistência real ainda não foi comprovada em experiência publicada.**
 
-## Limitações importantes
+## Validação e limites
 
-- **Ainda não há persistência**. Moedas, classe e progresso reiniciam ao sair do servidor.
-- Esta é uma **vertical slice em desenvolvimento**, não o jogo final nem uma experiência publicada.
-- NPCs e inimigos são objetos provisórios gerados por código; assets 3D finais virão depois.
-- Combate, multiplayer, ergonomia mobile e interface **ainda exigem testes reais no Roblox Studio**.
-- Compras em Robux **não foram implementadas**. Nada é vendido nesta versão.
+Uma passagem completa com Artífice na revisão de gameplay de 02/11/2026 chegou a QuestIndex=6, fragmento=true e 200 moedas, sem duplicação ao repetir a coleta. As três classes, passadas, ataques, salto e respawn foram exercitados no Studio. A vegetação e o HUD receberam alterações posteriores; veja o escopo exato em [DEVELOPMENT_STATUS](docs/DEVELOPMENT_STATUS.md) e [PLAYTEST](docs/PLAYTEST.md).
 
-## Arquitetura
+O aspecto atual ainda é procedural e provisório. Realismo final, cooperação completa, duração do capítulo e desempenho em aparelho móvel físico continuam pendentes. HTTP 403 do serviço de assets está afetando avatares/animações nativas; a contingência é visual, sem alterar controles ou conta. Emulação no desktop não comprova desempenho de celular.
 
-- `src/shared`: configurações compartilhadas.
-- `src/server`: serviços autoritativos, missão, inimigos e cenário de teste.
-- `src/client`: interface e comandos de gameplay.
-- `default.project.json`: mapeamento Rojo.
+Nada foi publicado. Compras não foram implementadas nem ativadas.
 
-Backlog completo: [GitHub Issues](../../issues). PR inicial: [#30](../../pull/30).
+## Documentação
 
-## Propriedade intelectual
+[Arquitetura](docs/ARCHITECTURE.md) · [Operação MCP](docs/MCP_OPERATOR_RUNBOOK.md) · [História](docs/STORY_CHAPTER_01.md) · [Direção artística](docs/ART_DIRECTION_SEMIREALISTIC.md) · [Manifesto](docs/ASSET_MANIFEST.md) · [Plano técnico](docs/TECHNICAL_PLAN_CHAPTER_01.md).
 
-O projeto é um universo próprio e não incorpora conteúdo protegido da animação Caverna do Dragão.
+GitHub Actions valida estrutura, JSON e build Rojo; não executa os testes de gameplay no Studio.
 
-Direitos reservados à LCM Dev Tech. Sem licença pública de reutilização.
+Universo próprio: inspiração de aventura, fantasia e drama, com personagens e narrativa originais. Direitos reservados à LCM Dev Tech; sem licença pública de reutilização.

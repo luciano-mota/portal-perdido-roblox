@@ -40,7 +40,7 @@ Deixe `rojo serve` ativo. No Roblox Studio, conecte o plugin Rojo ao servidor lo
 3. **Missão:** conversar com Ilyra, enfrentar Sentinela, conferir HP, cooldown, retorno e 25 moedas.
 4. **Multiplayer:** abrir teste local com dois jogadores, verificar mortes, respawn, crédito da missão e regressões.
 5. **Mobile:** emular tela pequena; conferir HUD, botão ATACAR e alcance do ProximityPrompt.
-6. **Persistência:** atualmente **não existe**; não simular que o progresso foi salvo.
+6. **Persistência:** o adapter versionado existe, mas o Studio usa memória temporária; não alegar salvamento real antes de validar DataStore em experiência privada autorizada.
 7. **Segurança:** não permitir danos ou moedas enviados pelo cliente; não duplicar recompensa em múltiplos ProximityPrompts.
 8. **Evidências:** guardar screenshot, nome de cenário, versão de branch/commit, erros e resultado por caso em `docs/PLAYTEST.md` ou comentário do PR.
 

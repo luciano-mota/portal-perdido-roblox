@@ -57,3 +57,35 @@ Complemento de validação das articulações no mesmo rig:
 
 - Respawn após morte induzida de teste: Explorador manteve classe e 110 HP, voltou ao spawn e animou novamente as 15 articulações; 29 amostras andando, joelho entre 0,050 e 0,881 rad. Sem alteração manual de progresso.
 - Separado o gesto de ataque do limite de efeitos decorativos: atingir o orçamento visual não cancela a movimentação dos braços.
+
+## Passagem completa atual com Artífice e revisão mobile
+
+Em 02/11/2026, no Studio local, branch feature/cpp-001-003-bootstrap sobre 877609b, mais alterações de HUD/contingência desta sessão:
+
+1. Seleção real de Artífice (100 HP), conversa com Ilyra e fechamento das páginas.
+2. Sentinela derrotado por Q/R: quest 3 e 25 moedas.
+3. Guardas Dawn/Root/Star derrotados e respectivos prompts acionados: três inscrições, quest 4 e 65 moedas.
+4. Fonte do templo utilizada, checkpoint Temple; selos Aurora → Raiz → Estrela levaram a quest 5 e 100 moedas.
+5. Entrada pelo limiar e combate contra 1800 HP: 1416 → 1032 → 648 (fase 2) → 432 → 48 → 0. Ataques Q/R e movimento lateral por A/D; sem modificar HP do chefe ou flags de progresso.
+6. BossDefeated=true; coleta pelo prompt: quest 6, fragmento=true, checkpoint Village e 200 moedas. Repetição manteve 200. Tela de conclusão exibida após o epílogo.
+7. LogService não apresentou erro de execução do jogo na passagem; continuam erros externos 403/mesh/animation asset delivery.
+
+O combate usou emulação de Samsung Galaxy A06, mas mouse/teclado automatizados e InputHold dos prompts: **não é teste físico de toque**. Antes da correção subsequente de layout, o teclado alternava o HUD para desktop; a captura do chefe documenta essa condição histórica.
+
+Medição durante o chefe, 600 frames no desktop com emulador: média 59,99 FPS, mediana 60,01, percentil lento equivalente a 55,55 FPS; memória total informada pelo Studio 2656 MB. Não representa memória nem velocidade de aparelho físico.
+
+### Correções posteriores e escopo de regressão
+
+- Falhas tardias de meshes agora são reavaliadas a cada três segundos: na sessão anterior, 15 meshes já estavam Failure mas não havia shells, pois só se verificava uma vez. Novo Play confirmou 15 shells visuais, sem alterar rig/colisões.
+- Seleção compacta sem encolher toda a tipografia: botões 416×49; introdução, continuar, áudio e fechar recebem alvos com pelo menos 44 de altura. HUD de missão 390×76 no viewport de teste.
+- TouchEnabled mantém layout de toque mesmo com PreferredInput KeyboardAndMouse. Confirmado após Q no emulador.
+- Ajustes de espaçamento da conclusão e diário; a frase de salvamento permanece explícita e curta.
+- Árvores com ramos assimétricos, onze grupos de copa e raízes, relevo lateral fora do corredor/inscrições e árvores posicionadas na superfície do terreno. Mundo: 1572 BaseParts. Sem meshes/texturas externos adicionais.
+- Uma medição de 300 frames na inicialização da vegetação nova deu média 58,25 FPS, mediana 60,11 e percentil lento 54,94 FPS; memória total Studio 2905 MB. Inclui inicialização e não isola custo da vegetação. Ainda falta comparação aquecida e aparelho físico.
+- Sem erro Luau encontrado no Play após a revisão de vegetação. A passagem completa acima precede a alteração da vegetação e o ajuste final do texto do diário; estes não aprovam nova passagem completa por inferência.
+
+### Evidências
+
+Capturas em docs/evidence/2026-11-02-chapter: seleção mobile de 49 px, diálogo/contingência visível, chefe em fase 2 e conclusão com Artífice. As datas/versões e o uso misto de entrada estão descritos em PLAYTEST.md.
+
+Ainda pendentes: cooperação completa na revisão atual, benchmark aquecido sob combate após arte nova, aparelho móvel físico, persistência real, naturalidade/realismo artístico final e duração do capítulo.

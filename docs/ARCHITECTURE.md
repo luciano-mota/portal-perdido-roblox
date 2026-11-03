@@ -1,43 +1,43 @@
-# Arquitetura do Portal Perdido — protótipo inicial
+# Arquitetura — Capítulo 1: A Travessia
 
-## Objetivo
+## Autoridade e fluxo
 
-Validar uma **vertical slice**: escolher classe, atravessar o Vale de Lúmen, iniciar a primeira missão com Ilyra, derrotar um Sentinela de Musgo e voltar para receber moedas.
+O cliente apresenta interface, controles, poses e efeitos. O servidor decide classe, alvos válidos, dano, cooldown, inscrições, missão, checkpoints e recompensas. `src` sincronizado por Rojo é a fonte de verdade; não editar módulos sincronizados só na memória do Studio.
 
-## Runtime
+`GameServer` constrói o mundo e conecta serviços/remotes. Perfis carregam antes de registrar classe e missão. O prólogo e a seleção são apresentados ao cliente quando QuestIndex está disponível.
 
-- **Cliente:** interface, botão de ataque, tecla Q e apresentação de objetivos. Envia apenas pedidos por `RemoteEvent`.
-- **Servidor:** valida classe, distância, cooldown, vida do inimigo, derrota, estados da missão e pagamento de moedas de teste.
-- **Shared:** configurações legíveis pelo cliente.
-- **DataStoreService:** planejado para CPP-004, **não implementado**.
-- **MarketplaceService:** planejado para CPP-019 e CPP-020, **não implementado**.
+## Módulos
 
-## Serviços
-
-- `ClassService`: allowlist de classes, escolha fixa por sessão e saúde inicial.
-- `WorldBuilder`: monta blockout provisório, remove apenas Baseplate e SpawnLocation padrões, cria um spawn no Vale.
-- `QuestService`: estados NOT_STARTED → ACTIVE → READY → COMPLETED. Define moedas somente no servidor.
-- `EnemyService`: 1 inimigo compartilhado, perseguição simples, ataque ao Humanoid e combate validado pelo servidor.
+| Módulo | Responsabilidade |
+| --- | --- |
+| WorldBuilder | Geração determinística de vila, floresta, templo, arena e terreno limitado; Ready sinaliza construção concluída. |
+| ClassService | Allowlist, escolha persistida, saúde, equipamento e retorno ao checkpoint no respawn. |
+| PlayerDataService | Sessões, atributos replicados, mutações no servidor, recompensas por chave, autosave/release. Studio usa memória temporária. |
+| ProfileStore | Schema v2, sanitização e adapter UpdateAsync com lease; perfil corrompido ou sessão concorrente não é sobrescrito. |
+| QuestService | Cinco etapas, ProximityPrompt com validação de vida/distância, inscrições/selos, descanso, fragmento e epílogo. |
+| EnemyService | Sete encontros compartilhados, LOS, busca de rotas, leash, telegráficos, dano, apoio/crédito e chefe em duas fases. |
+| GameClient | Prólogo/câmera, seleção, HUD/diário/diálogo, pedidos de combate e layout de toque. |
+| Art | Geometria original reproduzível, acessórios, NPCs, inimigos e previews. |
+| AvatarFallback / CharacterMotion | Contingência local para meshes/animações com falha confirmada; suporte aos dois tipos de articulação; poses sem alterar raiz ou hitboxes. |
+| VisualEffects / Audio | Apresentação local limitada; telegráficos críticos e gestos independem do limite de decoração. |
 
 ## Contratos remotos
 
-- `GameRemotes.ChooseClass(classId: string)`: valida o valor no servidor, permite uma escolha por sessão.
-- `GameRemotes.AttackEnemy()`: o servidor identifica o personagem, verifica classe, alcance, cooldown e calcula o dano, sem confiar em parâmetros de alvo/dano enviados pelo cliente.
+- `ChooseClass(classId)`: aceita apenas string em allowlist; escolha existente não muda por novo pedido.
+- `AttackEnemy()`: servidor escolhe alvo por alcance e linha de visão; parâmetros extras não concedem dano.
+- `UseSkill()` e `Dash()`: classe, personagem vivo e cooldown verificados no servidor.
+- `Notify`: servidor envia apresentação, mensagens e eventos de combate; cliente não concede moedas ou progressão.
 
-## Segurança
+Prompts de inscrições/selos/fragmento verificam distância e fase. Recompensas usam chaves por missão. Uma repetição não paga novamente. O inventário e a progressão pertencem ao perfil do servidor, não aos atributos alteráveis localmente.
 
-Nunca confiar em preço, dano, inventário, experiência, moeda ou conclusão de missão enviados pelo cliente. Os remotes têm controle de frequência e as moedas são concedidas somente na transição READY → COMPLETED.
+## Cooperação e limites
 
-**Limites desta versão:** nenhuma proteção anti-exploit está completa; é preciso validar line-of-sight, IA, PVP, persistência e ferramentas de telemetria em entregas futuras.
+Inimigos são compartilhados. Crédito de derrota exige contribuição recente, personagem vivo e proximidade; Égide pode registrar apoio de seu conjurador. Vida do chefe escala no primeiro dano com participantes elegíveis, até seis. Ausência de alvo por 12 segundos reinicia o encontro. Essa implementação ainda exige teste cooperativo completo da revisão atual.
 
-## Evolução priorizada
+O protocolo de perfil foi testado com adapter determinístico, mas a integração real de DataStore permanece não comprovada: este lugar tem PlaceId=0. Falhas de carregamento não autorizam substituir perfis bons por vazios; o cliente informa progresso temporário.
 
-1. **Play Test com Studio e Rojo**: validar seleção, diálogo, Q/touch, vida, respawn e recompensa.
-2. **CPP-004**: persistência versionada com proteção para save e retry.
-3. **CPP-011/012/013**: classes com habilidades, animações, mais criaturas e indicadores de combate.
-4. **CPP-009/014**: cinco missões e chefão do capítulo.
-5. **CPP-019/020**: monetização opcional, somente com concessão durável e `ProcessReceipt` idempotente para consumíveis.
+Não há MarketplaceService nem compras. Publicação e monetização dependem de aprovação do usuário.
 
-## Definição de pronto
+## Validação
 
-O GitHub Actions testa apenas estrutura e construção do arquivo Roblox via Rojo. A aprovação de gameplay requer testes dentro do Studio. Não declarar tarefa concluída antes desses testes.
+Consulte DEVELOPMENT_STATUS.md e PLAYTEST.md para versão, cenários e limites. CI verifica estrutura/JSON/build, não simula gameplay nem garante segurança completa. Testes no emulador não substituem aparelho físico.

@@ -49,12 +49,14 @@ end
 
 local loading=text(screen,"Loading","Preparando a travessia…",19,UDim2.fromScale(0.2,0.4),UDim2.fromScale(0.6,0.15))
 local card=frame(screen,"ClassSelection",UDim2.fromOffset(460,350),UDim2.fromScale(0.5,0.5)) card.AnchorPoint=Vector2.new(0.5,0.5) card.Visible=false stroke(card,amber)
+local classButtons: {TextButton}={}
 local cardScale=Instance.new("UIScale") cardScale.Parent=card
 text(card,"Title","AS CRÔNICAS DO\nPORTAL PERDIDO",21,UDim2.fromOffset(18,15),UDim2.new(1,-36,0,57),amber).Font=Enum.Font.GothamBold
 text(card,"Subtitle","CAPÍTULO 1 · A TRAVESSIA\nEscolha como enfrentará este novo mundo.",13,UDim2.fromOffset(20,77),UDim2.new(1,-40,0,43))
 for i,id in {"Guardian","Explorer","Artificer"} do
 	local class=Classes[id]
 	local b=button(card,"Choose"..id,class.displayName.."  |  "..class.health.." VIDA\n"..class.description,UDim2.fromOffset(22,125+(i-1)*64),UDim2.new(1,-44,0,55),Color3.fromRGB(35,69,81))
+	classButtons[i]=b
 	stroke(b,class.color)
 	b.TextXAlignment=Enum.TextXAlignment.Left
 	local padding=Instance.new("UIPadding") padding.PaddingLeft=UDim.new(0,76) padding.PaddingRight=UDim.new(0,8) padding.Parent=b
@@ -160,18 +162,66 @@ end
 local bloom=Instance.new("BloomEffect") bloom.Name="PortalPerdidoBloom" bloom.Intensity=0.14 bloom.Size=18 bloom.Threshold=1.7 bloom.Parent=Lighting
 local function layout()
 	local available=screen.AbsoluteSize
-	cardScale.Scale=math.clamp(math.min((available.X-24)/460,(available.Y-24)/350),0.2,1)
-	local touch=UIS.PreferredInput==Enum.PreferredInput.Touch
+	local touch=UIS.TouchEnabled and UIS.PreferredInput~=Enum.PreferredInput.Gamepad
+	local compact=touch and available.Y<450
+	card.Size=UDim2.fromOffset(if compact then math.min(460,available.X-24) else 460,if compact then 256 else 350)
+	cardScale.Scale=if compact then math.min(1,(available.Y-16)/256) else math.clamp(math.min((available.X-24)/460,(available.Y-24)/350),0.2,1)
+	local title=card:FindFirstChild("Title") :: TextLabel
+	local subtitle=card:FindFirstChild("Subtitle") :: TextLabel
+	local footer=card:FindFirstChild("Footer") :: TextLabel
+	title.Position=UDim2.fromOffset(18,if compact then 8 else 15)
+	title.Size=UDim2.new(1,-36,0,if compact then 40 else 57)
+	title.TextSize=if compact then 18 else 21
+	subtitle.Position=UDim2.fromOffset(20,if compact then 48 else 77)
+	subtitle.Size=UDim2.new(1,-40,0,if compact then 32 else 43)
+	subtitle.TextSize=if compact then 12 else 13
+	footer.Visible=not compact
+	for i,b in classButtons do
+		b.Position=UDim2.fromOffset(22,(if compact then 84 else 125)+(i-1)*(if compact then 55 else 64))
+		b.Size=UDim2.new(1,-44,0,if compact then 49 else 55)
+		b.TextSize=15
+	end
+	hud.Size=UDim2.new(if compact then 0.72 else 0.92,0,0,if compact then 76 else 96)
+	hud:FindFirstChildOfClass("UISizeConstraint").MaxSize=Vector2.new(if compact then 390 else 510,96)
+	heading.Position=UDim2.fromOffset(12,if compact then 4 else 7)
+	objective.Position=UDim2.fromOffset(12,if compact then 22 else 28)
+	objective.Size=UDim2.new(1,-24,0,if compact then 28 else 39)
+	objective.TextSize=if compact then 13 else 14
+	hpBG.Position=UDim2.new(0.04,0,0,if compact then 64 else 78)
+	hpText.Position=UDim2.new(0.04,0,0,if compact then 50 else 64)
+	coins.Position=UDim2.new(0.6,0,0,if compact then 46 else 62)
+	boss.Position=UDim2.new(0.5,0,0,if compact then 90 else 116)
+	boss.Size=UDim2.new(if compact then 0.48 else 0.86,0,0,40)
+	continueButton.Size=UDim2.fromOffset(138,if touch then 44 else 32)
+	continueButton.Position=UDim2.new(1,-156,1,if touch then -52 else -45)
+	journal.Close.Size=UDim2.fromOffset(if touch then 44 else 32,if touch then 44 else 30)
+	journal.Close.Position=UDim2.new(1,if touch then -52 else -46,0,8)
+	audioToggle.Position=UDim2.new(0.07,0,1,-52)
+	audioToggle.Size=UDim2.new(0.55,0,0,44)
+	journalDetails.Position=UDim2.fromScale(0.07,0.65)
+	journalDetails.Size=UDim2.fromScale(0.86,0.12)
+	for i,entry in entries do entry.Position=UDim2.new(0.07,0,0.17+(i-1)*0.09,0) entry.Size=UDim2.new(0.86,0,0.085,0) end
+	ending.Explore.Position=UDim2.new(0.15,0,1,-54)
+	ending.Explore.Size=UDim2.new(0.7,0,0,44)
+	ending.Title.TextSize=if compact then 24 else 30
+	ending.Epilogue.Position=UDim2.fromScale(0.1,if compact then 0.46 else 0.5)
+	ending.Epilogue.Size=UDim2.fromScale(0.8,if compact then 0.27 else 0.28)
+	ending.Epilogue.TextSize=if compact then 14 else 16
+	introNext.Position=UDim2.new(0.35,0,1,-104)
+	introNext.Size=UDim2.new(0.3,0,0,44)
+	introSkip.Position=UDim2.new(0.3,0,1,-52)
+	introSkip.Size=UDim2.new(0.4,0,0,44)
 	bloom.Enabled=not touch
-	attackButton.Position=if touch then UDim2.new(1,-140,1,-190) else UDim2.new(1,-174,1,-90)
+	attackButton.Position=if touch then UDim2.new(1,-140,1,-124) else UDim2.new(1,-174,1,-90)
 	attackButton.Size=if touch then UDim2.fromOffset(120,54) else UDim2.fromOffset(150,60)
-	skillButton.Position=if touch then UDim2.new(1,-250,1,-190) else UDim2.new(1,-290,1,-90)
+	skillButton.Position=if touch then UDim2.new(1,-250,1,-124) else UDim2.new(1,-290,1,-90)
 	skillButton.Size=UDim2.fromOffset(100,54)
-	dashButton.Position=if touch then UDim2.new(1,-120,1,-244) else UDim2.new(1,-174,1,-142)
+	dashButton.Position=if touch then UDim2.new(1,-120,1,-180) else UDim2.new(1,-174,1,-142)
 	dashButton.Size=if touch then UDim2.fromOffset(100,48) else UDim2.fromOffset(150,42)
 	attackButton.Text=if touch then "ATACAR" else "ATACAR [Q]"
 	journalButton.Text=if touch then "DIÁRIO" else "DIÁRIO [J]"
-	journalButton.Position=if touch then UDim2.new(0.5,-45,1,-44) else UDim2.new(1,-110,0,112)
+	journalButton.Size=UDim2.fromOffset(100,if touch then 44 else 32)
+	journalButton.Position=if touch then UDim2.new(0.5,-50,1,-52) else UDim2.new(1,-110,0,112)
 	introText.TextSize=if available.Y<450 then 18 else 24
 	speech.TextSize=if available.Y<450 then 14 else 16
 	if refresh then refresh() end
@@ -239,8 +289,8 @@ refresh=function()
 	coins.Text="Moedas: "..tostring(player:GetAttribute("Coins") or 0).."\n"..(if player:GetAttribute("DataStatus")=="Saved" then "Salvo" elseif player:GetAttribute("DataStatus")=="StudioMemory" then "Progresso temporário" else "Não salvo")
 	for i,q in Chapter.Quests do entries[i].Text=(if index>i then "CONCLUÍDA   " elseif index==i then "EM CURSO   " else "A SEGUIR   ")..q.title entries[i].TextColor3=if index>i then teal elseif index==i then amber else Color3.fromRGB(130,151,160) end
 	local status=player:GetAttribute("DataStatus")
-	local saving=if status=="Saved" then "Progresso salvo." elseif status=="StudioMemory" then "Studio: progresso temporário desta sessão." elseif status=="Loading" then "Carregando progresso…" else "Salvamento indisponível. Progresso temporário; não será sobrescrito."
-	journalDetails.Text="Inscrições: "..tostring(player:GetAttribute("RuneCount") or 0).."/3  ·  Fragmento: "..(if player:GetAttribute("HasFragment") then "adquirido" else "não adquirido").."\n\n"..saving
+	local saving=if status=="Saved" then "Progresso salvo." elseif status=="StudioMemory" then "Studio: progresso temporário desta sessão." elseif status=="Loading" then "Carregando progresso…" else "Salvamento indisponível; progresso temporário."
+	journalDetails.Text="Inscrições: "..tostring(player:GetAttribute("RuneCount") or 0).."/3  ·  Fragmento: "..(if player:GetAttribute("HasFragment") then "adquirido" else "não adquirido").."\n"..saving
 	updateHealth()
 end
 for _, attribute in {"ClassId","QuestIndex","Coins","RuneCount","SealProgress","HasFragment","DataStatus","ShieldUntil","BossDefeated"} do player:GetAttributeChangedSignal(attribute):Connect(refresh) end

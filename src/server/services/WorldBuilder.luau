@@ -95,6 +95,21 @@ function WorldBuilder.build()
 		end
 		if i%6==0 then task.wait() end
 	end
+	-- Ondulações laterais mantêm o corredor, inscrições e checkpoints planos.
+	for i=1,12 do
+		local side=if i%2==0 then -1 else 1
+		local center=Vector3.new(side*(112+(i%3)*4),-24,-30-i*31)
+		local clear=true
+		for _,rune in Chapter.Runes do
+			if (Vector3.new(center.X,0,center.Z)-rune.position).Magnitude<62 then clear=false end
+		end
+		if clear then terrain:FillBall(center,34+(i%3),Enum.Material.LeafyGrass) end
+	end
+	local groundParams=RaycastParams.new() groundParams.FilterType=Enum.RaycastFilterType.Include groundParams.FilterDescendantsInstances={terrain}
+	local function rooted(x: number,z: number): Vector3
+		local hit=workspace:Raycast(Vector3.new(x,80,z),Vector3.new(0,-150,0),groundParams)
+		return Vector3.new(x,if hit then hit.Position.Y-2 else 0,z)
+	end
 	local paths=folder(world,"Paths")
 	local nodes={Vector3.new(0,0.12,70),Vector3.new(0,0.12,-70),Vector3.new(10,0.12,-120),Vector3.new(0,0.12,-185),Vector3.new(18,0.12,-245),Vector3.new(-8,0.12,-315),Vector3.new(0,0.12,-390),Vector3.new(0,0.12,-520)}
 	for i=1,#nodes-1 do
@@ -137,7 +152,7 @@ function WorldBuilder.build()
 	sign(village,Vector3.new(9,0,-100),"FLORESTA ESQUECIDA","As três inscrições")
 	for i=1,8 do
 		local x=if i%2==0 then -22-i*2 else 25+i*2
-		Art.tree(village,Vector3.new(x,0,75-i*14),i,false)
+		Art.tree(village,rooted(x,75-i*14),i,false)
 	end
 	task.wait()
 	local forest=folder(world,"Forest")
@@ -148,7 +163,7 @@ function WorldBuilder.build()
 		-- Corredor central desobstruído; árvores fora dos pontos de inscrição.
 		local clear=true
 		for _, rune in Chapter.Runes do if (Vector3.new(x,0,z)-rune.position).Magnitude<18 then clear=false end end
-		if clear then Art.tree(forest,Vector3.new(x,0,z),80+i,true) end
+		if clear then Art.tree(forest,rooted(x,z),80+i,true) end
 		if i%8==0 then task.wait() end
 	end
 	for i=1,24 do

@@ -206,6 +206,8 @@ local function cast(record: any,target: Player)
 	local centers={if ranged then Vector3.new(root.Position.X,2.75,root.Position.Z) else Vector3.new(record.root.Position.X,2.75,record.root.Position.Z)}
 	local radius=if boss and record.phase==2 then 10 else record.stats.radius
 	local windup=if record.phase==2 then 1.05 else record.stats.windup
+	record.model:SetAttribute("CastStartedAt",workspace:GetServerTimeNow())
+	record.model:SetAttribute("CastEndsAt",workspace:GetServerTimeNow()+windup)
 	if boss and record.phase==2 then
 		for _, offset in {Vector3.new(12,0,3),Vector3.new(-9,0,-7)} do table.insert(centers,centers[1]+offset) end
 	end
@@ -213,6 +215,7 @@ local function cast(record: any,target: Player)
 	record.nextCast=os.clock()+(if record.phase==2 then 2.8 else record.stats.cooldown)+windup
 	task.delay(windup,function()
 		if record.hp>0 and record.model.Parent then
+			record.model:SetAttribute("ImpactUntil",workspace:GetServerTimeNow()+0.25)
 			local hit: {[Player]: boolean}={}
 			for _, player in Players:GetPlayers() do
 				local playerPart=playerRoot(player)

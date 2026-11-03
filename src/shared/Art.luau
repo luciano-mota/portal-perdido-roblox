@@ -1,5 +1,6 @@
 --!strict
 -- Kit procedural original. Sem modelos externos ou scripts de Toolbox.
+local Face=require(script.Parent.FacePresentation)
 local Art = {}
 local stone = Color3.fromRGB(119, 124, 134)
 local bark = Color3.fromRGB(86, 72, 59)
@@ -30,6 +31,21 @@ end
 
 function Art.segment(parent: Instance, name: string, a: Vector3, b: Vector3, width: number, color: Color3, material: Enum.Material?, solid: boolean?): Part
 	return Art.part(parent, name, Vector3.new((b-a).Magnitude, width, width), CFrame.lookAt((a+b)*0.5, b)*CFrame.Angles(0, math.pi/2, 0), color, material, Enum.PartType.Cylinder, solid)
+end
+
+local function articulated(base: BasePart,piece: BasePart,pivot: CFrame,name: string): Motor6D
+	piece.Anchored=false piece.Massless=true
+	local joint=Instance.new("Motor6D") joint.Name=name
+	joint.Part0=base joint.Part1=piece
+	joint.C0=base.CFrame:ToObjectSpace(pivot)
+	joint.C1=piece.CFrame:ToObjectSpace(pivot)
+	joint.Parent=piece
+	return joint
+end
+
+local function attach(base: BasePart,piece: BasePart)
+	piece.Anchored=false piece.Massless=true
+	local weld=Instance.new("WeldConstraint") weld.Part0=base weld.Part1=piece weld.Parent=piece
 end
 
 function Art.label(parent: BasePart, title: string, subtitle: string?, color: Color3?, offset: number?)
@@ -65,26 +81,43 @@ function Art.npc(parent: Instance, position: Vector3): Model
 	m.PrimaryPart = root
 	p("Robe", Vector3.new(2.7,4.1,1.8), Vector3.new(0,2.2,0), robe, Enum.Material.Fabric, Enum.PartType.Ball)
 	p("Bodice", Vector3.new(2.1,2.2,1.4), Vector3.new(0,4.1,0), robe, Enum.Material.Fabric, Enum.PartType.Ball)
-	p("Mantle", Vector3.new(3.2,0.65,1.9), Vector3.new(0,4.8,0.12), Color3.fromRGB(62,115,119), Enum.Material.Fabric, Enum.PartType.Ball)
-	p("Belt", Vector3.new(2.2,0.22,1.5), Vector3.new(0,3.5,0), gold, Enum.Material.Metal)
+	p("Mantle", Vector3.new(2.7,0.5,1.7), Vector3.new(0,4.8,0.12), Color3.fromRGB(62,115,119), Enum.Material.Fabric, Enum.PartType.Ball)
+	p("Belt", Vector3.new(2.2,0.22,1.5), Vector3.new(0,3.5,0), bark, Enum.Material.Leather)
 	p("Buckle", Vector3.new(0.35,0.35,0.2), Vector3.new(0,3.5,-0.8), cyan, Enum.Material.Neon, Enum.PartType.Ball)
-	p("Head", Vector3.new(1.55,1.85,1.45), Vector3.new(0,6.0,0), skin, nil, Enum.PartType.Ball)
-	p("Hair", Vector3.new(1.75,1.65,1.6), Vector3.new(0,6.4,0.25), hair, nil, Enum.PartType.Ball)
+	p("Head", Vector3.new(1.25,1.55,1.2), Vector3.new(0,5.95,0), skin, nil, Enum.PartType.Ball)
+	p("Hair", Vector3.new(1.4,1.4,1.35), Vector3.new(0,6.25,0.2), hair, nil, Enum.PartType.Ball)
 	for _, side in {-1,1} do
-		p("Braid", Vector3.new(0.35,2.25,0.4), Vector3.new(side*0.78,5.45,-0.1), hair, nil, Enum.PartType.Ball)
-		p("BraidRing", Vector3.new(0.4,0.18,0.44), Vector3.new(side*0.78,4.7,-0.1), gold, Enum.Material.Metal)
-		p("Eye", Vector3.new(0.32,0.16,0.08), Vector3.new(side*0.3,6.05,-0.68), Color3.fromRGB(238,237,224), nil, Enum.PartType.Ball)
-		p("Iris", Vector3.new(0.12,0.14,0.06), Vector3.new(side*0.3,6.05,-0.73), Color3.fromRGB(60,113,114), nil, Enum.PartType.Ball)
-		Art.segment(m,"Sleeve",position+Vector3.new(side*1.2,4.6,0),position+Vector3.new(side*1.6,3.4,-0.15),0.65,robe,Enum.Material.Fabric)
-		p("Hand", Vector3.new(0.43,0.63,0.43), Vector3.new(side*1.6,3.05,-0.15), skin, nil, Enum.PartType.Ball)
+		p("Braid", Vector3.new(0.28,2.1,0.32), Vector3.new(side*0.62,5.4,-0.04), hair, nil, Enum.PartType.Ball)
+		p("BraidRing", Vector3.new(0.32,0.14,0.36), Vector3.new(side*0.62,4.65,-0.04), gold, Enum.Material.Metal)
+		p("Eye", Vector3.new(0.25,0.12,0.06), Vector3.new(side*0.24,5.98,-0.56), Color3.fromRGB(238,237,224), nil, Enum.PartType.Ball)
+		p("Iris", Vector3.new(0.1,0.11,0.04), Vector3.new(side*0.24,5.98,-0.6), Color3.fromRGB(60,113,114), nil, Enum.PartType.Ball)
+		local sleeve=Art.segment(m,"Sleeve",position+Vector3.new(side*1.2,4.6,0),position+Vector3.new(side*1.6,3.4,-0.15),0.65,robe,Enum.Material.Fabric)
+		local hand=p("Hand", Vector3.new(0.4,0.57,0.4), Vector3.new(side*1.6,3.05,-0.15), skin, nil, Enum.PartType.Ball)
+		local sideName=if side<0 then "Left" else "Right"
+		sleeve.Name=sideName.."Sleeve" hand.Name=sideName.."Hand"
+		articulated(root,sleeve,CFrame.new(position+Vector3.new(side*1.2,4.6,0)),sideName.."Shoulder")
+		attach(sleeve,hand)
+		p("Boot",Vector3.new(0.65,0.7,1.55),Vector3.new(side*0.6,0.35,-0.6),bark,Enum.Material.Leather,Enum.PartType.Ball)
+		p("Pupil",Vector3.new(0.044,0.085,0.025),Vector3.new(side*0.24,5.98,-0.625),Color3.fromRGB(28,37,42),nil,Enum.PartType.Ball)
+		p("Eyebrow",Vector3.new(0.25,0.045,0.06),Vector3.new(side*0.24,6.12,-0.56),hair,nil,Enum.PartType.Ball)
+		p("Ear",Vector3.new(0.18,0.28,0.22),Vector3.new(side*0.62,5.86,0),skin,nil,Enum.PartType.Ball)
 	end
-	p("Nose",Vector3.new(0.2,0.33,0.25),Vector3.new(0,5.8,-0.71),skin,nil,Enum.PartType.Ball)
-	p("Smile",Vector3.new(0.35,0.055,0.065),Vector3.new(0,5.5,-0.65),Color3.fromRGB(147,99,86))
-	p("Circlet",Vector3.new(1.62,0.13,1.5),Vector3.new(0,6.55,0),gold,Enum.Material.Metal)
-	p("CircletGem",Vector3.new(0.3,0.4,0.18),Vector3.new(0,6.5,-0.78),cyan,Enum.Material.Neon,Enum.PartType.Ball)
+	p("Nose",Vector3.new(0.18,0.28,0.22),Vector3.new(0,5.77,-0.59),skin,nil,Enum.PartType.Ball)
+	p("Smile",Vector3.new(0.29,0.045,0.05),Vector3.new(0,5.51,-0.53),Color3.fromRGB(147,99,86))
+	p("Circlet",Vector3.new(1.32,0.11,1.25),Vector3.new(0,6.4,0),gold,Enum.Material.Metal)
+	p("CircletGem",Vector3.new(0.22,0.3,0.15),Vector3.new(0,6.38,-0.65),cyan,Enum.Material.Neon,Enum.PartType.Ball)
 	Art.segment(m,"Staff",position+Vector3.new(1.9,0.1,-0.4),position+Vector3.new(1.9,6.4,-0.4),0.18,bark,Enum.Material.Wood)
 	p("StaffHalo",Vector3.new(0.65,0.65,0.23),Vector3.new(1.9,6.5,-0.4),gold,Enum.Material.Metal,Enum.PartType.Ball)
 	p("StaffLight",Vector3.new(0.35,0.35,0.3),Vector3.new(1.9,6.6,-0.56),cyan,Enum.Material.Neon,Enum.PartType.Ball)
+	local head=m:FindFirstChild("Head") :: BasePart
+	articulated(root,head,CFrame.new(position+Vector3.new(0,5.2,0)),"Neck")
+	local headPieces={Hair=true,Braid=true,BraidRing=true,Eye=true,Iris=true,Pupil=true,Eyebrow=true,Ear=true,Nose=true,Smile=true,Circlet=true,CircletGem=true}
+	for _,piece in m:GetChildren() do
+		if piece:IsA("BasePart") and piece~=root and piece~=head and not piece:FindFirstChildWhichIsA("JointInstance") and not piece:FindFirstChildOfClass("WeldConstraint") then
+			attach(if headPieces[piece.Name] then head else root,piece)
+		end
+	end
+	m:SetAttribute("PresentationKind","Ilyra")
 	Art.label(root,"ILYRA","Guardiã do Vale",nil,5)
 	m:PivotTo(m:GetPivot()*CFrame.Angles(0,math.pi,0))
 	m.Parent = parent
@@ -136,16 +169,37 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 			end
 		end
 	end
-	for _, v in m:GetChildren() do
-		if v:IsA("BasePart") and v ~= root then
-			v.Anchored = false
-			v.Massless = true
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = root
-			weld.Part1 = v
-			weld.Parent = v
+	local arms: {[number]: BasePart}={}
+	local legs: {[number]: BasePart}={}
+	local head=m:FindFirstChild("Head")
+	for _,piece in m:GetChildren() do
+		if piece:IsA("BasePart") then
+			local off=root.CFrame:PointToObjectSpace(piece.Position)
+			local side=if off.X<0 then -1 else 1
+			if piece.Name=="Arm" then arms[side]=piece elseif piece.Name=="Leg" and kind~="Thorn" then legs[side]=piece end
 		end
 	end
+	for _,piece in m:GetChildren() do
+		if not piece:IsA("BasePart") or piece==root then continue end
+		local off=root.CFrame:PointToObjectSpace(piece.Position)
+		local side=if off.X<0 then -1 else 1
+		local sideName=if side<0 then "Left" else "Right"
+		if piece.Name=="Arm" then
+			articulated(root,piece,CFrame.new(piece.Position+Vector3.new(0,1.2*scale,0)),sideName.."Shoulder")
+		elseif piece.Name=="Leg" then
+			local label=if kind=="Thorn" then (if off.Z<0 then "Front" else "Rear") else ""
+			articulated(root,piece,CFrame.new(piece.Position+Vector3.new(0,0.8*scale,0)),sideName..label.."Hip")
+		elseif piece.Name=="Head" then
+			articulated(root,piece,CFrame.new(piece.Position+Vector3.new(0,-0.65*scale,0)),"Neck")
+		elseif piece.Name=="Core" and kind=="Wisp" then
+			articulated(root,piece,piece.CFrame,"SpiritCore")
+		elseif piece.Name=="Hand" and arms[side] then attach(arms[side],piece)
+		elseif piece.Name=="Foot" and legs[side] then attach(legs[side],piece)
+		elseif (piece.Name=="Eye" or piece.Name=="CrownRoot" or piece.Name=="CrownBranch") and head and head:IsA("BasePart") then attach(head,piece)
+		elseif piece.Name=="Eye" and kind=="Wisp" then attach(m:FindFirstChild("Core") :: BasePart,piece)
+		else attach(root,piece) end
+	end
+
 	m.Parent = parent
 	return m
 end
@@ -256,9 +310,28 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 	elseif classId=="Explorer" then
 		equip("Quiver",Vector3.new(2,0.7,0.65),CFrame.new(0.65,0,0.8)*CFrame.Angles(0,0,1.3),bark,Enum.Material.Leather,Enum.PartType.Cylinder)
 		for i=1,3 do equip("Arrow",Vector3.new(0.06,2.5,0.06),CFrame.new(0.5+i*0.1,0.35,0.85),gold,Enum.Material.Wood) end
-		local curve={Vector3.new(-0.2,-1.3,-0.3),Vector3.new(-0.6,-0.9,-0.3),Vector3.new(-0.8,0,-0.3),Vector3.new(-0.6,0.9,-0.3),Vector3.new(-0.2,1.3,-0.3)}
-		for i=1,#curve-1 do local a,b=curve[i],curve[i+1] equip("BowLimb",Vector3.new((b-a).Magnitude,0.14,0.14),CFrame.lookAt((a+b)*0.5,b)*CFrame.Angles(0,math.pi/2,0),bark,Enum.Material.Wood,Enum.PartType.Cylinder,left) end
-		equip("BowString",Vector3.new(2.6,0.035,0.035),CFrame.new(-0.2,0,-0.3)*CFrame.Angles(0,0,math.pi/2),Color3.fromRGB(221,212,182),Enum.Material.Fabric,Enum.PartType.Cylinder,left)
+		-- O centro da empunhadura é a mão; a compensação mantém o arco vertical ao mirar.
+		local mount=equip("BowGrip",Vector3.new(0.05,0.05,0.05),CFrame.identity,bark,nil,nil,left)
+		mount.Transparency=1
+		local oldWeld=mount:FindFirstChildOfClass("WeldConstraint") if oldWeld then oldWeld:Destroy() end
+		local mountJoint=Instance.new("Motor6D") mountJoint.Name="BowOrientation" mountJoint.Part0=left :: BasePart mountJoint.Part1=mount mountJoint.Transform=CFrame.Angles(0,-math.pi/2,0) mountJoint.Parent=mount
+		local grip=CFrame.identity
+		local curve={Vector3.new(0.6,-1.3,0),Vector3.new(0.2,-0.9,0),Vector3.zero,Vector3.new(0.2,0.9,0),Vector3.new(0.6,1.3,0)}
+		for i=1,#curve-1 do local a,b=curve[i],curve[i+1] equip("BowLimb",Vector3.new((b-a).Magnitude,0.14,0.14),grip*CFrame.lookAt((a+b)*0.5,b)*CFrame.Angles(0,math.pi/2,0),bark,Enum.Material.Wood,Enum.PartType.Cylinder,mount) end
+		local stringColor=Color3.fromRGB(221,212,182)
+		equip("BowString",Vector3.new(2.6,0.028,0.028),grip*CFrame.new(0.6,0,0)*CFrame.Angles(0,0,math.pi/2),stringColor,Enum.Material.Fabric,Enum.PartType.Cylinder,mount)
+		local function anchor(name: string,offset: CFrame,target: Instance): Attachment
+			local piece=equip(name,Vector3.new(0.05,0.05,0.05),offset,bark,nil,nil,target)
+			piece.Transparency=1
+			local attachment=Instance.new("Attachment") attachment.Parent=piece return attachment
+		end
+		local top=anchor("BowTipTop",grip*CFrame.new(curve[#curve]),mount)
+		local bottom=anchor("BowTipBottom",grip*CFrame.new(curve[1]),mount)
+		local nock=anchor("StringDraw",CFrame.new(0,-0.1,0),right)
+		for _,tip in {top,bottom} do
+			local beam=Instance.new("Beam") beam.Name="DrawnString" beam.Attachment0=tip beam.Attachment1=nock beam.Width0=0.028 beam.Width1=0.028 beam.FaceCamera=true beam.Color=ColorSequence.new(stringColor) beam.Enabled=false beam.Parent=folder
+		end
+
 	else
 		equip("ArcaneFocus",Vector3.new(0.7,0.9,0.7),CFrame.new(0,0.25,-0.2),color,Enum.Material.Neon,Enum.PartType.Ball,right)
 		equip("FocusCage",Vector3.new(0.12,0.75,0.75),CFrame.new(0,0.25,-0.2),gold,Enum.Material.Metal,Enum.PartType.Cylinder,right)
@@ -273,7 +346,8 @@ function Art.classPreview(classId: string,color: Color3): Model
 		return Art.part(m,name,size,CFrame.new(position),tint,Enum.Material.SmoothPlastic,Enum.PartType.Ball)
 	end
 	m.PrimaryPart=p("UpperTorso",Vector3.new(1.9,2,1),Vector3.new(0,3.2,0),color:Lerp(Color3.fromRGB(43,58,69),0.55))
-	p("Head",Vector3.new(1.2,1.4,1.15),Vector3.new(0,4.9,0),Color3.fromRGB(209,176,143))
+	local head=p("Head",Vector3.new(1.2,1.4,1.15),Vector3.new(0,4.9,0),Color3.fromRGB(209,176,143))
+	Face.apply(head,classId)
 	p("Hair",Vector3.new(1.25,0.85,1.2),Vector3.new(0,5.3,0.1),Color3.fromRGB(76,61,48))
 	for _, side in {-1,1} do
 		p(if side<0 then "LeftHand" else "RightHand",Vector3.new(0.55,1.9,0.6),Vector3.new(side*1.3,3,0),color)

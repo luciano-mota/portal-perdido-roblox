@@ -104,7 +104,7 @@ local function setPortrait(show: boolean)
 		if npc and npc:IsA("Model") then
 			local scene=Instance.new("WorldModel") scene.Parent=portrait
 			local clone=npc:Clone()
-			for _, v in clone:GetDescendants() do if v:IsA("BillboardGui") or v:IsA("ProximityPrompt") then v:Destroy() end end
+			for _, v in clone:GetDescendants() do if v:IsA("BillboardGui") or v:IsA("ProximityPrompt") then v:Destroy() elseif v:IsA("BasePart") then v.LocalTransparencyModifier=0 end end
 			clone:PivotTo(CFrame.identity) clone.Parent=scene
 			local camera=Instance.new("Camera") camera.CFrame=CFrame.lookAt(Vector3.new(0,2.8,-6),Vector3.new(0,2.6,0)) camera.FieldOfView=33 camera.Parent=portrait portrait.CurrentCamera=camera portraitReady=true
 		end
@@ -297,6 +297,7 @@ for _, attribute in {"ClassId","QuestIndex","Coins","RuneCount","SealProgress","
 
 FX.init()
 require(ReplicatedStorage.Shared.AvatarFallback).init()
+require(ReplicatedStorage.Shared.ActorPresentation).init()
 notify.OnClientEvent:Connect(function(data)
 	if typeof(data)~="table" then return end
 	if data.kind=="dialogue" then

@@ -40,12 +40,29 @@ function FX.play(data: any)
 	if data.kind=="strike" then
 		local actor=typeof(data.userId)=="number" and Players:GetPlayerByUserId(data.userId)
 		if actor and actor.Character then
+			actor.Character:SetAttribute("PortalAimPosition",data.position)
 			actor.Character:SetAttribute("PortalAttackStarted",os.clock())
 			actor.Character:SetAttribute("PortalAttackClass",data.classId)
 			actor.Character:SetAttribute("PortalAttackDuration",if data.classId=="Explorer" then 0.46 else 0.56)
 		end
 		if #container:GetChildren()>60 then return end
 		if data.classId=="Guardian" then ring(data.position-Vector3.new(0,2.5,0),3,data.color,0.22)
+		elseif data.classId=="Explorer" then
+			task.delay(0.18,function()
+				if not container.Parent or #container:GetChildren()>60 then return end
+				local model=actor and actor.Character
+				local equipment=model and model:FindFirstChild("ClassEquipment")
+				local grip=equipment and equipment:FindFirstChild("BowGrip")
+				local origin=if grip and grip:IsA("BasePart") then grip.Position else data.origin
+				local delta=data.position-origin
+				if delta.Magnitude<0.1 then return end
+				local direction=delta.Unit
+				local arrow=Art.segment(container,"ArrowFlight",origin,origin+direction*1.8,0.065,Color3.fromRGB(171,137,87),Enum.Material.Wood)
+				arrow.CastShadow=false
+				local duration=math.clamp(delta.Magnitude/180,0.08,0.45)
+				TweenService:Create(arrow,TweenInfo.new(duration,Enum.EasingStyle.Linear),{CFrame=arrow.CFrame+delta}):Play()
+				Debris:AddItem(arrow,duration+0.03)
+			end)
 		else
 			local beam=Art.segment(container,"ArcaneTrail",data.origin,data.position,0.12,data.color,Enum.Material.Neon)
 			beam.CastShadow=false

@@ -22,6 +22,12 @@ local function message(player: Player,text: string)
 end
 
 local function dialogue(player: Player, lines: {string}, speaker: string?)
+	if not speaker or speaker=="ILYRA" then
+		local world=workspace:FindFirstChild("PortalChapter")
+		local village=world and world:FindFirstChild("Village")
+		local npc=village and village:FindFirstChild("Ilyra")
+		if npc then npc:SetAttribute("TalkingUntil",workspace:GetServerTimeNow()+8) end
+	end
 	notify:FireClient(player,{kind="dialogue",speaker=speaker or "ILYRA",lines=lines})
 end
 

@@ -7,6 +7,7 @@ local RunService=game:GetService("RunService")
 local Art=require(script.Parent.Art)
 local Classes=require(script.Parent.Config.Classes)
 local Motion=require(script.Parent.CharacterMotion)
+local Face=require(script.Parent.FacePresentation)
 local Fallback={}
 local actors: {[Model]: any}={}
 
@@ -23,7 +24,14 @@ local function weldPart(parent: Instance,body: BasePart,name: string,size: Vecto
 end
 
 local function shell(body: MeshPart,player: Player,connections: {RBXScriptConnection})
-	if body:FindFirstChild("PortalFallbackSurface") then return end
+	local existing=body:FindFirstChild("PortalFallbackSurface")
+	if existing then
+		local surface=existing:FindFirstChild("Surface")
+		if body.Name=="Head" and surface and surface:IsA("BasePart") and Face.apply(surface,player:GetAttribute("ClassId") or "Guardian") then
+			for _,item in existing:GetChildren() do if item:IsA("BasePart") and (item.Name=="Eye" or item.Name=="Glint" or item.Name=="Mouth") then item.Transparency=1 end end
+		end
+		return
+	end
 	local m=Instance.new("Model") m.Name="PortalFallbackSurface" m.Parent=body
 	local class=Classes[player:GetAttribute("ClassId") or "Guardian"] or Classes.Guardian
 	local tint=body.Color
@@ -31,15 +39,18 @@ local function shell(body: MeshPart,player: Player,connections: {RBXScriptConnec
 	if string.find(body.Name,"Torso") then tint=Color3.fromRGB(43,65,82)
 	elseif string.find(body.Name,"Leg") or string.find(body.Name,"Foot") then tint=Color3.fromRGB(52,62,70)
 	elseif string.find(body.Name,"Arm") then tint=class.color:Lerp(Color3.fromRGB(40,57,67),0.55) end
-	weldPart(m,body,"Surface",body.Size*Vector3.new(0.9,1,0.9),CFrame.identity,tint,Enum.PartType.Ball)
+	local surface=weldPart(m,body,"Surface",body.Size*Vector3.new(0.9,1,0.9),CFrame.identity,tint,Enum.PartType.Ball)
 	if body.Name=="Head" then
 		local size=body.Size
+		local textured=Face.apply(surface,player:GetAttribute("ClassId") or "Guardian")
+		if not textured then
 		for _, side in {-1,1} do
 			weldPart(m,body,"Eye",Vector3.new(0.09,0.12,0.055),CFrame.new(side*size.X*0.19,size.Y*0.05,-size.Z*0.46),Color3.fromRGB(43,53,61),Enum.PartType.Ball)
 			weldPart(m,body,"Glint",Vector3.new(0.035,0.035,0.025),CFrame.new(side*size.X*0.19+0.02,size.Y*0.08,-size.Z*0.49),Color3.new(1,1,1),Enum.PartType.Ball)
 		end
-		weldPart(m,body,"Hair",size*Vector3.new(0.95,0.65,0.95),CFrame.new(0,size.Y*0.3,size.Z*0.1),Color3.fromRGB(73,58,48),Enum.PartType.Ball)
 		weldPart(m,body,"Mouth",Vector3.new(0.16,0.035,0.04),CFrame.new(0,-size.Y*0.23,-size.Z*0.43),Color3.fromRGB(127,85,73),Enum.PartType.Ball)
+		end
+		weldPart(m,body,"Hair",size*Vector3.new(0.95,0.65,0.95),CFrame.new(0,size.Y*0.3,size.Z*0.1),Color3.fromRGB(73,58,48),Enum.PartType.Ball)
 	end
 	local connection: RBXScriptConnection?=nil
 	connection=ContentProvider:GetAssetFetchStatusChangedSignal(body.MeshId):Connect(function(status)
@@ -68,7 +79,7 @@ local function bind(player: Player,character: Model)
 			local joints={}
 			for _,item in character:GetDescendants() do
 				if item:IsA("Animation") and failed(item.AnimationId) then failedAnimations+=1 end
-				if item:IsA("Motor6D") or item:IsA("AnimationConstraint") then table.insert(joints,item) end
+				if (item:IsA("Motor6D") or item:IsA("AnimationConstraint")) and item.Name~="BowOrientation" then table.insert(joints,item) end
 			end
 			actor.joints=joints
 			local loaded=false
@@ -109,8 +120,33 @@ function Fallback.init()
 			local duration=character:GetAttribute("PortalAttackDuration") or 0.5
 			local progress=if typeof(started)=="number" then (time-started)/duration else 2
 			local attacking=progress>=0 and progress<=1
-			if not actor.animate and not attacking and not actor.combat then continue end
 			local root=character:FindFirstChild("HumanoidRootPart")
+			if actor.player==Players.LocalPlayer then
+				local aim=character:GetAttribute("PortalAimPosition")
+				if attacking and root and root:IsA("BasePart") and typeof(aim)=="Vector3" then
+					if actor.autoRotateBefore==nil then actor.autoRotateBefore=actor.humanoid.AutoRotate end
+					actor.humanoid.AutoRotate=false
+					local delta=Vector3.new(aim.X-root.Position.X,0,aim.Z-root.Position.Z)
+					if delta.Magnitude>0.1 then
+						local rotation=root.CFrame.Rotation:Lerp(CFrame.lookAt(Vector3.zero,delta),1-math.exp(-dt*24))
+						root.CFrame=CFrame.new(root.Position)*rotation
+					end
+				elseif actor.autoRotateBefore~=nil then actor.humanoid.AutoRotate=actor.autoRotateBefore actor.autoRotateBefore=nil end
+			end
+			local equipment=character:FindFirstChild("ClassEquipment")
+			local mount=equipment and equipment:FindFirstChild("BowGrip")
+			local bowJoint=mount and mount:FindFirstChild("BowOrientation")
+			if bowJoint and bowJoint:IsA("Motor6D") and bowJoint.Part0 and root and root:IsA("BasePart") then
+				bowJoint.Transform=bowJoint.Part0.CFrame.Rotation:Inverse()*root.CFrame.Rotation*CFrame.Angles(0,-math.pi/2,0)
+			end
+			if equipment and (attacking or actor.combat) then
+				local drawing=attacking and progress<0.55
+				for _,piece in equipment:GetChildren() do
+					if piece:IsA("Beam") and piece.Name=="DrawnString" then piece.Enabled=drawing
+					elseif piece:IsA("BasePart") and piece.Name=="BowString" then piece.Transparency=if drawing then 1 else 0 end
+				end
+			end
+			if not actor.animate and not attacking and not actor.combat then continue end
 			local speed=if root and root:IsA("BasePart") then Vector3.new(root.AssemblyLinearVelocity.X,0,root.AssemblyLinearVelocity.Z).Magnitude else 0
 			local targetStride=math.clamp(speed/16,0,1)
 			actor.stride+=(targetStride-actor.stride)*(1-math.exp(-dt*12))
@@ -128,7 +164,7 @@ function Fallback.init()
 				local pose=previous:Lerp(target,1-math.exp(-dt*22))
 				actor.poses[joint]=pose
 				if actor.animate then joint.Transform=pose
-				elseif name:find("shoulder") or name:find("elbow") or name=="waist" then
+				elseif name:find("shoulder") or name:find("elbow") or name:find("wrist") or name=="waist" then
 					joint.Transform=joint.Transform*pose
 				end
 			end

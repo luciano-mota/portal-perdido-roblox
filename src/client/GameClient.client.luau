@@ -281,6 +281,11 @@ end
 player.CharacterAdded:Connect(bindCharacter)
 if player.Character then task.spawn(bindCharacter,player.Character) end
 
+-- Direção da esquiva: para onde o jogador está andando (vazio = passo para trás, no servidor).
+local function dodgeDirection(): Vector3
+	local move=if humanoid then humanoid.MoveDirection else Vector3.zero
+	return Vector3.new(move.X,0,move.Z)
+end
 local lastAttack=-math.huge
 local function attack()
 	local id=player:GetAttribute("ClassId")
@@ -293,7 +298,7 @@ local function attack()
 end
 attackButton.Activated:Connect(attack)
 skillButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then skillRemote:FireServer() end end)
-dashButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then dashRemote:FireServer() end end)
+dashButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then dashRemote:FireServer(dodgeDirection()) end end)
 local blocking=false
 local function setBlock(active: boolean)
 	if active and (dialogue.Visible or journal.Visible or intro.Visible or player:GetAttribute("ClassId")~="Guardian") then active=false end
@@ -315,7 +320,7 @@ UIS.InputBegan:Connect(function(input,processed)
 	if processed then return end
 	if input.KeyCode==Enum.KeyCode.Q then attack()
 	elseif input.KeyCode==Enum.KeyCode.R then if not dialogue.Visible and not intro.Visible and not journal.Visible then skillRemote:FireServer() end
-	elseif input.KeyCode==Enum.KeyCode.LeftShift then if not intro.Visible and not dialogue.Visible and not journal.Visible then dashRemote:FireServer() end
+	elseif input.KeyCode==Enum.KeyCode.LeftShift then if not intro.Visible and not dialogue.Visible and not journal.Visible then dashRemote:FireServer(dodgeDirection()) end
 	elseif input.KeyCode==Enum.KeyCode.F then setBlock(true)
 	elseif input.KeyCode==Enum.KeyCode.J and introDone then journal.Visible=not journal.Visible refresh() end
 end)

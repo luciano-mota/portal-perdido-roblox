@@ -77,6 +77,12 @@ end
 local function hurtPlayer(player: Player,amount: number,position: Vector3)
 	local root,humanoid=playerRoot(player)
 	if not humanoid or not root then return end
+	-- Invencível durante a esquiva.
+	local dodgeUntil=player:GetAttribute("DodgeUntil")
+	if typeof(dodgeUntil)=="number" and dodgeUntil>workspace:GetServerTimeNow() then
+		notify:FireClient(player,{kind="evade",position=root.Position})
+		return
+	end
 	local shield=player:GetAttribute("ShieldUntil")
 	local reduced=typeof(shield)=="number" and shield>workspace:GetServerTimeNow()
 	local factor=if reduced then 0.35 else 1
@@ -94,14 +100,21 @@ local function hurtPlayer(player: Player,amount: number,position: Vector3)
 end
 
 -- Defesa com escudo: o cliente pede, o servidor valida classe/vida e aplica a lentidão.
-local blockSpeed=9
+-- Velocidade do jogador a partir dos estados ativos (preso > defendendo > normal).
+local function refreshSpeed(player: Player)
+	local _,humanoid=playerRoot(player)
+	if not humanoid then return end
+	local snared=(player:GetAttribute("SnaredUntil") or 0)>workspace:GetServerTimeNow()
+	humanoid.WalkSpeed=if snared then 3 elseif player:GetAttribute("Blocking")==true then 9 else 16
+end
+
 local function setBlocking(player: Player,wanted: any)
 	local root,humanoid=playerRoot(player)
 	local p=Data.get(player)
 	local active=wanted==true and root~=nil and humanoid~=nil and p~=nil and p.classId=="Guardian"
 	if (player:GetAttribute("Blocking")==true)==active then return end
 	player:SetAttribute("Blocking",active)
-	if humanoid then humanoid.WalkSpeed=if active then blockSpeed else 16 end
+	refreshSpeed(player)
 end
 
 local function damage(player: Player,record: any,amount: number)
@@ -212,17 +225,257 @@ local function skill(player: Player)
 	end
 end
 
-local function dash(player: Player)
+-- Esquiva: impulso na direção pedida pelo cliente (validada: horizontal e unitária) com 0,35 s
+-- de invencibilidade. Sem direção → passo para trás. Esquivar também solta das raízes.
+local DODGE_COOLDOWN=1.6
+local function dash(player: Player,wanted: any)
 	local root=playerRoot(player)
 	if not root then return end
+	-- MoveDirection é unitário; rejeita NaN, infinito e magnitudes que
+	-- transbordariam ao normalizar antes de consumir cooldown ou tocar a física.
+	if wanted~=nil then
+		if typeof(wanted)~="Vector3" then return end
+		if wanted.X~=wanted.X or wanted.Y~=wanted.Y or wanted.Z~=wanted.Z
+			or math.abs(wanted.X)>1.01 or math.abs(wanted.Y)>1.01 or math.abs(wanted.Z)>1.01 then return end
+	end
 	local now=os.clock()
-	if now-(lastDash[player] or -math.huge)<3 then return end
+	if now-(lastDash[player] or -math.huge)<DODGE_COOLDOWN then return end
 	lastDash[player]=now
-	player:SetAttribute("DashReadyAt",workspace:GetServerTimeNow()+3)
-	local direction=Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z)
+	player:SetAttribute("DashReadyAt",workspace:GetServerTimeNow()+DODGE_COOLDOWN)
+	local direction=Vector3.zero
+	if typeof(wanted)=="Vector3" and wanted.X==wanted.X and wanted.Z==wanted.Z then direction=Vector3.new(wanted.X,0,wanted.Z) end
+	if direction.Magnitude<0.2 then direction=-Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z) end
 	if direction.Magnitude<0.1 then return end
-	root.AssemblyLinearVelocity=direction.Unit*52+Vector3.new(0,root.AssemblyLinearVelocity.Y,0)
-	notify:FireAllClients({kind="dash",position=root.Position,color=Color3.fromRGB(181,210,221),userId=player.UserId})
+	direction=direction.Unit
+	player:SetAttribute("DodgeUntil",workspace:GetServerTimeNow()+0.35)
+	if (player:GetAttribute("SnaredUntil") or 0)>workspace:GetServerTimeNow() then
+		player:SetAttribute("SnaredUntil",0) refreshSpeed(player)
+	end
+	root.AssemblyLinearVelocity=direction*46+Vector3.new(0,root.AssemblyLinearVelocity.Y,0)
+	local localDir=root.CFrame:VectorToObjectSpace(direction)
+	notify:FireAllClients({kind="dash",position=root.Position,color=Color3.fromRGB(181,210,221),userId=player.UserId,dir=Vector3.new(localDir.X,0,localDir.Z)})
+end
+
+-- ===== Movimentos das criaturas =====
+-- Cada ataque marca o modelo com CastKind/CastStartedAt/CastEndsAt para a animação local e
+-- envia telegrafia aos clientes; dano, puxões e imobilização são decididos aqui.
+
+local function serverNow(): number return workspace:GetServerTimeNow() end
+
+local function dodging(player: Player): boolean
+	local untilTime=player:GetAttribute("DodgeUntil")
+	return typeof(untilTime)=="number" and untilTime>serverNow()
+end
+
+
+local function snare(player: Player,seconds: number,position: Vector3)
+	player:SetAttribute("SnaredUntil",serverNow()+seconds)
+	refreshSpeed(player)
+	notify:FireAllClients({kind="snare",userId=player.UserId,position=position,duration=seconds})
+	task.delay(seconds+0.05,function() if player.Parent then refreshSpeed(player) end end)
+end
+
+local function beginCast(record: any,kind: string,windup: number)
+	record.casting=true
+	if record.motion then record.motion:Cancel() end
+	record.model:SetAttribute("CastKind",kind)
+	record.model:SetAttribute("CastStartedAt",serverNow())
+	record.model:SetAttribute("CastEndsAt",serverNow()+windup)
+end
+
+local function faceTowards(record: any,position: Vector3)
+	local flat=Vector3.new(position.X,record.root.Position.Y,position.Z)
+	if (flat-record.root.Position).Magnitude>0.1 then record.root.CFrame=CFrame.lookAt(record.root.Position,flat) end
+end
+
+-- Mão de onde sai a vinha (ponta do braço direito do modelo gerado, ou a frente da raiz).
+local function handPosition(record: any): Vector3
+	local arm=record.model:FindFirstChild("RightArm")
+	if arm and arm:IsA("BasePart") then return arm.Position-arm.CFrame.UpVector*arm.Size.Y*0.4 end
+	return record.root.Position+record.root.CFrame.LookVector*2
+end
+
+local function forwardCone(record: any,player: Player,range: number,minDot: number): boolean
+	local root=playerRoot(player)
+	if not root then return false end
+	local delta=Vector3.new(root.Position.X-record.root.Position.X,0,root.Position.Z-record.root.Position.Z)
+	if delta.Magnitude>range then return false end
+	if delta.Magnitude<1.5 then return true end
+	local look=Vector3.new(record.root.CFrame.LookVector.X,0,record.root.CFrame.LookVector.Z).Unit
+	return look:Dot(delta.Unit)>=minDot
+end
+
+local rootBurst: (record: any,target: Player,windupOverride: number?) -> ()
+
+-- Raízes irrompem do chão na área ao redor da criatura (Sentinela) ou sob o alvo (chefe).
+rootBurst=function(record: any,target: Player,windupOverride: number?)
+	if record.casting or record.hp<=0 then return end
+	local root=playerRoot(target)
+	if not root then return end
+	local boss=record.definition.kind=="Boss"
+	local windup=windupOverride or (if record.phase==2 then 1.05 else record.stats.windup)
+	beginCast(record,"RootBurst",windup)
+	faceTowards(record,root.Position)
+	local radius=if boss and record.phase==2 then 10 else record.stats.radius
+	local centers={if boss then Vector3.new(root.Position.X,2.75,root.Position.Z) else Vector3.new(record.root.Position.X,2.75,record.root.Position.Z)}
+	if boss and record.phase==2 then
+		for _, offset in {Vector3.new(12,0,3),Vector3.new(-9,0,-7)} do table.insert(centers,centers[1]+offset) end
+	end
+	for _, center in centers do notify:FireAllClients({kind="telegraph",position=center,radius=radius,duration=windup,boss=boss,style="roots"}) end
+	record.nextCast=os.clock()+(if record.phase==2 then 2.8 else record.stats.cooldown)+windup
+	task.delay(windup,function()
+		if record.hp>0 and record.model.Parent then
+			record.model:SetAttribute("ImpactUntil",serverNow()+0.3)
+			local hit: {[Player]: boolean}={}
+			for _, player in Players:GetPlayers() do
+				local playerPart=playerRoot(player)
+				if playerPart and eligible(player,record) then
+					for _, center in centers do
+						local flat=Vector3.new(playerPart.Position.X,center.Y,playerPart.Position.Z)
+						if not hit[player] and (flat-center).Magnitude<=radius then
+							hit[player]=true
+							if not dodging(player) then
+								hurtPlayer(player,record.stats.damage+(if record.phase==2 then 5 else 0),center)
+								snare(player,if boss then 0.9 else 1.1,playerPart.Position)
+							end
+						end
+					end
+				end
+			end
+			for _, center in centers do notify:FireAllClients({kind="impact",position=center,radius=radius,style="roots"}) end
+		end
+		record.casting=false
+	end)
+end
+
+-- Vinha: estica o braço, lança uma raiz em linha reta (mira travada no início) e, se pegar,
+-- puxa o alvo para dentro da área e emenda a Explosão de Raízes. Esquiva ou sair da linha evita.
+local function vineGrab(record: any,target: Player,reach: number)
+	if record.casting or record.hp<=0 then return end
+	local root=playerRoot(target)
+	if not root then return end
+	local windup=if record.definition.kind=="Boss" then 0.8 else 0.65
+	beginCast(record,"VineGrab",windup)
+	faceTowards(record,root.Position)
+	local origin=handPosition(record)
+	local direction=Vector3.new(root.Position.X-origin.X,0,root.Position.Z-origin.Z)
+	if direction.Magnitude<0.1 then record.casting=false return end
+	direction=direction.Unit
+	local tip=origin+direction*reach
+	record.model:SetAttribute("ReachTarget",tip)
+	notify:FireAllClients({kind="vineTelegraph",from=origin,to=tip,duration=windup,width=2.4})
+	record.nextGrab=os.clock()+(if record.definition.kind=="Boss" then 7 else 6)
+	record.nextCast=math.max(record.nextCast,os.clock()+windup+0.6)
+	task.delay(windup,function()
+		if record.hp<=0 or not record.model.Parent then record.casting=false return end
+		local travel=math.clamp(reach/55,0.18,0.45)
+		record.model:SetAttribute("ReachUntil",serverNow()+travel+0.5)
+		-- Primeiro jogador atingido ao longo da linha (largura 2,4 studs).
+		local caught: Player?=nil local caughtAt=math.huge
+		for _, player in Players:GetPlayers() do
+			local part=playerRoot(player)
+			if part and eligible(player,record) and not dodging(player) then
+				local rel=Vector3.new(part.Position.X-origin.X,0,part.Position.Z-origin.Z)
+				local along=rel:Dot(direction)
+				local side=(rel-direction*along).Magnitude
+				if along>0 and along<=reach and side<=2.4 and along<caughtAt then caught=player caughtAt=along end
+			end
+		end
+		local stop=if caught then origin+direction*caughtAt else tip
+		notify:FireAllClients({kind="vine",from=origin,to=stop,travel=travel,caught=caught and caught.UserId or nil})
+		task.wait(travel)
+		if caught and caught.Parent and record.hp>0 then
+			local part=playerRoot(caught)
+			if part then
+				local character=caught.Character :: Model
+				-- Puxa até a frente da criatura, dentro da área das raízes.
+				local landing=record.root.Position+record.root.CFrame.LookVector*math.max(3.5,record.stats.radius*0.45)
+				landing=Vector3.new(landing.X,part.Position.Y,landing.Z)
+				snare(caught,1.0,part.Position)
+				local start=part.Position
+				for i=1,8 do
+					if not character.Parent then break end
+					local p=start:Lerp(landing,i/8)
+					character:PivotTo(CFrame.lookAt(p,Vector3.new(record.root.Position.X,p.Y,record.root.Position.Z)))
+					task.wait(0.035)
+				end
+				hurtPlayer(caught,math.floor(record.stats.damage*0.4),landing)
+			end
+		end
+		record.casting=false
+		if caught and record.hp>0 then rootBurst(record,caught,0.55) end
+	end)
+end
+
+-- Carnívoros (Predador): só mordida e garras, golpes rápidos em cone à frente.
+local function bite(record: any,target: Player)
+	if record.casting or record.hp<=0 then return end
+	local root=playerRoot(target)
+	if not root then return end
+	local windup=0.45
+	beginCast(record,"Bite",windup)
+	faceTowards(record,root.Position)
+	local front=record.root.Position+record.root.CFrame.LookVector*3.2
+	notify:FireAllClients({kind="telegraph",position=Vector3.new(front.X,2.75,front.Z),radius=2.6,duration=windup,small=true})
+	record.nextCast=os.clock()+record.stats.cooldown*0.8+windup
+	task.delay(windup,function()
+		if record.hp<=0 or not record.model.Parent then record.casting=false return end
+		-- Bote: avança 2,5 studs mordendo.
+		record.root.CFrame=record.root.CFrame+record.root.CFrame.LookVector*2.5
+		record.model:SetAttribute("ImpactUntil",serverNow()+0.25)
+		for _, player in Players:GetPlayers() do
+			if eligible(player,record) and forwardCone(record,player,5.5,0.45) and not dodging(player) then
+				local part=playerRoot(player)
+				hurtPlayer(player,record.stats.damage,if part then part.Position else front)
+			end
+		end
+		notify:FireAllClients({kind="bite",position=record.root.Position+record.root.CFrame.LookVector*2.2})
+		record.casting=false
+	end)
+end
+
+local function claw(record: any,target: Player)
+	if record.casting or record.hp<=0 then return end
+	local root=playerRoot(target)
+	if not root then return end
+	local windup=0.55
+	beginCast(record,"Claw",windup)
+	faceTowards(record,root.Position)
+	local front=record.root.Position+record.root.CFrame.LookVector*3
+	notify:FireAllClients({kind="telegraph",position=Vector3.new(front.X,2.75,front.Z),radius=3.6,duration=windup,small=true})
+	record.nextCast=os.clock()+record.stats.cooldown+windup
+	task.delay(windup,function()
+		if record.hp<=0 or not record.model.Parent then record.casting=false return end
+		record.model:SetAttribute("ImpactUntil",serverNow()+0.3)
+		for _, player in Players:GetPlayers() do
+			if eligible(player,record) and forwardCone(record,player,6,0.05) and not dodging(player) then
+				local part=playerRoot(player)
+				hurtPlayer(player,math.floor(record.stats.damage*0.85),if part then part.Position else front)
+			end
+		end
+		notify:FireAllClients({kind="claw",position=front,look=record.root.CFrame.LookVector})
+		record.casting=false
+	end)
+end
+
+-- Eco do Vazio: some e reaparece longe quando o jogador chega perto demais.
+local function blink(record: any,target: Player)
+	local root=playerRoot(target)
+	if not root then return end
+	local away=Vector3.new(record.root.Position.X-root.Position.X,0,record.root.Position.Z-root.Position.Z)
+	away=if away.Magnitude>0.1 then away.Unit else record.root.CFrame.LookVector*-1
+	local wanted=record.root.Position+away*11
+	-- Respeita a corrente (leash) e só aceita destino com chão.
+	local fromOrigin=Vector3.new(wanted.X-record.origin.X,0,wanted.Z-record.origin.Z)
+	if fromOrigin.Magnitude>record.definition.leash-2 then wanted=record.origin+fromOrigin.Unit*(record.definition.leash-2)+Vector3.new(0,record.root.Position.Y-record.origin.Y,0) end
+	local params=RaycastParams.new() params.FilterType=Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances={workspace:FindFirstChild("PortalChapter") or workspace.Terrain,workspace.Terrain}
+	if not workspace:Raycast(wanted+Vector3.new(0,6,0),Vector3.new(0,-20,0),params) then return end
+	local from=record.root.Position
+	if record.motion then record.motion:Cancel() end
+	record.root.CFrame=CFrame.lookAt(Vector3.new(wanted.X,from.Y,wanted.Z),Vector3.new(root.Position.X,from.Y,root.Position.Z))
+	record.nextBlink=os.clock()+7
+	notify:FireAllClients({kind="blink",from=from,to=record.root.Position,color=record.stats.color})
 end
 
 local function cast(record: any,target: Player)
@@ -236,6 +489,7 @@ local function cast(record: any,target: Player)
 	local centers={if ranged then Vector3.new(root.Position.X,2.75,root.Position.Z) else Vector3.new(record.root.Position.X,2.75,record.root.Position.Z)}
 	local radius=if boss and record.phase==2 then 10 else record.stats.radius
 	local windup=if record.phase==2 then 1.05 else record.stats.windup
+	record.model:SetAttribute("CastKind","Spell")
 	record.model:SetAttribute("CastStartedAt",workspace:GetServerTimeNow())
 	record.model:SetAttribute("CastEndsAt",workspace:GetServerTimeNow()+windup)
 	if boss and record.phase==2 then
@@ -252,7 +506,7 @@ local function cast(record: any,target: Player)
 				if playerPart and eligible(player,record) then
 					for _, center in centers do
 						local flat=Vector3.new(playerPart.Position.X,center.Y,playerPart.Position.Z)
-						if not hit[player] and (flat-center).Magnitude<=radius then hit[player]=true hurtPlayer(player,record.stats.damage+(if record.phase==2 then 5 else 0),center) end
+						if not hit[player] and (flat-center).Magnitude<=radius then hit[player]=true if not dodging(player) then hurtPlayer(player,record.stats.damage+(if record.phase==2 then 5 else 0),center) end end
 					end
 				end
 			end
@@ -332,10 +586,50 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 			local wanted=point or r.origin
 			local delta=Vector3.new(wanted.X-r.root.Position.X,0,wanted.Z-r.root.Position.Z)
 			local boss=r.definition.kind=="Boss"
-			local hitRange=if boss then 42 elseif r.definition.kind=="Wisp" then 25 else r.stats.radius+2
-			if target and distance<=hitRange and os.clock()>=r.nextCast and (boss or lineOfSight(target,r)) then cast(r,target :: Player) continue end
+			local kind=r.definition.kind
+			local now=os.clock()
+			local ready=now>=r.nextCast
+			local sees=target~=nil and (boss or lineOfSight(target :: Player,r))
+			-- Escolha de movimento por tipo de criatura.
+			if target and sees then
+				local t=target :: Player
+				if kind=="Moss" then
+					if distance<=r.stats.radius+1 and ready then rootBurst(r,t) continue end
+					if distance>r.stats.radius+1 and distance<=20 and now>=(r.nextGrab or 0) and ready then vineGrab(r,t,20) continue end
+				elseif kind=="Boss" then
+					if distance>14 and distance<=32 and now>=(r.nextGrab or 0) and ready then vineGrab(r,t,32) continue end
+					if distance<=42 and ready then rootBurst(r,t) continue end
+				elseif kind=="Thorn" then
+					if distance<=6 and ready then
+						r.alternate=not r.alternate
+						if r.alternate then bite(r,t) else claw(r,t) end
+						continue
+					end
+				elseif kind=="Wisp" then
+					if distance<6 and now>=(r.nextBlink or 0) then blink(r,t) continue end
+					if distance<=25 and ready then cast(r,t) continue end
+				end
+			end
+			-- Predador rodeia a presa enquanto o próximo ataque recarrega.
+			if kind=="Thorn" and target and distance<9 and not ready then
+				local around=Vector3.new(r.root.Position.X-(point :: Vector3).X,0,r.root.Position.Z-(point :: Vector3).Z)
+				if around.Magnitude>0.1 then
+					r.circle=r.circle or (if math.random()<0.5 then 1 else -1)
+					local tangent=Vector3.new(-around.Unit.Z,0,around.Unit.X)*r.circle
+					local wantedPos=(point :: Vector3)+around.Unit*6.5+tangent*3
+					local stepVec=Vector3.new(wantedPos.X-r.root.Position.X,0,wantedPos.Z-r.root.Position.Z)
+					if stepVec.Magnitude>0.2 then
+						local pos=r.root.Position+stepVec.Unit*math.min(stepVec.Magnitude,r.stats.speed*0.7*step)
+						if r.motion then r.motion:Cancel() end
+						r.motion=TweenService:Create(r.root,TweenInfo.new(0.16,Enum.EasingStyle.Linear),{CFrame=CFrame.lookAt(pos,Vector3.new((point :: Vector3).X,pos.Y,(point :: Vector3).Z))})
+						r.motion:Play()
+					end
+					continue
+				end
+			end
 			-- Para antes de encostar: metade da largura do corpo lógico + espaço do jogador.
-			local stopDistance=if target then math.max(4.5,r.root.Size.X*0.5+2.5) else 0.3
+			-- O Eco luta à distância: mantém ~12 studs.
+			local stopDistance=if not target then 0.3 elseif kind=="Wisp" then 12 else math.max(4.5,r.root.Size.X*0.5+2.5)
 			if delta.Magnitude>stopDistance then
 				local speed=r.stats.speed*(if r.slowUntil>os.clock() then 0.4 else 1)
 				local nextPoint=navigate(r,wanted)

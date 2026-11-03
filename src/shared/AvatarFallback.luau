@@ -250,6 +250,7 @@ function Fallback.init()
 				combo=character:GetAttribute("PortalCombo") or 1,
 				skill=if skilling then skillProgress else nil,
 				dash=if dashing then dashProgress else nil,
+				dashDir=character:GetAttribute("PortalDashDir"),
 				blocking=if actor.block>0.02 then actor.block else nil,
 			}
 			for _,joint in actor.joints do

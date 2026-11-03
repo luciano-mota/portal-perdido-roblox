@@ -121,7 +121,7 @@ local function toCFrame(v: {number}): CFrame
 	return CFrame.new(v[4] or 0,v[5] or 0,v[6] or 0)*CFrame.Angles(v[1] or 0,v[2] or 0,v[3] or 0)
 end
 
-export type Context={classId: string,attack: number?,combo: number?,skill: number?,dash: number?,blocking: number?}
+export type Context={classId: string,attack: number?,combo: number?,skill: number?,dash: number?,dashDir: Vector3?,blocking: number?}
 
 -- Sobreposição de combate para uma articulação, ou nil se nada a mover.
 function Motion.overlay(name: string,ctx: Context): CFrame?
@@ -160,10 +160,25 @@ function Motion.overlay(name: string,ctx: Context): CFrame?
 	-- Guardião: a mão do escudo fica sempre alinhada ao antebraço, fechada na alça (sem entrar no escudo).
 	if ctx.classId=="Guardian" and name=="leftwrist" and not result then result=P.ShieldWrist end
 	if ctx.classId=="Guardian" and name=="rightwrist" and not result then result=P.IdleSwordWrist end
-	if ctx.dash and name=="waist" then
-		local lean=-0.38*math.sin(math.clamp(ctx.dash,0,1)*math.pi)
-		result=result or {0,0,0,0,0,0}
-		result={(result[1] or 0)+lean,result[2] or 0,result[3] or 0,result[4] or 0,result[5] or 0,result[6] or 0}
+	if ctx.dash then
+		-- Esquiva: agacha, inclina o tronco na direção do salto (frente/trás) ou rola para o lado.
+		local k=math.sin(math.clamp(ctx.dash,0,1)*math.pi)
+		local dir=ctx.dashDir or Vector3.new(0,0,-1)
+		local forward=-dir.Z -- +1 frente, −1 trás
+		local side=dir.X     -- +1 direita
+		local add: {number}?=nil
+		if name=="waist" then add={(-0.45*forward)*k,0,(-0.45*side)*k}
+		elseif name=="root" then add={0,0,(-0.25*side)*k,0,-0.45*k,0}
+		elseif name=="leftknee" or name=="rightknee" then add={-0.7*k,0,0}
+		elseif name=="lefthip" or name=="righthip" then add={0.45*k,0,0}
+		elseif name=="leftshoulder" then add={0.5*k,0,0.35*k}
+		elseif name=="rightshoulder" then add={0.5*k,0,-0.35*k} end
+		if add then
+			local base=result or {0,0,0,0,0,0}
+			local out={}
+			for i=1,6 do out[i]=(base[i] or 0)+(add[i] or 0) end
+			result=out
+		end
 	end
 	return if result then toCFrame(result) else nil
 end

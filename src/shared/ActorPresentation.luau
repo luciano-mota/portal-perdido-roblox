@@ -56,7 +56,14 @@ local function creaturePose(actor: any,name: string,now: number,ctx: any): CFram
 			return CFrame.new(0,bob,-0.18*h*impact)*CFrame.Angles(x-0.1*flinch,ry,rz)
 		end
 		-- Moss/Boss: inclina para trás ao erguer os braços e golpeia para a frente.
-		x+=0.22*wind-0.32*impact+0.18*flinch
+		if ctx.castKind=="VineGrab" then
+			-- Projeta o tronco para a frente acompanhando o braço.
+			local extend=math.max(wind,if ctx.reaching then 1 else 0)
+			return CFrame.new(0,bob,0)*CFrame.Angles(x-0.12*extend,ry-0.2*extend,rz)
+		end
+		-- Raízes: ergue os braços e golpeia o chão, curvando o tronco.
+		x+=0.22*wind-0.45*impact+0.18*flinch
+		bob+=-0.05*h*impact
 		return CFrame.new(0,bob,0)*CFrame.Angles(x,ry,rz)
 	elseif name=="SpiritCore" then
 		-- Eco: flutua, oscila e sobe ao conjurar; recua ao ser atingido.
@@ -66,12 +73,23 @@ local function creaturePose(actor: any,name: string,now: number,ctx: any): CFram
 		local rear=if name:find("Rear") then -1 else 1
 		local swing=math.sin(phase)*stride*side*rear*0.5
 		-- Predador: patas dianteiras avançam e traseiras recolhem ao se preparar para o bote.
-		if kind=="Thorn" then swing+=(if rear<0 then -0.25 else 0.2)*wind end
+		if kind=="Thorn" then
+			if ctx.castKind=="Claw" and side>0 and rear>0 then
+				-- Garras: ergue a pata dianteira direita e desfere o golpe para baixo.
+				return CFrame.Angles(swing-1.1*wind+1.6*impact,0,-0.25*wind)
+			end
+			swing+=(if rear<0 then -0.25 else 0.2)*wind
+		end
 		return CFrame.Angles(swing,0,0)
 	elseif name:find("Shoulder") then
 		local walk=-math.sin(phase)*stride*side*0.35
 		local x=walk-0.04+breathe*0.03
 		if kind=="Wisp" then x=0.15+1.35*wind-0.6*impact+breathe*0.06
+		elseif ctx.castKind=="VineGrab" then
+			-- Vinha: o braço direito aponta para o alvo e fica estendido enquanto a raiz voa; o esquerdo recua.
+			local extend=math.max(wind,if ctx.reaching then 1 else 0)
+			if side>0 then return CFrame.Angles(x*(1-extend)+1.55*extend,0,0.05) end
+			x=x*(1-extend)-0.35*extend
 		else x=x*(1-wind)+2.4*wind-1.7*impact end
 		return CFrame.Angles(x,0,side*(0.04+0.18*wind))
 	elseif name=="Neck" then
@@ -124,7 +142,8 @@ function Presentation.init()
 			local relative=root.CFrame:VectorToObjectSpace(playerRoot.Position-root.Position)
 			local yawTarget=if relative.Magnitude<45 and relative.Z<0 then math.clamp(math.atan2(-relative.X,-relative.Z),-0.6,0.6) else 0
 			local ctx={wind=ease(wind),impact=actor.impactBlend,flinch=1-ease((os.clock()-actor.hitAt)/0.28),
-				death=if actor.deadAt then ease((os.clock()-actor.deadAt)/0.55) else 0,yaw=yawTarget}
+				death=if actor.deadAt then ease((os.clock()-actor.deadAt)/0.55) else 0,yaw=yawTarget,
+				castKind=model:GetAttribute("CastKind"),reaching=(model:GetAttribute("ReachUntil") or 0)>now}
 			for _,joint in actor.joints do
 				if not joint.Parent then continue end
 				local name=joint.Name

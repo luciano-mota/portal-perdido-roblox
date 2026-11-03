@@ -163,22 +163,28 @@ local function skill(player: Player)
 	if now-(lastSkill[player] or -math.huge)<class.skillCooldown then return end
 	lastSkill[player]=now
 	player:SetAttribute("SkillReadyAt",workspace:GetServerTimeNow()+class.skillCooldown)
+	-- "skillCast" só alimenta gesto e efeitos nos clientes; dano e escudo continuam decididos aqui.
+	local cast={kind="skillCast",classId=p.classId,userId=player.UserId,position=root.Position,color=class.color,targets={}}
 	if p.classId=="Guardian" then
 		for _, ally in Players:GetPlayers() do
 			local allyRoot=playerRoot(ally)
 			if allyRoot and (allyRoot.Position-root.Position).Magnitude<=22 then ally:SetAttribute("ShieldUntil",workspace:GetServerTimeNow()+5) ally:SetAttribute("ShieldSourceUserId",player.UserId) end
 		end
-		notify:FireAllClients({kind="shield",position=root.Position,color=class.color,radius=22})
+		cast.radius=22
+		notify:FireAllClients(cast)
 	elseif p.classId=="Explorer" then
 		local selected=targets(player,class.range)
 		for i=1,math.min(3,#selected) do
 			local enemy=selected[i]
 			damage(player,enemy,45)
-			notify:FireAllClients({kind="strike",origin=root.Position,position=enemy.root.Position,classId=p.classId,userId=player.UserId,color=class.color})
+			table.insert(cast.targets,enemy.root.Position)
 		end
+		if #cast.targets==0 then table.insert(cast.targets,root.Position+root.CFrame.LookVector*20) end
+		notify:FireAllClients(cast)
 	else
 		for _, enemy in targets(player,26) do enemy.slowUntil=now+4 damage(player,enemy,48) end
-		notify:FireAllClients({kind="pulse",position=root.Position,color=class.color,radius=26})
+		cast.radius=26
+		notify:FireAllClients(cast)
 	end
 end
 
@@ -192,7 +198,7 @@ local function dash(player: Player)
 	local direction=Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z)
 	if direction.Magnitude<0.1 then return end
 	root.AssemblyLinearVelocity=direction.Unit*52+Vector3.new(0,root.AssemblyLinearVelocity.Y,0)
-	notify:FireAllClients({kind="dash",position=root.Position,color=Color3.fromRGB(181,210,221)})
+	notify:FireAllClients({kind="dash",position=root.Position,color=Color3.fromRGB(181,210,221),userId=player.UserId})
 end
 
 local function cast(record: any,target: Player)

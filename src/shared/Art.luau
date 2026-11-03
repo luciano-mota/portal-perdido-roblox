@@ -178,10 +178,11 @@ end
 local GENERATED: {[string]: any}={
 	Boss={
 		template="RootGuardianTemplate", scale=1.5, baseY=-0.85,
-		joints={Head={"Neck",-0.4},LeftArm={"LeftShoulder",0.38},RightArm={"RightShoulder",0.38},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4}},
+		-- Tronco (com a base de pedras modelada) gira a partir de baixo; cabeça e braços acompanham o tronco.
+		joints={Torso={"Waist",-0.45},Head={"Neck",-0.4,"Torso"},LeftArm={"LeftShoulder",0.38,"Torso"},RightArm={"RightShoulder",0.38,"Torso"},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4}},
 		-- Offsets medidos por raycast no template (peito ≈ z −1,1; máscara ≈ z −0,75).
 		glow={
-			{name="Core",size=Vector3.new(1.0,0.95,0.3),offset=Vector3.new(0,0.62,-1.02),shape=Enum.PartType.Ball,on="Root",light=14},
+			{name="Core",size=Vector3.new(1.0,0.95,0.3),offset=Vector3.new(0,0.62,-1.02),shape=Enum.PartType.Ball,on="Torso",light=14},
 			{name="Eye",size=Vector3.new(0.3,0.15,0.08),offset=Vector3.new(-0.3,2.72,-0.74),on="Head"},
 			{name="Eye",size=Vector3.new(0.3,0.15,0.08),offset=Vector3.new(0.3,2.72,-0.74),on="Head"},
 		},
@@ -195,7 +196,7 @@ local GENERATED: {[string]: any}={
 	Thorn={
 		-- Quadrúpede de espinhos: nomes de quadril seguem ActorPresentation (Left/Right + Front/Rear).
 		template="ThornStalkerTemplate", scale=1.25, baseY=0,
-		joints={Head={"Neck",0.3},FrontLeftLeg={"LeftFrontHip",0.4},FrontRightLeg={"RightFrontHip",0.4},RearLeftLeg={"LeftRearHip",0.4},RearRightLeg={"RightRearHip",0.4}},
+		joints={Body={"Waist",0},Head={"Neck",0.3,"Body"},FrontLeftLeg={"LeftFrontHip",0.4},FrontRightLeg={"RightFrontHip",0.4},RearLeftLeg={"LeftRearHip",0.4},RearRightLeg={"RightRearHip",0.4}},
 		bodyLight={on="Body",range=7,brightness=0.9,color=Color3.fromRGB(236,160,72)},
 	},
 }
@@ -262,6 +263,15 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 			visual:ScaleTo(visual:GetScale()*1.3)
 			visual:PivotTo(CFrame.new(position))
 			local joints={['head_geom']={'Head','Neck',-0.55},['left arm_geom']={'LeftArm','LeftShoulder',1.25},['right arm_geom']={'RightArm','RightShoulder',1.25},['left leg_geom']={'LeftLeg','LeftHip',1.15},['right leg_geom']={'RightLeg','RightHip',1.15}}
+			-- Tronco ganha articulação própria (Waist) para balançar/inclinar; cabeça e braços o acompanham.
+			local torso: BasePart?=nil
+			for _,piece in visual:GetDescendants() do
+				if piece:IsA("BasePart") and piece.Name=="torso_geom" then torso=piece end
+			end
+			if torso then
+				torso.Name="Torso" torso.CanCollide=false torso.CanTouch=false torso.CanQuery=false torso.Parent=m
+				articulated(root,torso,CFrame.new(torso.Position-Vector3.new(0,torso.Size.Y*0.4,0)),"Waist")
+			end
 			for _,piece in visual:GetDescendants() do
 				if piece:IsA("BasePart") then
 					piece.CanCollide=false piece.CanTouch=false piece.CanQuery=false
@@ -269,7 +279,8 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 					piece.Parent=m
 					if config then
 						piece.Name=config[1]
-						articulated(root,piece,CFrame.new(piece.Position+Vector3.new(0,config[3],0)),config[2])
+						local base=if torso and (config[2]=="Neck" or config[2]:find("Shoulder")) then torso else root
+						articulated(base,piece,CFrame.new(piece.Position+Vector3.new(0,config[3],0)),config[2])
 					else attach(root,piece) end
 				end
 			end
@@ -456,17 +467,37 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 	equip("Crest",Vector3.new(0.35,0.5,0.15),CFrame.new(0,0.4,-0.65),gold,Enum.Material.Metal,Enum.PartType.Ball)
 	if classId=="Guardian" then
 		-- Escudo redondo azul com aro e estrela de oito pontas dourados (referência guardian-reference-v1).
-		local face=CFrame.Angles(0,math.pi/2,0) -- eixo do cilindro apontando para fora da mão
+		-- Preso ao antebraço como um escudo real, com a face para fora do braço: em repouso fica ao
+		-- lado do corpo; com o antebraço em guarda, a face vira para a frente. Sem antebraço
+		-- (boneco da seleção), usa a mão como antes. Peças em coordenadas do escudo (face = −Z).
+		local forearm=character:FindFirstChild("LeftLowerArm")
+		local mount: Instance=left
+		local shieldFrame=CFrame.new(-0.25,0,-0.33)
+		if forearm and forearm:IsA("BasePart") then
+			-- Suporte articulado: em repouso a face aponta para fora do braço (ao lado do corpo);
+			-- em guarda, AvatarFallback gira o motor "ShieldOrientation" para a rotação medida no Play
+			-- (antebraço em guarda → face para a frente). O mesmo padrão do BowOrientation do arco.
+			local rest=CFrame.Angles(0,math.pi/2,0)
+			local guard=CFrame.Angles(-2.39,0.03,-0.62)
+			local holder=equip("ShieldMount",Vector3.new(0.05,0.05,0.05),CFrame.new(-0.42,-0.05,0)*rest,iron,nil,nil,forearm)
+			holder.Transparency=1
+			local weld=holder:FindFirstChildOfClass("WeldConstraint") if weld then weld:Destroy() end
+			local joint=Instance.new("Motor6D") joint.Name="ShieldOrientation" joint.Part0=forearm joint.Part1=holder
+			joint.C0=forearm.CFrame:ToObjectSpace(holder.CFrame) joint.Parent=holder
+			holder:SetAttribute("GuardTransform",rest:Inverse()*guard)
+			mount=holder shieldFrame=CFrame.identity
+		end
+		local face=CFrame.Angles(0,math.pi/2,0) -- eixo do cilindro ao longo da normal do escudo
 		local royal=Color3.fromRGB(38,58,132)
 		local steel=Color3.fromRGB(196,206,216)
-		equip("ShieldRim",Vector3.new(0.16,2.3,2.3),CFrame.new(-0.25,0,-0.33)*face,gold,Enum.Material.Metal,Enum.PartType.Cylinder,left)
-		equip("AstralShield",Vector3.new(0.2,2.08,2.08),CFrame.new(-0.25,0,-0.37)*face,royal,Enum.Material.Metal,Enum.PartType.Cylinder,left)
+		equip("ShieldRim",Vector3.new(0.16,2.3,2.3),shieldFrame*face,gold,Enum.Material.Metal,Enum.PartType.Cylinder,mount)
+		equip("AstralShield",Vector3.new(0.2,2.08,2.08),shieldFrame*CFrame.new(0,0,-0.04)*face,royal,Enum.Material.Metal,Enum.PartType.Cylinder,mount)
 		for i=0,3 do
 			local long=i%2==0
 			-- Elipsoides afilam nas pontas e formam a estrela de oito pontas.
-			equip("ShieldStar",Vector3.new(if long then 0.3 else 0.2,if long then 1.75 else 1.1,0.05),CFrame.new(-0.25,0,-0.49)*CFrame.Angles(0,0,i*math.pi/4),gold,Enum.Material.Metal,Enum.PartType.Ball,left)
+			equip("ShieldStar",Vector3.new(if long then 0.3 else 0.2,if long then 1.75 else 1.1,0.05),shieldFrame*CFrame.new(0,0,-0.16)*CFrame.Angles(0,0,i*math.pi/4),gold,Enum.Material.Metal,Enum.PartType.Ball,mount)
 		end
-		equip("ShieldSigil",Vector3.new(0.34,0.34,0.14),CFrame.new(-0.25,0,-0.52),color,Enum.Material.Neon,Enum.PartType.Ball,left)
+		equip("ShieldSigil",Vector3.new(0.34,0.34,0.14),shieldFrame*CFrame.new(0,0,-0.19),color,Enum.Material.Neon,Enum.PartType.Ball,mount)
 		-- Espada longa montada no próprio eixo (Y = lâmina) e encaixada no punho fechado:
 		-- o punho cruza a palma e a lâmina sai para frente (−Z da mão), inclinada ~20° para cima.
 		local hold=CFrame.new(0,-0.18,0)*CFrame.Angles(-1.22,0,0)
@@ -480,6 +511,16 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 		sword("SwordBlade",Vector3.new(0.2,2.45,0.06),1.65,steel,Enum.Material.Metal)
 		sword("SwordFuller",Vector3.new(0.05,2.05,0.075),1.52,Color3.fromRGB(140,152,166),Enum.Material.Metal)
 		sword("SwordTip",Vector3.new(0.2,0.55,0.06),2.87,steel,Enum.Material.Metal,Enum.PartType.Ball)
+		-- Rastro do corte: desligado; AvatarFallback liga só na fase de golpe do ataque.
+		local blade=folder:FindFirstChild("SwordBlade")
+		if blade then
+			local a0=Instance.new("Attachment") a0.Name="TrailBase" a0.Position=Vector3.new(0,-1.0,0) a0.Parent=blade
+			local a1=Instance.new("Attachment") a1.Name="TrailTip" a1.Position=Vector3.new(0,1.45,0) a1.Parent=blade
+			local trail=Instance.new("Trail") trail.Attachment0=a0 trail.Attachment1=a1 trail.Lifetime=0.16 trail.MinLength=0.05
+			trail.Color=ColorSequence.new(Color3.fromRGB(235,245,255),color) trail.LightEmission=0.8
+			trail.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.25),NumberSequenceKeypoint.new(1,1)})
+			trail.WidthScale=NumberSequence.new(1,0.3) trail.Enabled=false trail.Parent=blade
+		end
 	elseif classId=="Explorer" then
 		-- Aljava de couro encostada nas costas, na diagonal; flechas emplumadas saem do topo.
 		local quiver=CFrame.new(0.32,0.1,0.62)*CFrame.Angles(0,0,1.22)

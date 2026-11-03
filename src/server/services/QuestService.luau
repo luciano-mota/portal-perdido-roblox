@@ -145,6 +145,16 @@ function Quest.init(notifyRemote: RemoteEvent, isGuardAlive: (string) -> boolean
 	prompt(world.Temple.ArenaGate,"Atravessar","Limiar do Santuário",function(player)
 		local p=Data.get(player)
 		if p.quest<5 then message(player,"O limiar permanece fechado. Complete os três selos.") return end
+		-- Ferido demais para o chefe: lembra da Fonte do templo antes de entrar (não bloqueia).
+		local humanoid=player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.Health<humanoid.MaxHealth*0.7 and not p.bossDefeated then
+			message(player,"Você está ferido. A Fonte de Lúmen do templo restaura sua vida antes do Guardião.")
+			-- Só no primeiro aviso o jogador fica do lado de fora; apertar de novo atravessa.
+			if not player:GetAttribute("ThresholdWarned") then
+				player:SetAttribute("ThresholdWarned",true)
+				return
+			end
+		end
 		Data.mutate(player,function(profile) profile.checkpoint="Arena" end)
 		if player.Character then player.Character:PivotTo(CFrame.new(Chapter.Checkpoints.Arena)) end
 	end)

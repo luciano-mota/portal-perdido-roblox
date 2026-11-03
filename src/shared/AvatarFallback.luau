@@ -10,6 +10,7 @@ local Motion=require(script.Parent.CharacterMotion)
 local Face=require(script.Parent.FacePresentation)
 local Fallback={}
 local actors: {[Model]: any}={}
+local IS_STUDIO=RunService:IsStudio()
 
 local function failed(id: string): boolean
 	local ok,status=pcall(function() return ContentProvider:GetAssetFetchStatus(id) end)
@@ -121,7 +122,14 @@ function Fallback.init()
 			local started=character:GetAttribute("PortalAttackStarted")
 			local duration=character:GetAttribute("PortalAttackDuration") or 0.5
 			local progress=if typeof(started)=="number" then (time-started)/duration else 2
-			local attacking=progress>=0 and progress<=1
+			local skillStarted=character:GetAttribute("PortalSkillStarted")
+			local skillProgress=if typeof(skillStarted)=="number" then (time-skillStarted)/Motion.Timing.Skill.duration else 2
+			local skilling=skillProgress>=0 and skillProgress<=1
+			local dashStarted=character:GetAttribute("PortalDashStarted")
+			local dashProgress=if typeof(dashStarted)=="number" then (time-dashStarted)/Motion.Timing.Dash.duration else 2
+			local dashing=dashProgress>=0 and dashProgress<=1
+			-- A habilidade usa o mesmo caminho de "ataque" para travar a mira e sobrepor a parte superior.
+			local attacking=(progress>=0 and progress<=1) or skilling or dashing
 			local root=character:FindFirstChild("HumanoidRootPart")
 			if actor.player==Players.LocalPlayer then
 				local aim=character:GetAttribute("PortalAimPosition")
@@ -141,11 +149,36 @@ function Fallback.init()
 			if bowJoint and bowJoint:IsA("Motor6D") and bowJoint.Part0 and root and root:IsA("BasePart") then
 				bowJoint.Transform=bowJoint.Part0.CFrame.Rotation:Inverse()*root.CFrame.Rotation*CFrame.Angles(0,-math.pi/2,0)
 			end
+			-- Escudo: gira suavemente para a guarda durante o combate do Guardião e volta ao repouso.
+			local holder=equipment and equipment:FindFirstChild("ShieldMount")
+			local shieldJoint=holder and holder:FindFirstChild("ShieldOrientation")
+			if shieldJoint and shieldJoint:IsA("Motor6D") then
+				local guardTransform=holder:GetAttribute("GuardTransform")
+				local guarding=attacking or actor.combat
+				actor.guard=(actor.guard or 0)+((if guarding then 1 else 0)-(actor.guard or 0))*(1-math.exp(-dt*(if guarding then 18 else 6)))
+				if typeof(guardTransform)=="CFrame" then shieldJoint.Transform=CFrame.identity:Lerp(guardTransform,actor.guard) end
+			end
 			if equipment and (attacking or actor.combat) then
-				local drawing=attacking and progress<0.55
+				local attackClass=character:GetAttribute("PortalAttackClass")
+				local striking=progress>=0 and progress<=1
+				local drawing=(striking and progress<Motion.Timing.Explorer.release) or (skilling and skillProgress<0.48)
+				-- Brilho do cristal: cresce enquanto carrega e diminui depois de lançar.
+				local charge=if striking and attackClass=="Artificer" then math.clamp(progress/Motion.Timing.Artificer.release,0,1)*(if progress<Motion.Timing.Artificer.release then 1 else math.max(0,1-(progress-Motion.Timing.Artificer.release)*4)) else 0
+				if skilling and character:GetAttribute("PortalSkillClass")=="Artificer" then charge=math.max(charge,math.clamp(skillProgress/0.45,0,1)*(if skillProgress<0.55 then 1 else 0)) end
 				for _,piece in equipment:GetChildren() do
 					if piece:IsA("Beam") and piece.Name=="DrawnString" then piece.Enabled=drawing
-					elseif piece:IsA("BasePart") and piece.Name=="BowString" then piece.Transparency=if drawing then 1 else 0 end
+					elseif piece:IsA("BasePart") and piece.Name=="BowString" then piece.Transparency=if drawing then 1 else 0
+					elseif piece:IsA("BasePart") and piece.Name=="SwordBlade" then
+						local trail=piece:FindFirstChildOfClass("Trail")
+						if trail then trail.Enabled=striking and attackClass=="Guardian" and progress>0.26 and progress<0.62 end
+					elseif piece:IsA("BasePart") and piece.Name=="FocusShell" then
+						local base=piece:GetAttribute("BaseSize")
+						if typeof(base)~="Vector3" then base=piece.Size piece:SetAttribute("BaseSize",base) end
+						piece.Size=(base :: Vector3)*(1+0.45*charge)
+					elseif piece:IsA("BasePart") and piece.Name=="ArcaneFocus" then
+						local light=piece:FindFirstChildOfClass("PointLight")
+						if light then light.Brightness=1.1+3*charge light.Range=6+6*charge end
+					end
 				end
 			end
 			if not actor.animate and not attacking and not actor.combat then continue end
@@ -160,8 +193,14 @@ function Fallback.init()
 			for _,joint in actor.joints do
 				if not joint.Parent then continue end
 				local name=joint.Name:gsub(" ",""):lower()
-				local target=Motion.pose(name,actor.phase,actor.stride,airborne,classId,if attacking then progress else nil,time)
+				local skillClass=character:GetAttribute("PortalSkillClass") or classId
+				local target=Motion.pose(name,actor.phase,actor.stride,airborne,if skilling then skillClass else classId,if progress>=0 and progress<=1 then progress else nil,time,if skilling then skillProgress else nil,if dashing then dashProgress else nil)
 				if not actor.animate and not attacking then target=CFrame.identity end
+				-- Calibração no Studio: atributo "PoseOverride_<articulação>" (CFrame) substitui a pose.
+				if IS_STUDIO then
+					local override=character:GetAttribute("PoseOverride_"..name)
+					if typeof(override)=="CFrame" then target=override end
+				end
 				local previous=actor.poses[joint] or CFrame.identity
 				local pose=previous:Lerp(target,1-math.exp(-dt*22))
 				actor.poses[joint]=pose

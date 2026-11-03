@@ -48,3 +48,12 @@ Evidência no Play do Studio, classe Artífice:
 Referência: https://create.roblox.com/docs/reference/engine/classes/AnimationConstraint (suporte a Transform e migração Motor6D).
 
 Esta é uma melhoria funcional de animação, não aprovação de qualidade humana final. Modelagem/realismo final, cooperação e regressão do capítulo continuam em desenvolvimento.
+
+Complemento de validação das articulações no mesmo rig:
+- Guardião, seleção real 150 HP e ataques Q: 290 amostras, ombro entre -1,125 e 0,411 rad.
+- Explorador, seleção real 110 HP e ataques Q: 193 amostras, ombro entre -0,885 e -0,060 rad; cotovelo entre -1,473 e -0,138 rad.
+- Salto por Espaço: 16 amostras Jumping/Freefall, joelho entre 0,203 e 0,550 rad.
+- Esses resultados comprovam movimento das articulações em execução; não equivalem a aprovação de naturalidade ou sincronização audiovisual final.
+
+- Respawn após morte induzida de teste: Explorador manteve classe e 110 HP, voltou ao spawn e animou novamente as 15 articulações; 29 amostras andando, joelho entre 0,050 e 0,881 rad. Sem alteração manual de progresso.
+- Separado o gesto de ataque do limite de efeitos decorativos: atingir o orçamento visual não cancela a movimentação dos braços.

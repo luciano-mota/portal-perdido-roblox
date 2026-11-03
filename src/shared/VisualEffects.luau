@@ -36,7 +36,7 @@ function FX.play(data: any)
 	if data.kind=="telegraph" then
 		ring(data.position,data.radius,Color3.fromRGB(233,109,73),data.duration,true) return
 	end
-	if #container:GetChildren()>60 then return end
+	-- Gestos não dependem do orçamento de partículas decorativas.
 	if data.kind=="strike" then
 		local actor=typeof(data.userId)=="number" and Players:GetPlayerByUserId(data.userId)
 		if actor and actor.Character then
@@ -44,12 +44,14 @@ function FX.play(data: any)
 			actor.Character:SetAttribute("PortalAttackClass",data.classId)
 			actor.Character:SetAttribute("PortalAttackDuration",if data.classId=="Explorer" then 0.46 else 0.56)
 		end
+		if #container:GetChildren()>60 then return end
 		if data.classId=="Guardian" then ring(data.position-Vector3.new(0,2.5,0),3,data.color,0.22)
 		else
 			local beam=Art.segment(container,"ArcaneTrail",data.origin,data.position,0.12,data.color,Enum.Material.Neon)
 			beam.CastShadow=false
 			TweenService:Create(beam,TweenInfo.new(0.22),{Transparency=1}):Play() Debris:AddItem(beam,0.3)
 		end
+	elseif #container:GetChildren()>60 then return
 	elseif data.kind=="damage" then
 		local anchor=part(data.position,Color3.new(1,1,1),Vector3.new(0.1,0.1,0.1),nil,0.8) anchor.Transparency=1
 		local gui=Instance.new("BillboardGui") gui.Size=UDim2.fromOffset(95,35) gui.AlwaysOnTop=true gui.MaxDistance=100 gui.Parent=anchor

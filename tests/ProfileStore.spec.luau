@@ -48,6 +48,17 @@ return function(Store: any)
 		assert(Store.sanitize(invalid)==nil,"invalid balance accepted")
 	end
 	table.insert(passed,"saldo negativo, infinito, NaN e fracionário rejeitados")
+	for _, value in {-1,4,math.huge,0/0,1.5,"2"} do
+		local invalid=Store.fresh() invalid.seals=value
+		assert(Store.sanitize(invalid)==nil,"invalid temple progress accepted")
+	end
+	for stage=0,3 do
+		local valid=Store.fresh() valid.seals=stage
+		assert(Store.sanitize(valid).seals==stage,"valid temple progress changed")
+	end
+	local legacy=Store.fresh() legacy.seals=nil
+	assert(Store.sanitize(legacy).seals==0,"missing optional seals must default to zero")
+	table.insert(passed,"progresso inválido do templo rejeitado; etapas válidas preservadas")
 	local broken=Store.new({UpdateAsync=function() error("simulated outage") end},"offline",function() return now end)
 	local networkOK=pcall(function() broken:load("player") end)
 	assert(not networkOK and records.player.profile.coins==25,"network failure cannot overwrite good data")

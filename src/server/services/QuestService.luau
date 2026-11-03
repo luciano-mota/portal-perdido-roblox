@@ -91,7 +91,10 @@ function Quest.init(notifyRemote: RemoteEvent, isGuardAlive: (string) -> boolean
 		elseif p.quest==2 then dialogue(player,{"O Sentinela está além do arco antigo. Use seu ataque e sua habilidade de classe. Desvie das marcas no chão."})
 		elseif p.quest==3 then dialogue(player,Chapter.Dialogues.Runes)
 		elseif p.quest==4 then dialogue(player,{"A ordem no templo é Aurora, Raiz, Estrela. As inscrições não podem ser esquecidas."})
-		elseif p.quest==5 then dialogue(player,Chapter.Dialogues.Temple)
+		elseif p.quest==5 then
+			if p.bossDefeated then
+				dialogue(player,{"O Guardião reconheceu sua vitória. O Fragmento da Aurora espera no altar do santuário.","Atravesse o limiar do templo e recolha o fragmento. Depois, retorne ao vale."})
+			else dialogue(player,Chapter.Dialogues.Temple) end
 		else dialogue(player,Chapter.Dialogues.Ending) end
 	end)
 	for _, id in {"Forest","Temple"} do

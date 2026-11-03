@@ -14,11 +14,12 @@ function ProfileStore.sanitize(value: any)
 	if typeof(value.coins)~="number" or value.coins%1~=0 or value.coins<0 or value.coins>10000000 then return nil end
 	if value.classId~=nil and (typeof(value.classId)~="string" or not allowedClasses[value.classId]) then return nil end
 	if typeof(value.runes)~="table" or typeof(value.rewards)~="table" then return nil end
+	if value.seals~=nil and (typeof(value.seals)~="number" or value.seals%1~=0 or value.seals<0 or value.seals>3) then return nil end
 	local p=ProfileStore.fresh()
 	p.quest=value.quest p.coins=value.coins p.classId=value.classId
 	p.fragment=value.fragment==true
 	p.bossDefeated=value.bossDefeated==true
-	p.seals=if typeof(value.seals)=="number" then math.clamp(math.floor(value.seals),0,3) else 0
+	p.seals=value.seals or 0
 	for _, id in {"Dawn","Root","Star"} do p.runes[id]=value.runes[id]==true end
 	for i=1,5 do p.rewards[tostring(i)]=value.rewards[tostring(i)]==true end
 	local checkpoints={Village=true,Forest=true,Temple=true,Arena=true}

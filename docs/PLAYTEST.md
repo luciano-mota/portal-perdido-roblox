@@ -186,3 +186,13 @@ LightingStyle=Realistic serializado no projeto. Vista de spawn com RenderSetting
 ![Qualidade alta](evidence/2026-11-02-coop/realistic-lighting-quality21.jpg)
 
 300 frames por condição, média 59,9963 e 60,0035 FPS respectivamente, no desktop. Novo teste Ilyra/Sentinela após a troca de iluminação: quest 3, 25 moedas, sem erro do jogo. Arte final e desempenho de celular físico continuam pendentes. A comparação mostra opções de renderização do Studio; não transforma a modelagem procedural em arte realista final.
+
+## Regressão de 03/11/2026 (G0 + capítulo com personagens humanizados)
+
+Detalhes em `DEVELOPMENT_STATUS.md` ("Regressão G0 e personagens humanizados" e "Passagem completa com o Guardião humanizado"), `ILYRA_VISUAL_REVIEW.md` e `GUARDIAN_RIG_QA.md`.
+
+- [x] G0 com Guardião, Explorador e Artífice: seleção → Ilyra → Sentinela → missão 3 / 25 moedas, sem erro Luau.
+- [x] Capítulo completo com Guardião humanizado até a tela de conclusão; selos com erro e sequência correta; fragmento idempotente.
+- [x] Proteção de 4 s ao renascer (corrige dano imediato no checkpoint da Arena).
+- [ ] Captura visual do Guardião em jogo (renderizador do Studio ficou branco após a geração; reiniciar o Studio).
+- [ ] Repetir passagem em dupla com os modelos novos; aparelho móvel físico.

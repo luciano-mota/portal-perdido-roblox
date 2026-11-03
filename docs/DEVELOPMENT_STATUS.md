@@ -148,3 +148,18 @@ Mudanças:
 - Modelos de revisão que apareciam no caminho do spawn movidos para `ServerStorage.ReviewArchive` (mudança apenas na cena do Studio).
 
 Pendente: captura visual do Guardião em jogo (o renderizador do Studio entrou em estado branco após a geração), passagem completa do capítulo com os novos modelos, aparelho móvel físico e persistência publicada.
+
+### Passagem completa com o Guardião humanizado — 03/11/2026
+
+Play solo, classe escolhida pela interface real. Movimento por `Humanoid:MoveTo`, ataques/habilidade/esquiva pelos mesmos RemoteEvents que Q/R/Shift disparam, prompts por `InputHoldBegin/End`, diálogos fechados pelo botão real (dois intermediários ocultados no cliente — sem efeito no servidor). Nenhuma alteração direta de vida, dano, moedas ou progresso para vencer.
+
+1. Ilyra → missão 2. Sentinela → missão 3, 25 moedas.
+2. RuneMoss/RuneThorn/RuneWisp derrotados; Dawn/Root/Star lidas → missão 4, 65 moedas.
+3. Selo Raiz primeiro: rejeitado ("A sequência se desfez"), progresso 0. Aurora → Raiz → Estrela → missão 5, 100 moedas, checkpoint Temple.
+4. Limiar → Arena. Chefe 1800 HP: 1800 → 1410 → 1050 → 690 (fase 2) → morte do jogador; renasceu na Arena com Guardian, rig gerado, 5 peças de equipamento, missão 5, 100 moedas, 3 inscrições; chefe manteve 630 HP. Segunda morte em 240; terceira tentativa: 240 → 120 → 0. BossDefeated=true.
+5. Fragmento → missão 6, HasFragment=true, 200 moedas, checkpoint Village. Repetição manteve 200. Epílogo fechado pelo botão real → tela de conclusão visível.
+6. Zero erros Luau no cliente e no servidor.
+
+**Defeito encontrado e corrigido:** ao renascer na Arena (que fica toda dentro do raio de 48 studs do chefe), o jogador levava dano antes de agir (150 → 96 em 1,5 s; outra vez começou com 42). `ClassService` agora adiciona `ForceField` "SpawnGrace" por 4 s ao posicionar no checkpoint. Validação com morte induzida só para teste: SpawnGrace presente, `TakeDamage(40)` manteve 110/110, proteção removida após 4,5 s e `TakeDamage(10)` → 100. Classe e rig preservados.
+
+A automação não aprova dificuldade/duração para público real; as três mortes indicam que o chefe exige atenção à esquiva, o que precisa de avaliação humana.

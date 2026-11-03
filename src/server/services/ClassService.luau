@@ -43,6 +43,10 @@ local function apply(player: Player, character: Model, moveToCheckpoint: boolean
 	if moveToCheckpoint then
 		local point=Chapter.Checkpoints[profile.checkpoint] or Chapter.Checkpoints.Village
 		character:PivotTo(CFrame.new(point))
+		-- Proteção curta ao renascer: o checkpoint da Arena fica dentro do alcance do chefe.
+		-- Humanoid:TakeDamage ignora dano enquanto houver ForceField no personagem.
+		local grace=Instance.new("ForceField") grace.Name="SpawnGrace" grace.Visible=true grace.Parent=character
+		game:GetService("Debris"):AddItem(grace,4)
 	end
 	player:SetAttribute("ShieldUntil",0)
 end

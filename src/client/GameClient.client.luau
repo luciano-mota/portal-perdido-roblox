@@ -299,6 +299,7 @@ end
 for _, attribute in {"ClassId","QuestIndex","Coins","RuneCount","SealProgress","HasFragment","DataStatus","ShieldUntil","BossDefeated"} do player:GetAttributeChangedSignal(attribute):Connect(refresh) end
 
 FX.init()
+require(ReplicatedStorage.Shared.ObjectiveGuide).init()
 require(ReplicatedStorage.Shared.AvatarFallback).init()
 require(ReplicatedStorage.Shared.ActorPresentation).init()
 notify.OnClientEvent:Connect(function(data)

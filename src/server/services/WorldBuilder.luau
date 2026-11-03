@@ -125,7 +125,7 @@ function WorldBuilder.build()
 	local nodes={Vector3.new(0,0.12,70),Vector3.new(0,0.12,-70),Vector3.new(10,0.12,-120),Vector3.new(0,0.12,-185),Vector3.new(18,0.12,-245),Vector3.new(-8,0.12,-315),Vector3.new(0,0.12,-390),Vector3.new(0,0.12,-520)}
 	for i=1,#nodes-1 do
 		local a,b=nodes[i],nodes[i+1]
-		Art.part(paths,"PilgrimPath",Vector3.new(if i<3 then 9 else 7,0.25,(b-a).Magnitude+1),CFrame.lookAt((a+b)*0.5,b),Color3.fromRGB(130,132,131),Enum.Material.Slate,nil,true)
+		Art.part(paths,"PilgrimPath",Vector3.new(if i<3 then 9 else 7,0.25,(b-a).Magnitude+1),CFrame.lookAt((a+b)*0.5,b),Color3.fromRGB(112,105,88),if i<3 then Enum.Material.Cobblestone else Enum.Material.Ground,nil,true)
 	end
 	for i=1,15 do
 		local z=35-i*34

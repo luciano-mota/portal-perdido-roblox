@@ -68,7 +68,7 @@ local function bind(player: Player,character: Model)
 		actors[character]=actor
 		-- O estado de download pode mudar depois do primeiro prazo. Reavaliar também
 		-- restaura a apresentação nativa se os assets voltarem a carregar.
-		task.wait(5)
+		task.wait(if character:GetAttribute("PortalGeneratedRig") then 0.1 else 5)
 		local warned=false
 		while character.Parent and actors[character]==actor do
 			local failedMeshes=0

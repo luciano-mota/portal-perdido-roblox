@@ -6,14 +6,16 @@ local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
 local Art=require(ReplicatedStorage.Shared.Art)
 local Data=require(script.Parent.PlayerDataService)
 local Service={}
+local templates={Explorer="ExplorerTemplate",Guardian="GuardianTemplate",Artificer="ArtificerTemplate"}
 
 local function apply(player: Player, character: Model, moveToCheckpoint: boolean)
 	local humanoid=character:WaitForChild("Humanoid",10)
 	local root=character:WaitForChild("HumanoidRootPart",10)
 	local profile=Data.get(player)
 	if not profile or player.Character~=character or not humanoid or not humanoid:IsA("Humanoid") or not root then return end
-	if profile.classId=="Explorer" and not character:GetAttribute("PortalGeneratedRig") then
-		local template=game:GetService("ServerStorage"):FindFirstChild("ExplorerTemplate")
+	local templateName=profile.classId and templates[profile.classId]
+	if templateName and not character:GetAttribute("PortalGeneratedRig") then
+		local template=game:GetService("ServerStorage"):FindFirstChild(templateName)
 		if template and template:IsA("Model") and template:FindFirstChild("HumanoidRootPart") and template:FindFirstChildOfClass("Humanoid") then
 			local replacement=template:Clone()
 			replacement.Name=player.Name

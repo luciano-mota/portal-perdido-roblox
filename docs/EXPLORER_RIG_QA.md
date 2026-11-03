@@ -14,3 +14,7 @@ Validação no Studio em 02/11/2026:
 Limitação: character_navigation permaneceu ativo de forma irregular durante o ensaio e houve deslocamento maior que o solicitado. Não usar esse percurso como evidência de naturalidade ou controle manual contínuo. Play encerrado após QA. Revisão de animação de arco quadro a quadro, cooperação, cabeça/capa finais e desempenho mobile ainda pendentes.
 
 Direção aprovada pelo usuário: estender proporções mais humanas, materiais e roupas modeladas ao Guardião, Artífice e Ilyra; criaturas preservam anatomia fantástica com maior credibilidade. Os modelos dessas outras classes ainda não foram substituídos.
+
+Revisão posterior: captura confirmou Explorador sem Mantle procedural sobreposto, 15 articulações, 110 HP e calçamento Cobblestone da vila. Fachadas com vigas/molduras visíveis. Consulta de erros de ClassService/AvatarFallback/WorldBuilder no cliente não retornou ocorrências; não equivale a Output global sem erros. Início da contingência de animação dos rigs gerados reduzido de cinco segundos para 0,1 segundo. Integração aceita templates opcionais das três classes, mantendo avatar normal quando inexistentes.
+
+Tentativa de gerar Guardião Astral retornou `AvatarGen: 2D preview failed: MODERATION_BLOCKED`. Nenhum Guardião novo entregue, nenhuma tentativa de contornar a restrição. Arte final das outras classes permanece pendente.

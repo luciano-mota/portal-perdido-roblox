@@ -135,6 +135,30 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 	local function p(name: string, size: Vector3, offset: Vector3, tint: Color3, material: Enum.Material?, shape: Enum.PartType?)
 		return Art.part(m,name,size*scale,CFrame.new(position+offset*scale),tint,material,shape)
 	end
+	if kind=="Moss" then
+		local template=game:GetService("ServerStorage"):FindFirstChild("SentinelTemplate")
+		if template and template:IsA("Model") then
+			local visual=template:Clone()
+			visual:ScaleTo(visual:GetScale()*1.3)
+			visual:PivotTo(CFrame.new(position))
+			local joints={['head_geom']={'Head','Neck',-0.55},['left arm_geom']={'LeftArm','LeftShoulder',1.25},['right arm_geom']={'RightArm','RightShoulder',1.25},['left leg_geom']={'LeftLeg','LeftHip',1.15},['right leg_geom']={'RightLeg','RightHip',1.15}}
+			for _,piece in visual:GetDescendants() do
+				if piece:IsA("BasePart") then
+					piece.CanCollide=false piece.CanTouch=false piece.CanQuery=false
+					local config=joints[piece.Name]
+					piece.Parent=m
+					if config then
+						piece.Name=config[1]
+						articulated(root,piece,CFrame.new(piece.Position+Vector3.new(0,config[3],0)),config[2])
+					else attach(root,piece) end
+				end
+			end
+			visual:Destroy()
+			m:SetAttribute("GeneratedCreature",true)
+			m.Parent=parent
+			return m
+		end
+	end
 	if kind == "Wisp" then
 		p("Core",Vector3.new(1.6,2.1,1.6),Vector3.zero,color,Enum.Material.Neon,Enum.PartType.Ball)
 		for i=1,5 do
@@ -338,7 +362,7 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 		equip("Harness",Vector3.new(0.3,2.2,0.1),CFrame.new(0.4,0,-0.65)*CFrame.Angles(0,0,-0.5),gold,Enum.Material.Metal)
 	end
 	if character:GetAttribute("PortalGeneratedRig") then
-		local baked={TravelBelt=true,BeltBuckle=true,TravelPouch=true,TravelScarf=true,LeatherBaldric=true,ShortCloak=true,Mantle=true,Crest=true}
+		local baked={TravelBelt=true,BeltBuckle=true,TravelPouch=true,TravelScarf=true,LeatherBaldric=true,ShortCloak=true,Mantle=true,Crest=true,WovenStole=true,RunicClasp=true,Harness=true}
 		for _,piece in folder:GetChildren() do if baked[piece.Name] then piece:Destroy() end end
 	end
 	folder.Parent=character

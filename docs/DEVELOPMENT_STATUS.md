@@ -178,3 +178,16 @@ Revisão por captura, com correções em `Art.equipment` e `GameClient`:
 - Retrato do diálogo da Ilyra confirmado por captura (rosto enquadrado).
 
 Regressão após as mudanças: Artífice escolhida pela interface → Ilyra (missão 2) → Sentinela (missão 3, 25 moedas); 60 FPS no desktop; zero erros Luau. Memória total do processo do Studio 3996 MB após várias sessões de Play — não representa o app em celular.
+
+## Abertura sem personagens antigos — 03/11/2026
+
+Relato do usuário: ao iniciar no Studio, apareciam os personagens antigos até a escolha de classe. Reproduzido: durante prólogo e seleção, o avatar padrão do Roblox (blocos) ficava no caminho da vila, e os cards da seleção mostravam por um instante os bonecos procedurais antes dos retratos humanizados.
+
+Correções:
+- `ClassService`: sem classe escolhida, o avatar padrão fica invisível (partes e decals, inclusive acessórios que chegam depois — segunda passada após 1 s), ancorado e sem nome exibido (`AwaitingClass=true`). A escolha troca pelo rig humanizado. Se faltar template, a visibilidade original é restaurada como contingência.
+- `AvatarFallback` não cria cascas visíveis sobre um avatar em `AwaitingClass`.
+- Cards da seleção nascem com o retrato humanizado; o boneco procedural só aparece se `ClassPreviews` não chegar em ~6 s.
+- `SpawnGrace` continua protegendo em todo posicionamento, mas a bolha só é visível fora da vila (respawn em combate).
+- Avisos (toasts) não aparecem sobre o texto do prólogo.
+
+Evidência (Play): durante o prólogo 0 partes visíveis do avatar, raiz ancorada; cards com Guardian/Explorer/Artificer como MeshPart desde a abertura; após escolher Explorador, rig gerado visível (28/32 partes; 4 âncoras do arco são invisíveis por design), solto, 110 HP, proteção sem bolha; aviso do objetivo oculto durante o prólogo; zero erros. As capturas do MCP nesta etapa saíram brancas (janela do Studio sem foco); a confirmação visual fica para o usuário.

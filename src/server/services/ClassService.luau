@@ -8,11 +8,43 @@ local Data=require(script.Parent.PlayerDataService)
 local Service={}
 local templates={Explorer="ExplorerTemplate",Guardian="GuardianTemplate",Artificer="ArtificerTemplate"}
 
+-- Antes da escolha de classe o avatar padrão do Roblox não deve aparecer (prólogo/seleção):
+-- fica invisível e parado no spawn. A escolha troca o personagem pelo rig humanizado.
+local function setAwaiting(character: Model, root: BasePart, humanoid: Humanoid, awaiting: boolean)
+	if (character:GetAttribute("AwaitingClass")==true)==awaiting then return end
+	character:SetAttribute("AwaitingClass",awaiting)
+	for _,item in character:GetDescendants() do
+		if item:IsA("BasePart") or item:IsA("Decal") then
+			if awaiting then
+				if item:GetAttribute("PortalOriginalTransparency")==nil then item:SetAttribute("PortalOriginalTransparency",item.Transparency) end
+				item.Transparency=1
+			else
+				local original=item:GetAttribute("PortalOriginalTransparency")
+				if typeof(original)=="number" then item.Transparency=original end
+			end
+		end
+	end
+	root.Anchored=awaiting
+	humanoid.DisplayDistanceType=if awaiting then Enum.HumanoidDisplayDistanceType.None else Enum.HumanoidDisplayDistanceType.Viewer
+end
+
 local function apply(player: Player, character: Model, moveToCheckpoint: boolean)
 	local humanoid=character:WaitForChild("Humanoid",10)
 	local root=character:WaitForChild("HumanoidRootPart",10)
 	local profile=Data.get(player)
-	if not profile or player.Character~=character or not humanoid or not humanoid:IsA("Humanoid") or not root then return end
+	if not profile or player.Character~=character or not humanoid or not humanoid:IsA("Humanoid") or not root or not root:IsA("BasePart") then return end
+	if not profile.classId then
+		-- Acessórios podem chegar depois do CharacterAdded; uma segunda passada cobre o atraso.
+		setAwaiting(character,root,humanoid,true)
+		task.delay(1,function()
+			local latest=Data.get(player)
+			if player.Character==character and latest and not latest.classId then
+				character:SetAttribute("AwaitingClass",false)
+				setAwaiting(character,root,humanoid,true)
+			end
+		end)
+		return
+	end
 	local templateName=profile.classId and templates[profile.classId]
 	if templateName and not character:GetAttribute("PortalGeneratedRig") then
 		local template=game:GetService("ServerStorage"):FindFirstChild(templateName)
@@ -35,6 +67,8 @@ local function apply(player: Player, character: Model, moveToCheckpoint: boolean
 			return
 		end
 	end
+	-- Contingência: classe sem template disponível mantém o avatar padrão, agora visível.
+	setAwaiting(character,root,humanoid,false)
 	local definition=profile.classId and Classes[profile.classId]
 	if definition then
 		humanoid.MaxHealth=definition.health humanoid.Health=definition.health
@@ -45,7 +79,8 @@ local function apply(player: Player, character: Model, moveToCheckpoint: boolean
 		character:PivotTo(CFrame.new(point))
 		-- Proteção curta ao renascer: o checkpoint da Arena fica dentro do alcance do chefe.
 		-- Humanoid:TakeDamage ignora dano enquanto houver ForceField no personagem.
-		local grace=Instance.new("ForceField") grace.Name="SpawnGrace" grace.Visible=true grace.Parent=character
+		-- Bolha visível só fora da vila (respawn em combate); na entrada do jogo ela só protege.
+		local grace=Instance.new("ForceField") grace.Name="SpawnGrace" grace.Visible=profile.checkpoint~="Village" grace.Parent=character
 		game:GetService("Debris"):AddItem(grace,4)
 	end
 	player:SetAttribute("ShieldUntil",0)

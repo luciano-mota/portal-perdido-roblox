@@ -72,8 +72,10 @@ local function bind(player: Player,character: Model)
 		local warned=false
 		while character.Parent and actors[character]==actor do
 			local failedMeshes=0
+			-- Avatar padrão escondido aguardando a classe: não criar cascas visíveis por cima.
+			local awaiting=character:GetAttribute("AwaitingClass")==true
 			for _,item in character:GetChildren() do
-				if item:IsA("MeshPart") and failed(item.MeshId) then shell(item,player,actor.connections) failedMeshes+=1 end
+				if item:IsA("MeshPart") and failed(item.MeshId) and not awaiting then shell(item,player,actor.connections) failedMeshes+=1 end
 			end
 			local failedAnimations=0
 			local joints={}

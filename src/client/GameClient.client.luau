@@ -62,24 +62,31 @@ for i,id in {"Guardian","Explorer","Artificer"} do
 	local padding=Instance.new("UIPadding") padding.PaddingLeft=UDim.new(0,76) padding.PaddingRight=UDim.new(0,8) padding.Parent=b
 	local preview=Instance.new("ViewportFrame") preview.Name="ClassPortrait" preview.Size=UDim2.fromOffset(58,53) preview.Position=UDim2.fromOffset(-68,1) preview.BackgroundTransparency=1 preview.Ambient=Color3.fromRGB(180,185,194) preview.LightColor=Color3.fromRGB(255,238,211) preview.Parent=b
 	local scene=Instance.new("WorldModel") scene.Parent=preview
-	local model=Art.classPreview(id,class.color) model.Parent=scene
-	local camera=Instance.new("Camera") camera.CFrame=CFrame.lookAt(Vector3.new(5,4.2,-8),Vector3.new(0,3.1,0)) camera.FieldOfView=40 camera.Parent=preview preview.CurrentCamera=camera
-	-- Troca o boneco procedural pelo rig humanizado publicado pelo servidor, quando disponível.
-	task.spawn(function()
-		local folder=ReplicatedStorage:WaitForChild("ClassPreviews",10)
-		local source=folder and folder:WaitForChild(id,5)
+	local camera=Instance.new("Camera") camera.Parent=preview preview.CurrentCamera=camera
+	-- Retrato humanizado publicado pelo servidor (ReplicatedStorage.ClassPreviews). O boneco procedural
+	-- só aparece como contingência se o retrato não chegar; antes ele surgia por um instante na abertura.
+	local function humanize(source: Instance?): boolean
 		local head=source and source:FindFirstChild("Head")
-		if not source or not source:IsA("Model") or not head or not head:IsA("BasePart") then return end
+		if not source or not source:IsA("Model") or not head or not head:IsA("BasePart") then return false end
 		local humanized=source:Clone()
 		humanized:PivotTo(CFrame.identity)
 		humanized.Parent=scene
-		model:Destroy()
 		local headCF=(humanized:FindFirstChild("Head") :: BasePart).CFrame
 		local h=headCF.Position
 		-- Close de rosto e ombros (o card tem ~58 px), levemente de lado, na direção do rosto.
 		camera.CFrame=CFrame.lookAt(h+headCF.LookVector*2.9+headCF.RightVector*0.55+Vector3.new(0,0.2,0),h-Vector3.new(0,0.22,0))
 		camera.FieldOfView=32
-	end)
+		return true
+	end
+	local previews=ReplicatedStorage:FindFirstChild("ClassPreviews")
+	if not humanize(previews and previews:FindFirstChild(id)) then
+		task.spawn(function()
+			local folder=ReplicatedStorage:WaitForChild("ClassPreviews",4)
+			if humanize(folder and folder:WaitForChild(id,2)) then return end
+			local model=Art.classPreview(id,class.color) model.Parent=scene
+			camera.CFrame=CFrame.lookAt(Vector3.new(5,4.2,-8),Vector3.new(0,3.1,0)) camera.FieldOfView=40
+		end)
+	end
 	b.Activated:Connect(function() choose:FireServer(id) end)
 end
 text(card,"Footer","Q atacar  ·  R habilidade  ·  Shift esquiva\nNo celular, use os botões na tela.",11,UDim2.fromOffset(20,318),UDim2.new(1,-40,0,26),Color3.fromRGB(177,195,200))
@@ -101,6 +108,8 @@ local bossFill=frame(boss,"Fill",UDim2.new(0.94,0,0,6),UDim2.new(0.03,0,0,28),Co
 local toast=text(screen,"Toast","",15,UDim2.fromScale(0.5,0.37),UDim2.new(0.85,0,0,46),amber) toast.AnchorPoint=Vector2.new(0.5,0.5) toast.TextStrokeTransparency=0.15 toast.Visible=false
 local toastVersion=0
 local function showToast(value: string)
+	-- O objetivo inicial já aparece no HUD depois da introdução; não sobrepor o texto do prólogo.
+	if not introDone then return end
 	toastVersion+=1 local version=toastVersion toast.Text=value toast.Visible=true
 	task.delay(4,function() if toastVersion==version then toast.Visible=false end end)
 end

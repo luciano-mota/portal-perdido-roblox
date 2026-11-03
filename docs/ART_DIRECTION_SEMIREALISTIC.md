@@ -87,3 +87,15 @@ Referências técnicas: https://create.roblox.com/docs/performance-optimization/
 - [ ] Spawn sem obstruções e caminho com orientação visual até Ilyra/portal.
 - [ ] Assets com proveniência, licença e versão em manifesto.
 - [ ] Performance aferida em desktop e mobile; regressão visual comparada ao blockout.
+
+## Refinamento solicitado — personagens e realismo (02/11/2026)
+
+Direção atual: buscar o maior realismo sustentável em PC e smartphone, também no elenco. A inspiração em Caverna do Dragão está na aventura de um grupo deslocado, na cooperação, na fantasia e no drama; a identidade visual, personagens e diálogos de Aetherion permanecem originais.
+
+- Guardião Astral: proteção de metal com acabamento usado, ombreiras, couro e emblema astral; silhueta firme e protetora.
+- Explorador: tecidos de viagem, capa curta verde, bandoleira de couro, arco e aljava; silhueta ágil.
+- Artífice: estola tecida, fechos de bronze, grimório e foco arcano; magia contida e curiosidade visual.
+- Ilyra: expressão acolhedora e experiente, vestes em camadas, tranças e cajado; manter continuidade com sua função narrativa de guardiã.
+- Preservar o avatar do jogador e as articulações nativas. Acessórios sem colisão, massa ou scripts externos; detalhes compartilhados entre preview e jogo.
+
+Produção nesta sessão: camadas procedurais dos trajes implementadas; ainda exigem revisão visual em Play. Tentativas de geração nativa de árvore e Ilyra falharam com `Unable to trigger model generation`; material também falhou no serviço. Nenhum asset gerado foi aprovado ou integrado. Realismo final e desempenho em aparelho físico permanecem pendentes.

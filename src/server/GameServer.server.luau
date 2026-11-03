@@ -1,40 +1,29 @@
 --!strict
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local services = ServerScriptService:WaitForChild("Services")
-local ClassService = require(services:WaitForChild("ClassService"))
-local WorldBuilder = require(services:WaitForChild("WorldBuilder"))
-local QuestService = require(services:WaitForChild("QuestService"))
-local EnemyService = require(services:WaitForChild("EnemyService"))
-
-local existingFolder = ReplicatedStorage:FindFirstChild("GameRemotes")
-local remoteFolder: Folder
-if existingFolder and existingFolder:IsA("Folder") then
-	remoteFolder = existingFolder
-else
-	remoteFolder = Instance.new("Folder")
-	remoteFolder.Name = "GameRemotes"
-	remoteFolder.Parent = ReplicatedStorage
+local ReplicatedStorage=game:GetService("ReplicatedStorage")
+local services=script.Parent:WaitForChild("Services")
+local Data=require(services.PlayerDataService)
+local Classes=require(services.ClassService)
+local World=require(services.WorldBuilder)
+local Quests=require(services.QuestService)
+local Enemies=require(services.EnemyService)
+local folder=ReplicatedStorage:FindFirstChild("GameRemotes")
+if not folder then folder=Instance.new("Folder") folder.Name="GameRemotes" folder.Parent=ReplicatedStorage end
+local function remote(name: string): RemoteEvent
+	local found=folder:FindFirstChild(name)
+	if found and found:IsA("RemoteEvent") then return found end
+	local event=Instance.new("RemoteEvent") event.Name=name event.Parent=folder return event
 end
-
-local function getOrCreateRemote(name: string): RemoteEvent
-	local existing = remoteFolder:FindFirstChild(name)
-	if existing and existing:IsA("RemoteEvent") then
-		return existing
-	end
-	local remote = Instance.new("RemoteEvent")
-	remote.Name = name
-	remote.Parent = remoteFolder
-	return remote
-end
-
-local chooseClass = getOrCreateRemote("ChooseClass")
-local attackEnemy = getOrCreateRemote("AttackEnemy")
-
-WorldBuilder.build()
-ClassService.init(chooseClass)
-QuestService.init()
-EnemyService.init(attackEnemy, QuestService)
-
-print("[Portal Perdido] Primeira aventura inicializada: classe, mentora, sentinela e missão.")
+local choose=remote("ChooseClass")
+local attack=remote("AttackEnemy")
+local skill=remote("UseSkill")
+local dash=remote("Dash")
+local notify=remote("Notify")
+World.build()
+Classes.init(choose)
+Quests.init(notify,Enemies.isAlive)
+Enemies.init(attack,skill,dash,notify,Quests)
+Data.init(function(player)
+	Classes.register(player)
+	Quests.register(player)
+end)
+print("[PortalPerdido] Capítulo 1 pronto: cinco missões, três classes, floresta, templo e Guardião.")

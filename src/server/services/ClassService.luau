@@ -1,72 +1,45 @@
 --!strict
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
+local Players=game:GetService("Players")
+local ReplicatedStorage=game:GetService("ReplicatedStorage")
+local Classes=require(ReplicatedStorage.Shared.Config.Classes)
+local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
+local Art=require(ReplicatedStorage.Shared.Art)
+local Data=require(script.Parent.PlayerDataService)
+local Service={}
 
-local Classes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Classes"))
-
-local ClassService = {}
-local lastRequest: { [Player]: number } = {}
-
-local function applyHealth(character: Model, classId: string)
-	local definition = Classes[classId]
-	if not definition then
-		return
+local function apply(player: Player, character: Model, moveToCheckpoint: boolean)
+	local humanoid=character:WaitForChild("Humanoid",10)
+	local root=character:WaitForChild("HumanoidRootPart",10)
+	local profile=Data.get(player)
+	if not profile or player.Character~=character or not humanoid or not humanoid:IsA("Humanoid") or not root then return end
+	local definition=profile.classId and Classes[profile.classId]
+	if definition then
+		humanoid.MaxHealth=definition.health humanoid.Health=definition.health
+		Art.equipment(character,profile.classId,definition.color)
 	end
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		humanoid.MaxHealth = definition.health
-		humanoid.Health = definition.health
+	if moveToCheckpoint then
+		local point=Chapter.Checkpoints[profile.checkpoint] or Chapter.Checkpoints.Village
+		character:PivotTo(CFrame.new(point))
 	end
+	player:SetAttribute("ShieldUntil",0)
 end
 
-function ClassService.select(player: Player, classId: any): boolean
-	if player.Parent ~= Players then
-		return false
-	end
-	if typeof(classId) ~= "string" or Classes[classId] == nil then
-		return false
-	end
-	-- Classe fixa na demonstração: impedir troca em pleno combate.
-	if player:GetAttribute("ClassId") ~= nil then
-		return false
-	end
+function Service.register(player: Player)
+	player.CharacterAdded:Connect(function(character) task.spawn(apply,player,character,true) end)
+	if player.Character then task.spawn(apply,player,player.Character,true) end
+end
 
-	local now = os.clock()
-	local previous = lastRequest[player]
-	if previous ~= nil and now - previous < 1 then
-		return false
-	end
-	lastRequest[player] = now
-	player:SetAttribute("ClassId", classId)
-	if player.Character then
-		applyHealth(player.Character, classId)
-	end
+function Service.select(player: Player, classId: any): boolean
+	local p=Data.get(player)
+	if player.Parent~=Players or not p or p.classId~=nil or typeof(classId)~="string" or Classes[classId]==nil then return false end
+	Data.mutate(player,function(profile) profile.classId=classId end)
+	if player.Character then task.spawn(apply,player,player.Character,false) end
+	task.spawn(Data.save,player,false)
 	return true
 end
 
-local function registerPlayer(player: Player)
-	player.CharacterAdded:Connect(function(character: Model)
-		-- Read the selection after the Humanoid exists: the client can select
-		-- during character construction, before applyHealth can find it.
-		local humanoid = character:WaitForChild("Humanoid", 10)
-		local classId = player:GetAttribute("ClassId")
-		if humanoid and humanoid:IsA("Humanoid") and typeof(classId) == "string" then
-			applyHealth(character, classId)
-		end
-	end)
+function Service.init(remote: RemoteEvent)
+	remote.OnServerEvent:Connect(Service.select)
 end
 
-function ClassService.init(chooseClassRemote: RemoteEvent)
-	chooseClassRemote.OnServerEvent:Connect(function(player: Player, classId: any)
-		ClassService.select(player, classId)
-	end)
-	Players.PlayerAdded:Connect(registerPlayer)
-	for _, player in Players:GetPlayers() do
-		registerPlayer(player)
-	end
-	Players.PlayerRemoving:Connect(function(player: Player)
-		lastRequest[player] = nil
-	end)
-end
-
-return ClassService
+return Service

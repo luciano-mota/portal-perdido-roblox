@@ -17,6 +17,7 @@ local choose=remotes:WaitForChild("ChooseClass") :: RemoteEvent
 local attackRemote=remotes:WaitForChild("AttackEnemy") :: RemoteEvent
 local skillRemote=remotes:WaitForChild("UseSkill") :: RemoteEvent
 local dashRemote=remotes:WaitForChild("Dash") :: RemoteEvent
+local blockRemote=remotes:WaitForChild("Block") :: RemoteEvent
 local notify=remotes:WaitForChild("Notify") :: RemoteEvent
 local gui=player:WaitForChild("PlayerGui")
 local old=gui:FindFirstChild("PortalPerdidoHUD") if old then old:Destroy() end
@@ -102,6 +103,8 @@ local journalButton=button(screen,"JournalButton","DIÁRIO  [J]",UDim2.new(1,-11
 local attackButton=button(screen,"AttackButton","ATACAR [Q]",UDim2.new(1,-174,1,-90),UDim2.fromOffset(150,60),Color3.fromRGB(169,89,65)) attackButton.Visible=false
 local skillButton=button(screen,"SkillButton","HABILIDADE",UDim2.new(1,-290,1,-90),UDim2.fromOffset(106,60)) skillButton.Visible=false
 local dashButton=button(screen,"DashButton","ESQUIVA",UDim2.new(1,-174,1,-142),UDim2.fromOffset(150,42),ink) dashButton.Visible=false
+-- Defesa do Guardião: segurar F ou o botão (toque) mantém o escudo erguido; o servidor valida.
+local blockButton=button(screen,"BlockButton","DEFENDER [F]",UDim2.new(1,-290,1,-142),UDim2.fromOffset(106,42),Color3.fromRGB(46,72,128)) blockButton.Visible=false
 local boss=frame(screen,"BossHealth",UDim2.new(0.86,0,0,40),UDim2.new(0.5,0,0,116),Color3.fromRGB(51,32,41)) boss.AnchorPoint=Vector2.new(0.5,0) limit(boss,500,40) boss.Visible=false
 local bossText=text(boss,"Name","",12,UDim2.new(0.03,0,0,3),UDim2.new(0.94,0,0,20),parchment)
 local bossFill=frame(boss,"Fill",UDim2.new(0.94,0,0,6),UDim2.new(0.03,0,0,28),Color3.fromRGB(196,114,87))
@@ -246,6 +249,9 @@ local function layout()
 	skillButton.Size=UDim2.fromOffset(100,54)
 	dashButton.Position=if touch then UDim2.new(1,-120,1,-180) else UDim2.new(1,-174,1,-142)
 	dashButton.Size=if touch then UDim2.fromOffset(100,48) else UDim2.fromOffset(150,42)
+	blockButton.Position=if touch then UDim2.new(1,-230,1,-180) else UDim2.new(1,-290,1,-142)
+	blockButton.Size=if touch then UDim2.fromOffset(100,48) else UDim2.fromOffset(106,42)
+	blockButton.Text=if touch then "DEFENDER" else "DEFENDER [F]"
 	attackButton.Text=if touch then "ATACAR" else "ATACAR [Q]"
 	journalButton.Text=if touch then "DIÁRIO" else "DIÁRIO [J]"
 	journalButton.Size=UDim2.fromOffset(100,if touch then 44 else 32)
@@ -288,11 +294,29 @@ end
 attackButton.Activated:Connect(attack)
 skillButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then skillRemote:FireServer() end end)
 dashButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then dashRemote:FireServer() end end)
+local blocking=false
+local function setBlock(active: boolean)
+	if active and (dialogue.Visible or journal.Visible or intro.Visible or player:GetAttribute("ClassId")~="Guardian") then active=false end
+	if blocking==active then return end
+	blocking=active
+	blockButton.BackgroundColor3=if active then Color3.fromRGB(86,128,201) else Color3.fromRGB(46,72,128)
+	blockRemote:FireServer(active)
+end
+blockButton.InputBegan:Connect(function(input)
+	if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then setBlock(true) end
+end)
+blockButton.InputEnded:Connect(function(input)
+	if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then setBlock(false) end
+end)
+UIS.InputEnded:Connect(function(input)
+	if input.KeyCode==Enum.KeyCode.F then setBlock(false) end
+end)
 UIS.InputBegan:Connect(function(input,processed)
 	if processed then return end
 	if input.KeyCode==Enum.KeyCode.Q then attack()
 	elseif input.KeyCode==Enum.KeyCode.R then if not dialogue.Visible and not intro.Visible and not journal.Visible then skillRemote:FireServer() end
 	elseif input.KeyCode==Enum.KeyCode.LeftShift then if not intro.Visible and not dialogue.Visible and not journal.Visible then dashRemote:FireServer() end
+	elseif input.KeyCode==Enum.KeyCode.F then setBlock(true)
 	elseif input.KeyCode==Enum.KeyCode.J and introDone then journal.Visible=not journal.Visible refresh() end
 end)
 
@@ -310,6 +334,8 @@ refresh=function()
 	journalButton.Visible=gameplay and not dialogue.Visible and not ending.Visible
 	local controls=gameplay and not dialogue.Visible and not journal.Visible and not ending.Visible
 	attackButton.Visible=controls skillButton.Visible=controls dashButton.Visible=controls
+	blockButton.Visible=controls and classId=="Guardian"
+	if not blockButton.Visible then setBlock(false) end
 	if index<=5 then
 		heading.Text="MISSÃO "..index.." / 5 · "..Chapter.Quests[index].title
 		objective.Text=Chapter.Quests[index].objective..(if index==3 then "  ("..tostring(player:GetAttribute("RuneCount") or 0).."/3)" elseif index==4 then "  ("..tostring(player:GetAttribute("SealProgress") or 0).."/3)" else "")

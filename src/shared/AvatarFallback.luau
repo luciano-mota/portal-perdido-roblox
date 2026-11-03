@@ -128,19 +128,46 @@ function Fallback.init()
 			local dashStarted=character:GetAttribute("PortalDashStarted")
 			local dashProgress=if typeof(dashStarted)=="number" then (time-dashStarted)/Motion.Timing.Dash.duration else 2
 			local dashing=dashProgress>=0 and dashProgress<=1
+			-- Defesa (atributo do jogador, replicado): entra rápido e sai suave.
+			local blockingNow=actor.player:GetAttribute("Blocking")==true
+			actor.block=(actor.block or 0)+((if blockingNow then 1 else 0)-(actor.block or 0))*(1-math.exp(-dt*(if blockingNow then 16 else 8)))
+			local striking=progress>=0 and progress<=1
 			-- A habilidade usa o mesmo caminho de "ataque" para travar a mira e sobrepor a parte superior.
-			local attacking=(progress>=0 and progress<=1) or skilling or dashing
+			local attacking=striking or skilling or dashing or actor.block>0.02
 			local root=character:FindFirstChild("HumanoidRootPart")
 			if actor.player==Players.LocalPlayer then
 				local aim=character:GetAttribute("PortalAimPosition")
-				if attacking and root and root:IsA("BasePart") and typeof(aim)=="Vector3" then
+				if (striking or skilling) and root and root:IsA("BasePart") and typeof(aim)=="Vector3" then
 					if actor.autoRotateBefore==nil then actor.autoRotateBefore=actor.humanoid.AutoRotate end
 					actor.humanoid.AutoRotate=false
 					local delta=Vector3.new(aim.X-root.Position.X,0,aim.Z-root.Position.Z)
 					if delta.Magnitude>0.1 then
-						local rotation=root.CFrame.Rotation:Lerp(CFrame.lookAt(Vector3.zero,delta),1-math.exp(-dt*24))
+						-- Postura da classe (o arqueiro fica de lado, ombro esquerdo para o alvo).
+						local stanceClass=if skilling then character:GetAttribute("PortalSkillClass") else character:GetAttribute("PortalAttackClass")
+						local yaw=Motion.StanceYaw[stanceClass or ""] or 0
+						local rotation=root.CFrame.Rotation:Lerp(CFrame.lookAt(Vector3.zero,delta)*CFrame.Angles(0,yaw,0),1-math.exp(-dt*20))
 						root.CFrame=CFrame.new(root.Position)*rotation
 					end
+				elseif blockingNow and root and root:IsA("BasePart") then
+					-- Defendendo: o escudo acompanha a ameaça mais próxima (o servidor só bloqueia golpes de frente).
+					local nearest,best=nil,26
+					local enemies=workspace:FindFirstChild("PortalEnemies")
+					if enemies then
+						for _,enemy in enemies:GetChildren() do
+							if enemy:IsA("Model") and (enemy:GetAttribute("Health") or 0)>0 and enemy.PrimaryPart then
+								local d=(enemy.PrimaryPart.Position-root.Position).Magnitude
+								if d<best then best=d nearest=enemy.PrimaryPart.Position end
+							end
+						end
+					end
+					if nearest then
+						if actor.autoRotateBefore==nil then actor.autoRotateBefore=actor.humanoid.AutoRotate end
+						actor.humanoid.AutoRotate=false
+						local delta=Vector3.new(nearest.X-root.Position.X,0,nearest.Z-root.Position.Z)
+						if delta.Magnitude>0.1 then
+							root.CFrame=CFrame.new(root.Position)*root.CFrame.Rotation:Lerp(CFrame.lookAt(Vector3.zero,delta),1-math.exp(-dt*14))
+						end
+					elseif actor.autoRotateBefore~=nil then actor.humanoid.AutoRotate=actor.autoRotateBefore actor.autoRotateBefore=nil end
 				elseif actor.autoRotateBefore~=nil then actor.humanoid.AutoRotate=actor.autoRotateBefore actor.autoRotateBefore=nil end
 			end
 			local equipment=character:FindFirstChild("ClassEquipment")
@@ -149,19 +176,43 @@ function Fallback.init()
 			if bowJoint and bowJoint:IsA("Motor6D") and bowJoint.Part0 and root and root:IsA("BasePart") then
 				bowJoint.Transform=bowJoint.Part0.CFrame.Rotation:Inverse()*root.CFrame.Rotation*CFrame.Angles(0,-math.pi/2,0)
 			end
-			-- Escudo: gira suavemente para a guarda durante o combate do Guardião e volta ao repouso.
-			local holder=equipment and equipment:FindFirstChild("ShieldMount")
-			local shieldJoint=holder and holder:FindFirstChild("ShieldOrientation")
-			if shieldJoint and shieldJoint:IsA("Motor6D") then
-				local guardTransform=holder:GetAttribute("GuardTransform")
-				local guarding=attacking or actor.combat
-				actor.guard=(actor.guard or 0)+((if guarding then 1 else 0)-(actor.guard or 0))*(1-math.exp(-dt*(if guarding then 18 else 6)))
-				if typeof(guardTransform)=="CFrame" then shieldJoint.Transform=CFrame.identity:Lerp(guardTransform,actor.guard) end
+			-- Flecha na mão do arqueiro: aparece ao tirá-la da aljava e some ao soltar.
+			local attackClassNow=character:GetAttribute("PortalAttackClass")
+			local skillClassNow=character:GetAttribute("PortalSkillClass")
+			local holdingArrow=(striking and attackClassNow=="Explorer" and progress>0.18 and progress<Motion.Timing.Explorer.release)
+				or (skilling and skillClassNow=="Explorer" and skillProgress>0.13 and skillProgress<0.48)
+			local nocked=(striking and progress>0.36 and progress<Motion.Timing.Explorer.release) or (skilling and skillProgress>0.3 and skillProgress<0.48)
+			local hand=character:FindFirstChild("RightHand")
+			local grip=equipment and equipment:FindFirstChild("BowGrip")
+			if holdingArrow and hand and hand:IsA("BasePart") then
+				local arrow=actor.handArrow
+				if not arrow or not arrow.Parent then
+					local folder=workspace:FindFirstChild("PortalClientEffects")
+					if folder then
+						arrow=Instance.new("Model") arrow.Name="HandArrow"
+						local shaft=Art.part(arrow,"Shaft",Vector3.new(0.06,0.06,1.8),CFrame.identity,Color3.fromRGB(171,137,87),Enum.Material.Wood)
+						local head=Art.part(arrow,"Head",Vector3.new(0.13,0.13,0.3),CFrame.new(0,0,-1.0),Color3.fromRGB(196,206,216),Enum.Material.Metal,Enum.PartType.Ball)
+						local feather=Art.part(arrow,"Fletching",Vector3.new(0.24,0.03,0.4),CFrame.new(0,0,0.75),Color3.fromRGB(231,224,206),Enum.Material.Fabric,Enum.PartType.Ball)
+						for _,piece in {shaft,head,feather} do piece.CastShadow=false end
+						arrow.PrimaryPart=shaft
+						arrow.Parent=folder
+						actor.handArrow=arrow
+					end
+				end
+				if arrow and arrow.PrimaryPart then
+					-- Encaixada: da mão da corda em direção ao arco. Antes disso: segura pela ponta das penas.
+					local nockPoint=hand.Position
+					local towards=if nocked and grip and grip:IsA("BasePart") then grip.Position else hand.Position-hand.CFrame.UpVector
+					if (towards-nockPoint).Magnitude>0.05 then
+						arrow:PivotTo(CFrame.lookAt(nockPoint,towards)*CFrame.new(0,0,-0.75))
+					end
+				end
+			elseif actor.handArrow and actor.handArrow.Parent then
+				actor.handArrow:Destroy() actor.handArrow=nil
 			end
 			if equipment and (attacking or actor.combat) then
-				local attackClass=character:GetAttribute("PortalAttackClass")
-				local striking=progress>=0 and progress<=1
-				local drawing=(striking and progress<Motion.Timing.Explorer.release) or (skilling and skillProgress<0.48)
+				local attackClass=attackClassNow
+				local drawing=nocked
 				-- Brilho do cristal: cresce enquanto carrega e diminui depois de lançar.
 				local charge=if striking and attackClass=="Artificer" then math.clamp(progress/Motion.Timing.Artificer.release,0,1)*(if progress<Motion.Timing.Artificer.release then 1 else math.max(0,1-(progress-Motion.Timing.Artificer.release)*4)) else 0
 				if skilling and character:GetAttribute("PortalSkillClass")=="Artificer" then charge=math.max(charge,math.clamp(skillProgress/0.45,0,1)*(if skillProgress<0.55 then 1 else 0)) end
@@ -170,7 +221,7 @@ function Fallback.init()
 					elseif piece:IsA("BasePart") and piece.Name=="BowString" then piece.Transparency=if drawing then 1 else 0
 					elseif piece:IsA("BasePart") and piece.Name=="SwordBlade" then
 						local trail=piece:FindFirstChildOfClass("Trail")
-						if trail then trail.Enabled=striking and attackClass=="Guardian" and progress>0.26 and progress<0.62 end
+						if trail then trail.Enabled=striking and attackClass=="Guardian" and progress>0.32 and progress<0.7 end
 					elseif piece:IsA("BasePart") and piece.Name=="FocusShell" then
 						local base=piece:GetAttribute("BaseSize")
 						if typeof(base)~="Vector3" then base=piece.Size piece:SetAttribute("BaseSize",base) end
@@ -181,7 +232,9 @@ function Fallback.init()
 					end
 				end
 			end
-			if not actor.animate and not attacking and not actor.combat then continue end
+			-- Guardião mantém o laço ativo: a mão do escudo é corrigida também fora do combate.
+			local persistent=actor.player:GetAttribute("ClassId")=="Guardian" and character:FindFirstChild("ClassEquipment")~=nil
+			if not actor.animate and not attacking and not actor.combat and not persistent then continue end
 			local speed=if root and root:IsA("BasePart") then Vector3.new(root.AssemblyLinearVelocity.X,0,root.AssemblyLinearVelocity.Z).Magnitude else 0
 			local targetStride=math.clamp(speed/16,0,1)
 			actor.stride+=(targetStride-actor.stride)*(1-math.exp(-dt*12))
@@ -190,26 +243,39 @@ function Fallback.init()
 			local state=actor.humanoid:GetState()
 			local airborne=state==Enum.HumanoidStateType.Freefall or state==Enum.HumanoidStateType.Jumping
 			local classId=character:GetAttribute("PortalAttackClass") or actor.player:GetAttribute("ClassId") or "Guardian"
+			local skillClass=character:GetAttribute("PortalSkillClass") or classId
+			local ctx={
+				classId=if skilling then skillClass else classId,
+				attack=if striking then progress else nil,
+				combo=character:GetAttribute("PortalCombo") or 1,
+				skill=if skilling then skillProgress else nil,
+				dash=if dashing then dashProgress else nil,
+				blocking=if actor.block>0.02 then actor.block else nil,
+			}
 			for _,joint in actor.joints do
 				if not joint.Parent then continue end
 				local name=joint.Name:gsub(" ",""):lower()
-				local skillClass=character:GetAttribute("PortalSkillClass") or classId
-				local target=Motion.pose(name,actor.phase,actor.stride,airborne,if skilling then skillClass else classId,if progress>=0 and progress<=1 then progress else nil,time,if skilling then skillProgress else nil,if dashing then dashProgress else nil)
-				if not actor.animate and not attacking then target=CFrame.identity end
+				local overlay=Motion.overlay(name,ctx)
 				-- Calibração no Studio: atributo "PoseOverride_<articulação>" (CFrame) substitui a pose.
 				if IS_STUDIO then
 					local override=character:GetAttribute("PoseOverride_"..name)
-					if typeof(override)=="CFrame" then target=override end
+					if typeof(override)=="CFrame" then overlay=override end
 				end
 				local previous=actor.poses[joint] or CFrame.identity
-				local pose=previous:Lerp(target,1-math.exp(-dt*22))
+				local pose=previous:Lerp(overlay or CFrame.identity,1-math.exp(-dt*22))
 				actor.poses[joint]=pose
-				if actor.animate then joint.Transform=pose
-				elseif name:find("shoulder") or name:find("elbow") or name:find("wrist") or name=="waist" then
+				if actor.animate then
+					-- Sem animação nativa: caminhada própria; o combate substitui braços e tronco.
+					local upper=name:find("shoulder") or name:find("elbow") or name:find("wrist") or name=="waist"
+					local walk=Motion.walk(name,actor.phase,actor.stride,airborne,time)
+					joint.Transform=if overlay and upper then pose else walk*pose
+				else
+					-- Com animação nativa: o combate é somado sobre ela (inclui avanço e joelhos).
 					joint.Transform=joint.Transform*pose
 				end
 			end
-			actor.combat=attacking or (actor.combat and progress<1.25)
+			if attacking then actor.lastActive=time end
+			actor.combat=attacking or (time-(actor.lastActive or 0)<0.45)
 
 		end
 	end)

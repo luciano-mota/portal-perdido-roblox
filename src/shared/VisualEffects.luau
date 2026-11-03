@@ -47,6 +47,26 @@ local function burst(position: Vector3,color: Color3,size: number,duration: numb
 	TweenService:Create(orb,TweenInfo.new(duration),{Size=Vector3.new(size*3,size*3,size*3),Transparency=1}):Play()
 end
 
+-- Clarão de luz no foco arcano: núcleo branco, halo colorido, raios e luz forte que se apaga.
+local function flash(position: Vector3,color: Color3,scale: number)
+	local core=Art.part(container,"ArcaneFlash",Vector3.new(0.4,0.4,0.4)*scale,CFrame.new(position),Color3.fromRGB(255,252,245),Enum.Material.Neon,Enum.PartType.Ball)
+	core.CastShadow=false
+	local halo=Art.part(container,"ArcaneHalo",Vector3.new(0.8,0.8,0.8)*scale,CFrame.new(position),color,Enum.Material.Neon,Enum.PartType.Ball)
+	halo.CastShadow=false halo.Transparency=0.35
+	local light=Instance.new("PointLight") light.Color=color light.Range=14*scale light.Brightness=5 light.Shadows=false light.Parent=core
+	TweenService:Create(core,TweenInfo.new(0.18,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=Vector3.new(1.6,1.6,1.6)*scale,Transparency=1}):Play()
+	TweenService:Create(halo,TweenInfo.new(0.3,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=Vector3.new(3.4,3.4,3.4)*scale,Transparency=1}):Play()
+	TweenService:Create(light,TweenInfo.new(0.32),{Brightness=0,Range=4}):Play()
+	for i=1,8 do
+		local direction=CFrame.Angles(0,i*math.pi/4,(i%2)*0.6-0.3)
+		local ray=Art.part(container,"ArcaneRay",Vector3.new(0.06,0.06,1.2*scale),CFrame.new(position)*direction*CFrame.new(0,0,-0.6*scale),Color3.fromRGB(255,245,255),Enum.Material.Neon)
+		ray.CastShadow=false ray.Transparency=0.15
+		TweenService:Create(ray,TweenInfo.new(0.22),{Size=Vector3.new(0.02,0.02,2.6*scale),CFrame=CFrame.new(position)*direction*CFrame.new(0,0,-1.5*scale),Transparency=1}):Play()
+		Debris:AddItem(ray,0.3)
+	end
+	Debris:AddItem(core,0.4) Debris:AddItem(halo,0.4)
+end
+
 local function equipmentPart(character: Model?,name: string): BasePart?
 	local equipment=character and character:FindFirstChild("ClassEquipment")
 	local piece=equipment and equipment:FindFirstChild(name)
@@ -87,6 +107,11 @@ function FX.play(data: any)
 		local actor=typeof(data.userId)=="number" and Players:GetPlayerByUserId(data.userId)
 		local timing=Motion.Timing[data.classId] or Motion.Timing.Guardian
 		if actor and actor.Character then
+			-- Combo do Guardião: golpes seguidos (até 1,3 s) alternam diagonal, horizontal e estocada.
+			local last=actor.Character:GetAttribute("PortalAttackStarted")
+			local combo=actor.Character:GetAttribute("PortalCombo") or 1
+			combo=if typeof(last)=="number" and os.clock()-last<1.3 then combo%3+1 else 1
+			actor.Character:SetAttribute("PortalCombo",combo)
 			actor.Character:SetAttribute("PortalAimPosition",data.position)
 			actor.Character:SetAttribute("PortalAttackStarted",os.clock())
 			actor.Character:SetAttribute("PortalAttackClass",data.classId)
@@ -109,6 +134,7 @@ function FX.play(data: any)
 			else
 				local focus=equipmentPart(model,"ArcaneFocus")
 				local origin=if focus then focus.Position else data.origin
+				flash(origin,data.color,1)
 				local distance=(data.position-origin).Magnitude
 				if distance<0.5 then return end
 				local orb=Art.part(container,"ArcaneBolt",Vector3.new(0.75,0.75,0.75),CFrame.new(origin),data.color,Enum.Material.Neon,Enum.PartType.Ball)
@@ -168,8 +194,10 @@ function FX.play(data: any)
 				end)
 			end)
 		else
-			task.delay(duration*0.55,function()
+			task.delay(duration*0.5,function()
 				if not container.Parent then return end
+				local focus=equipmentPart(model,"ArcaneFocus")
+				flash(if focus then focus.Position else data.position,data.color,1.6)
 				-- Pulso: onda de choque no alcance real (26 studs), coluna de luz e clarão.
 				-- Translúcidos: a área fica legível sem cobrir o combate.
 				ring(data.position-Vector3.new(0,2.5,0),data.radius,data.color,0.55,nil,0.78)
@@ -181,6 +209,20 @@ function FX.play(data: any)
 				burst(data.position,data.color,1.6,0.35)
 			end)
 		end
+	elseif data.kind=="block" then
+		-- Golpe aparado: faíscas douradas na face do escudo.
+		local actor=typeof(data.userId)=="number" and Players:GetPlayerByUserId(data.userId)
+		local shield=equipmentPart(actor and actor.Character,"AstralShield")
+		local at=if shield then shield.Position else data.position
+		local normal=if shield then shield.CFrame.RightVector else Vector3.new(0,0,-1)
+		for i=1,7 do
+			local dir=(normal+Vector3.new(math.cos(i*0.9)*0.7,math.sin(i*1.3)*0.7,math.sin(i*0.9)*0.7)).Unit
+			local spark=Art.part(container,"BlockSpark",Vector3.new(0.06,0.06,0.5),CFrame.lookAt(at,at+dir),Color3.fromRGB(255,214,120),Enum.Material.Neon)
+			spark.CastShadow=false
+			TweenService:Create(spark,TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{CFrame=CFrame.lookAt(at+dir*1.6,at+dir*3),Transparency=1}):Play()
+			Debris:AddItem(spark,0.3)
+		end
+		burst(at,Color3.fromRGB(255,236,180),0.7,0.2)
 	elseif #container:GetChildren()>60 then return
 	elseif data.kind=="damage" then
 		local anchor=part(data.position,Color3.new(1,1,1),Vector3.new(0.1,0.1,0.1),nil,0.8) anchor.Transparency=1

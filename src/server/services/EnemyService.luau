@@ -63,6 +63,8 @@ local function makeRecord(definition: any)
 	model:SetAttribute("MaxHealth",kind.health)
 	model:SetAttribute("Phase",1)
 	local root=model.PrimaryPart :: BasePart
+	-- Corpo lógico sólido: jogadores não atravessam a criatura (a malha visual continua sem colisão).
+	root.CanCollide=true
 	Art.label(root,kind.name,nil,Color3.fromRGB(234,224,202),if definition.kind=="Boss" then 11 else 5)
 	records[definition.id]={definition=definition,stats=kind,model=model,root=root,origin=origin,hp=kind.health,max=kind.health,phase=1,contributors={},casting=false,nextCast=0,slowUntil=0,engaged=false}
 end
@@ -73,13 +75,33 @@ function Service.isAlive(id: string): boolean
 end
 
 local function hurtPlayer(player: Player,amount: number,position: Vector3)
-	local _,humanoid=playerRoot(player)
-	if not humanoid then return end
+	local root,humanoid=playerRoot(player)
+	if not humanoid or not root then return end
 	local shield=player:GetAttribute("ShieldUntil")
 	local reduced=typeof(shield)=="number" and shield>workspace:GetServerTimeNow()
-	local damage=if reduced then math.floor(amount*0.35) else amount
+	local factor=if reduced then 0.35 else 1
+	-- Bloqueio com escudo (Guardião): só vale para golpes vindos da frente (cone de ~140°).
+	local blocked=false
+	if player:GetAttribute("Blocking")==true then
+		local toHit=Vector3.new(position.X-root.Position.X,0,position.Z-root.Position.Z)
+		local look=Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z)
+		if toHit.Magnitude<1.5 or (look.Magnitude>0.1 and look.Unit:Dot(toHit.Unit)>0.35) then blocked=true factor=math.min(factor,0.15) end
+	end
+	local damage=math.floor(amount*factor)
 	humanoid:TakeDamage(damage)
-	notify:FireClient(player,{kind="hurt",amount=damage,shielded=reduced,position=position})
+	notify:FireClient(player,{kind="hurt",amount=damage,shielded=reduced,blocked=blocked,position=position})
+	if blocked then notify:FireAllClients({kind="block",userId=player.UserId,position=root.Position}) end
+end
+
+-- Defesa com escudo: o cliente pede, o servidor valida classe/vida e aplica a lentidão.
+local blockSpeed=9
+local function setBlocking(player: Player,wanted: any)
+	local root,humanoid=playerRoot(player)
+	local p=Data.get(player)
+	local active=wanted==true and root~=nil and humanoid~=nil and p~=nil and p.classId=="Guardian"
+	if (player:GetAttribute("Blocking")==true)==active then return end
+	player:SetAttribute("Blocking",active)
+	if humanoid then humanoid.WalkSpeed=if active then blockSpeed else 16 end
 end
 
 local function damage(player: Player,record: any,amount: number)
@@ -147,6 +169,8 @@ local function attack(player: Player)
 	local class=Classes[p.classId]
 	local now=os.clock()
 	if now-(lastAttack[player] or -math.huge)<class.cooldown then return end
+	-- Atacar abaixa o escudo.
+	if player:GetAttribute("Blocking")==true then setBlocking(player,false) end
 	lastAttack[player]=now
 	local enemy=targets(player,class.range)[1]
 	local point=if enemy then enemy.root.Position else root.Position+root.CFrame.LookVector*8
@@ -269,9 +293,12 @@ local function navigate(record: any,wanted: Vector3): Vector3?
 	return nil
 end
 
-function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRemote: RemoteEvent,notifyRemote: RemoteEvent,questService: any)
+function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRemote: RemoteEvent,notifyRemote: RemoteEvent,questService: any,blockRemote: RemoteEvent?)
 	notify=notifyRemote quests=questService
 	for _, definition in Chapter.Encounters do makeRecord(definition) end
+	if blockRemote then blockRemote.OnServerEvent:Connect(setBlocking) end
+	Players.PlayerAdded:Connect(function(player) player.CharacterAdded:Connect(function() player:SetAttribute("Blocking",false) end) end)
+	for _, player in Players:GetPlayers() do player.CharacterAdded:Connect(function() player:SetAttribute("Blocking",false) end) end
 	attackRemote.OnServerEvent:Connect(attack)
 	skillRemote.OnServerEvent:Connect(skill)
 	dashRemote.OnServerEvent:Connect(dash)
@@ -307,7 +334,9 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 			local boss=r.definition.kind=="Boss"
 			local hitRange=if boss then 42 elseif r.definition.kind=="Wisp" then 25 else r.stats.radius+2
 			if target and distance<=hitRange and os.clock()>=r.nextCast and (boss or lineOfSight(target,r)) then cast(r,target :: Player) continue end
-			if delta.Magnitude>(if target then 5 else 0.3) then
+			-- Para antes de encostar: metade da largura do corpo lógico + espaço do jogador.
+			local stopDistance=if target then math.max(4.5,r.root.Size.X*0.5+2.5) else 0.3
+			if delta.Magnitude>stopDistance then
 				local speed=r.stats.speed*(if r.slowUntil>os.clock() then 0.4 else 1)
 				local nextPoint=navigate(r,wanted)
 				if not nextPoint then if r.motion then r.motion:Cancel() end continue end

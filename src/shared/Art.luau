@@ -100,7 +100,7 @@ function Art.npc(parent: Instance, position: Vector3): Model
 				if item:IsA("LuaSourceContainer") then item:Destroy()
 				elseif item:IsA("BasePart") then item.Anchored=false item.CanCollide=false item.CanTouch=false item.Massless=true end
 			end
-			root.Anchored=true
+			root.Anchored=true root.CanCollide=true -- jogadores não atravessam a Ilyra
 			local h=npc:FindFirstChildOfClass("Humanoid")
 			if h then h.DisplayDistanceType=Enum.HumanoidDisplayDistanceType.None h.AutoRotate=false end
 			npc:PivotTo(CFrame.new(position)*CFrame.Angles(0,math.pi,0))
@@ -467,29 +467,48 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 	equip("Crest",Vector3.new(0.35,0.5,0.15),CFrame.new(0,0.4,-0.65),gold,Enum.Material.Metal,Enum.PartType.Ball)
 	if classId=="Guardian" then
 		-- Escudo redondo azul com aro e estrela de oito pontas dourados (referência guardian-reference-v1).
-		-- Preso ao antebraço como um escudo real, com a face para fora do braço: em repouso fica ao
-		-- lado do corpo; com o antebraço em guarda, a face vira para a frente. Sem antebraço
-		-- (boneco da seleção), usa a mão como antes. Peças em coordenadas do escudo (face = −Z).
+		-- Preso ao antebraço como um escudo real: o antebraço corre ao longo do eixo Y do escudo,
+		-- logo atrás dele, e duas correias de couro o prendem. Em repouso a face fica para fora,
+		-- ao lado do corpo; na defesa (CharacterMotion) o braço cruza o peito e a face vai para a
+		-- frente. Sem antebraço (boneco da seleção) usa a mão. Coordenadas do escudo: face = −Z,
+		-- antebraço em (0, 0,05, +0,45).
 		local forearm=character:FindFirstChild("LeftLowerArm")
 		local mount: Instance=left
 		local shieldFrame=CFrame.new(-0.25,0,-0.33)
+		-- Malha visível da manopla medida por raycast no rig gerado: raio ≈ 0,25 e comprimento útil
+		-- de −0,3 a +0,3 no eixo Y do antebraço (a caixa da peça é bem maior que a malha).
+		local ARM_RADIUS=0.27
+		local SHIELD_OFFSET=ARM_RADIUS+0.09 -- verso do escudo encostado na manopla
 		if forearm and forearm:IsA("BasePart") then
-			-- Suporte articulado: em repouso a face aponta para fora do braço (ao lado do corpo);
-			-- em guarda, AvatarFallback gira o motor "ShieldOrientation" para a rotação medida no Play
-			-- (antebraço em guarda → face para a frente). O mesmo padrão do BowOrientation do arco.
-			local rest=CFrame.Angles(0,math.pi/2,0)
-			local guard=CFrame.Angles(-2.39,0.03,-0.62)
-			local holder=equip("ShieldMount",Vector3.new(0.05,0.05,0.05),CFrame.new(-0.42,-0.05,0)*rest,iron,nil,nil,forearm)
-			holder.Transparency=1
-			local weld=holder:FindFirstChildOfClass("WeldConstraint") if weld then weld:Destroy() end
-			local joint=Instance.new("Motor6D") joint.Name="ShieldOrientation" joint.Part0=forearm joint.Part1=holder
-			joint.C0=forearm.CFrame:ToObjectSpace(holder.CFrame) joint.Parent=holder
-			holder:SetAttribute("GuardTransform",rest:Inverse()*guard)
-			mount=holder shieldFrame=CFrame.identity
+			mount=forearm
+			shieldFrame=CFrame.new(-SHIELD_OFFSET,-0.05,0)*CFrame.Angles(0,math.pi/2,0)
 		end
 		local face=CFrame.Angles(0,math.pi/2,0) -- eixo do cilindro ao longo da normal do escudo
 		local royal=Color3.fromRGB(38,58,132)
 		local steel=Color3.fromRGB(196,206,216)
+		if mount==forearm then
+			-- Verso de couro com borda dourada, correias que abraçam o antebraço e alça para a mão.
+			equip("ShieldBack",Vector3.new(0.03,2.12,2.12),shieldFrame*CFrame.new(0,0,0.095)*face,Color3.fromRGB(96,68,45),Enum.Material.Leather,Enum.PartType.Cylinder,mount)
+			local strapColor=Color3.fromRGB(70,48,32)
+			-- Eixos: X do escudo ↔ Z do antebraço; Z do escudo ↔ X do antebraço.
+			-- Laço de couro rente à manopla: laterais do verso até além do braço e travessa por cima.
+			local half=ARM_RADIUS+0.02
+			local armCenter=SHIELD_OFFSET
+			local far=armCenter+ARM_RADIUS+0.03
+			for _,y in {0.23,-0.13} do
+				for _,sx in {-1,1} do
+					equip("ShieldStrap",Vector3.new(0.045,0.15,far-0.08),shieldFrame*CFrame.new(sx*half,y,0.08+(far-0.08)/2),strapColor,Enum.Material.Leather,nil,mount)
+				end
+				equip("ShieldStrap",Vector3.new(half*2+0.045,0.15,0.045),shieldFrame*CFrame.new(0,y,far),strapColor,Enum.Material.Leather,nil,mount)
+				equip("StrapBuckle",Vector3.new(0.12,0.18,0.05),shieldFrame*CFrame.new(half*0.45,y,far+0.03),gold,Enum.Material.Metal,nil,mount)
+			end
+			-- Alça onde a mão fecha (perto do punho), presa por dois pinos ao verso.
+			local handleY=-0.42
+			equip("ShieldHandle",Vector3.new(0.42,0.08,0.08),shieldFrame*CFrame.new(0,handleY,armCenter),strapColor,Enum.Material.Leather,Enum.PartType.Cylinder,mount)
+			for _,sx in {-1,1} do
+				equip("HandlePost",Vector3.new(0.05,0.05,armCenter-0.06),shieldFrame*CFrame.new(sx*0.2,handleY,0.08+(armCenter-0.08)/2),gold,Enum.Material.Metal,nil,mount)
+			end
+		end
 		equip("ShieldRim",Vector3.new(0.16,2.3,2.3),shieldFrame*face,gold,Enum.Material.Metal,Enum.PartType.Cylinder,mount)
 		equip("AstralShield",Vector3.new(0.2,2.08,2.08),shieldFrame*CFrame.new(0,0,-0.04)*face,royal,Enum.Material.Metal,Enum.PartType.Cylinder,mount)
 		for i=0,3 do

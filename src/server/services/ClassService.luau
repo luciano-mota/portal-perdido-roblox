@@ -48,7 +48,7 @@ local function apply(player: Player, character: Model, moveToCheckpoint: boolean
 	local templateName=profile.classId and templates[profile.classId]
 	if templateName and not character:GetAttribute("PortalGeneratedRig") then
 		local template=game:GetService("ServerStorage"):FindFirstChild(templateName)
-		if template and template:IsA("Model") and template:FindFirstChild("HumanoidRootPart") and template:FindFirstChildOfClass("Humanoid") then
+		if template and template:IsA("Model") and Art.templateReady(template) and template:FindFirstChild("HumanoidRootPart") and template:FindFirstChildOfClass("Humanoid") then
 			local replacement=template:Clone()
 			replacement.Name=player.Name
 			replacement:SetAttribute("PortalGeneratedRig",true)
@@ -105,7 +105,7 @@ local function publishPreviews()
 	local folder=Instance.new("Folder") folder.Name="ClassPreviews"
 	for classId,templateName in templates do
 		local template=game:GetService("ServerStorage"):FindFirstChild(templateName)
-		if template and template:IsA("Model") then
+		if template and template:IsA("Model") and Art.templateReady(template) then
 			local preview=template:Clone()
 			preview.Name=classId
 			for _,item in preview:GetDescendants() do

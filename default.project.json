@@ -8,7 +8,9 @@
       "ArtificerTemplate": { "$path": "assets/characters/models/artificer-generated-v1.rbxm" },
       "IlyraTemplate": { "$path": "assets/characters/models/ilyra-generated-v1.rbxm" },
       "GuardianTemplate": { "$path": "assets/characters/models/guardian-generated-v1.rbxm" },
-      "RootGuardianTemplate": { "$path": "assets/characters/models/root-guardian-generated-v1.rbxm" }
+      "RootGuardianTemplate": { "$path": "assets/characters/models/root-guardian-generated-v1.rbxm" },
+      "VoidEchoTemplate": { "$path": "assets/characters/models/void-echo-generated-v1.rbxm" },
+      "ThornStalkerTemplate": { "$path": "assets/characters/models/thorn-stalker-generated-v1.rbxm" }
     },
     "ReplicatedStorage": {
       "Shared": {

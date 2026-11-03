@@ -289,7 +289,7 @@ refresh=function()
 	coins.Text="Moedas: "..tostring(player:GetAttribute("Coins") or 0).."\n"..(if player:GetAttribute("DataStatus")=="Saved" then "Salvo" elseif player:GetAttribute("DataStatus")=="StudioMemory" then "Progresso temporário" else "Não salvo")
 	for i,q in Chapter.Quests do entries[i].Text=(if index>i then "CONCLUÍDA   " elseif index==i then "EM CURSO   " else "A SEGUIR   ")..q.title entries[i].TextColor3=if index>i then teal elseif index==i then amber else Color3.fromRGB(130,151,160) end
 	local status=player:GetAttribute("DataStatus")
-	local saving=if status=="Saved" then "Progresso salvo." elseif status=="StudioMemory" then "Studio: progresso temporário desta sessão." elseif status=="Loading" then "Carregando progresso…" else "Salvamento indisponível; progresso temporário."
+	local saving=if status=="Saved" then "Progresso salvo." elseif status=="Pending" then "Aguardando salvamento automático…" elseif status=="StudioMemory" then "Studio: progresso temporário desta sessão." elseif status=="Loading" then "Carregando progresso…" else "Salvamento indisponível; progresso temporário."
 	journalDetails.Text="Inscrições: "..tostring(player:GetAttribute("RuneCount") or 0).."/3  ·  Fragmento: "..(if player:GetAttribute("HasFragment") then "adquirido" else "não adquirido").."\n"..saving
 	updateHealth()
 end

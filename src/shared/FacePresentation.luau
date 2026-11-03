@@ -1,14 +1,25 @@
 --!strict
 -- Arte original. Prévia de pixels só no Studio; produção exige asset aprovado.
 local RunService=game:GetService("RunService")
+local ContentProvider=game:GetService("ContentProvider")
 local Face={}
 local cached: {[string]: any}={}
 local failed: {[string]: boolean}={}
-local assets: {[string]: string}={} -- Preencher somente com uploads permitidos/aprovados.
+local assets: {[string]: string}={Explorer="rbxassetid://77141053762926"}
 local previews={Explorer="ExplorerFacePixels"}
+local available: {[string]: boolean}={}
 
 local function contentFor(style: string): Content?
-	if assets[style] then return Content.fromUri(assets[style]) end
+	local asset=assets[style]
+	if asset and available[style]==nil and RunService:IsClient() then
+		available[style]=false
+		pcall(function()
+			ContentProvider:PreloadAsync({asset},function(_,status)
+				available[style]=status==Enum.AssetFetchStatus.Success
+			end)
+		end)
+	end
+	if asset and available[style] then return Content.fromUri(asset) end
 	if not RunService:IsStudio() or not RunService:IsClient() or failed[style] then return nil end
 	if cached[style] then return Content.fromObject(cached[style]) end
 	local source=previews[style]
@@ -41,7 +52,7 @@ function Face.apply(head: BasePart,style: string): boolean
 	local ok=pcall(function() decal.TextureContent=content end)
 	if not ok then decal:Destroy() return false end
 	decal:SetAttribute("FaceStyle",style)
-	decal:SetAttribute("StudioPreview",assets[style]==nil)
+	decal:SetAttribute("StudioPreview",available[style]~=true)
 	if existing then existing:Destroy() end
 	decal.Parent=head
 	return true

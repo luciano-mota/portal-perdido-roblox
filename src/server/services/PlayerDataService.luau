@@ -35,6 +35,7 @@ function Data.mutate(player: Player, change: (any) -> ())
 	if not session then return false end
 	change(session.profile)
 	session.revision+=1
+	if not session.readOnly then player:SetAttribute("DataStatus","Pending") end
 	Data.publish(player)
 	return true
 end
@@ -57,6 +58,7 @@ function Data.save(player: Player, release: boolean?)
 		else return false end
 	end
 	session.saving=true
+	local savedRevision=session.revision
 	local snapshot=HttpService:JSONDecode(HttpService:JSONEncode(session.profile))
 	local success=false
 	local failure="NETWORK"
@@ -69,7 +71,7 @@ function Data.save(player: Player, release: boolean?)
 	end
 	session.saving=false
 	if success then
-		player:SetAttribute("DataStatus","Saved")
+		player:SetAttribute("DataStatus",if session.revision==savedRevision then "Saved" else "Pending")
 	else
 		player:SetAttribute("DataStatus",if failure=="LOST_LEASE" then "SessionLost" else "SaveFailed")
 		warn("[PortalPerdido][Data] Save failed",player.UserId,failure)

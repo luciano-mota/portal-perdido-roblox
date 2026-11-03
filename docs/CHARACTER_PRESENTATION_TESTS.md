@@ -24,3 +24,7 @@ Alterações posteriores a 547fee7, registradas na mesma branch de PR #30.
 Revisão visual contínua do disparo, arte final, seis jogadores e desempenho em smartphone físico permanecem pendentes. O build Rojo passou; build não substitui teste de gameplay. Geração de avatar falhou e upload de imagem retornou `User is moderated`. Não houve mudança de conta, segurança, publicação ou compras.
 
 As novas referências e critérios visuais estão em CHARACTER_TARGETS.md. PNGs de referência locais ainda não são assets distribuídos pelo jogo.
+
+## Nova tentativa de upload
+
+O upload seguinte foi aceito, retornando `rbxassetid://77141053762926`. Entretanto, PreloadAsync no cliente do Studio retornou `Failure` (a chamada pcall concluiu sem exceção). Portanto, upload aceito não significa carregamento aprovado. FacePresentation verifica o resultado antes de substituir a apresentação: mantém prévia local no Studio ou geometria existente quando o asset falha. Build Rojo passou após a mudança. A causa da falha de entrega ainda não foi determinada.

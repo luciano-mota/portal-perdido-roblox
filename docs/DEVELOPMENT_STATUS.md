@@ -163,3 +163,18 @@ Play solo, classe escolhida pela interface real. Movimento por `Humanoid:MoveTo`
 **Defeito encontrado e corrigido:** ao renascer na Arena (que fica toda dentro do raio de 48 studs do chefe), o jogador levava dano antes de agir (150 → 96 em 1,5 s; outra vez começou com 42). `ClassService` agora adiciona `ForceField` "SpawnGrace" por 4 s ao posicionar no checkpoint. Validação com morte induzida só para teste: SpawnGrace presente, `TakeDamage(40)` manteve 110/110, proteção removida após 4,5 s e `TakeDamage(10)` → 100. Classe e rig preservados.
 
 A automação não aprova dificuldade/duração para público real; as três mortes indicam que o chefe exige atenção à esquiva, o que precisa de avaliação humana.
+
+## Acabamento visual de equipamentos e seleção — 03/11/2026 (após reinício do Studio)
+
+Studio reiniciado pelo usuário; lugar salvo como "Primeira Fase - As Cronicas do Portal Perdido.rbxl". Renderização normal. Capturas confirmaram o Guardião humanizado em jogo (cabelo dourado, armadura prateada com filetes dourados, túnica azul).
+
+Revisão por captura, com correções em `Art.equipment` e `GameClient`:
+
+- **Espada do Guardião** saía do punho na direção do antebraço, com o pomo além dos dedos (visível no golpe). Agora é montada no próprio eixo e encaixada no punho fechado; lâmina fina com sulco e ponta, guarda com remates, punho de couro e pomo. Em repouso fica abaixada à frente; no golpe Q sobe empunhada.
+- **Escudo** trocado de elipsoide com barra neon para escudo redondo azul real com aro dourado, estrela de oito pontas (elipsoides afiladas) e gema central na cor da classe.
+- **Aljava do Explorador**: cilindro escuro grande e solto virou aljava de couro nas costas, na diagonal, com aro e três flechas emplumadas.
+- **Foco da Artífice**: esfera neon grande que estourava no Bloom virou cristal pequeno (núcleo neon dentro de vidro translúcido) com PointLight suave, flutuando junto aos dedos e fora do casaco. O offset foi medido no Play (eixos da mão do rig gerado são girados em repouso). Grimório agora pende no quadril com páginas e fecho.
+- **Tela de seleção**: os retratos usavam bonecos de blocos. O servidor publica `ReplicatedStorage.ClassPreviews` (cópias ancoradas dos rigs, sem Humanoid/scripts, com equipamento) e o cliente troca o boneco por close de rosto quando disponível; o boneco antigo permanece como contingência.
+- Retrato do diálogo da Ilyra confirmado por captura (rosto enquadrado).
+
+Regressão após as mudanças: Artífice escolhida pela interface → Ilyra (missão 2) → Sentinela (missão 3, 25 moedas); 60 FPS no desktop; zero erros Luau. Memória total do processo do Studio 3996 MB após várias sessões de Play — não representa o app em celular.

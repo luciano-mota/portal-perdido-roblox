@@ -64,6 +64,22 @@ for i,id in {"Guardian","Explorer","Artificer"} do
 	local scene=Instance.new("WorldModel") scene.Parent=preview
 	local model=Art.classPreview(id,class.color) model.Parent=scene
 	local camera=Instance.new("Camera") camera.CFrame=CFrame.lookAt(Vector3.new(5,4.2,-8),Vector3.new(0,3.1,0)) camera.FieldOfView=40 camera.Parent=preview preview.CurrentCamera=camera
+	-- Troca o boneco procedural pelo rig humanizado publicado pelo servidor, quando disponível.
+	task.spawn(function()
+		local folder=ReplicatedStorage:WaitForChild("ClassPreviews",10)
+		local source=folder and folder:WaitForChild(id,5)
+		local head=source and source:FindFirstChild("Head")
+		if not source or not source:IsA("Model") or not head or not head:IsA("BasePart") then return end
+		local humanized=source:Clone()
+		humanized:PivotTo(CFrame.identity)
+		humanized.Parent=scene
+		model:Destroy()
+		local headCF=(humanized:FindFirstChild("Head") :: BasePart).CFrame
+		local h=headCF.Position
+		-- Close de rosto e ombros (o card tem ~58 px), levemente de lado, na direção do rosto.
+		camera.CFrame=CFrame.lookAt(h+headCF.LookVector*2.9+headCF.RightVector*0.55+Vector3.new(0,0.2,0),h-Vector3.new(0,0.22,0))
+		camera.FieldOfView=32
+	end)
 	b.Activated:Connect(function() choose:FireServer(id) end)
 end
 text(card,"Footer","Q atacar  ·  R habilidade  ·  Shift esquiva\nNo celular, use os botões na tela.",11,UDim2.fromOffset(20,318),UDim2.new(1,-40,0,26),Color3.fromRGB(177,195,200))

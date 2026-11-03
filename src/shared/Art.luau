@@ -349,19 +349,49 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 		for i=1,3 do
 			equip("RunicClasp",Vector3.new(0.18,0.13,0.06),CFrame.new(-0.53,0.65-i*0.38,-0.74),gold,Enum.Material.Metal)
 		end
-		equip("Grimoire",Vector3.new(0.64,0.87,0.28),CFrame.new(0.85,-0.65,0.1)*CFrame.Angles(0,0,-0.12),Color3.fromRGB(71,55,81),Enum.Material.Leather)
+		-- Grimório pendurado no quadril, com a capa rente ao corpo, páginas e fecho dourado.
+		local book=CFrame.new(0.8,-1.08,0.1)*CFrame.Angles(0,math.pi/2,-0.08)
+		equip("Grimoire",Vector3.new(0.62,0.82,0.24),book,Color3.fromRGB(71,55,81),Enum.Material.Leather)
+		equip("GrimoirePages",Vector3.new(0.6,0.76,0.2),book*CFrame.new(0.03,0,0),Color3.fromRGB(226,214,186),Enum.Material.SmoothPlastic)
+		equip("GrimoireClasp",Vector3.new(0.12,0.2,0.27),book*CFrame.new(0.3,0,0),gold,Enum.Material.Metal)
 	end
 	equip("Mantle",Vector3.new(2.1,0.35,1.2),CFrame.new(0,0.65,0),color,Enum.Material.Fabric)
 	equip("Crest",Vector3.new(0.35,0.5,0.15),CFrame.new(0,0.4,-0.65),gold,Enum.Material.Metal,Enum.PartType.Ball)
 	if classId=="Guardian" then
-		equip("AstralShield",Vector3.new(1.45,2,0.25),CFrame.new(-0.25,0,-0.35),Color3.fromRGB(76,92,118),Enum.Material.Metal,Enum.PartType.Ball,left)
-		equip("ShieldSigil",Vector3.new(0.2,1,0.1),CFrame.new(-0.25,0,-0.51),color,Enum.Material.Neon,nil,left)
-		equip("SwordBlade",Vector3.new(0.22,2.7,0.12),CFrame.new(0,1.45,-0.2),Color3.fromRGB(183,201,216),Enum.Material.Metal,nil,right)
-		equip("SwordGuard",Vector3.new(0.8,0.18,0.25),CFrame.new(0,0.05,-0.2),gold,Enum.Material.Metal,nil,right)
-		equip("SwordGrip",Vector3.new(0.15,0.65,0.15),CFrame.new(0,-0.35,-0.2),bark,Enum.Material.Leather,nil,right)
+		-- Escudo redondo azul com aro e estrela de oito pontas dourados (referência guardian-reference-v1).
+		local face=CFrame.Angles(0,math.pi/2,0) -- eixo do cilindro apontando para fora da mão
+		local royal=Color3.fromRGB(38,58,132)
+		local steel=Color3.fromRGB(196,206,216)
+		equip("ShieldRim",Vector3.new(0.16,2.3,2.3),CFrame.new(-0.25,0,-0.33)*face,gold,Enum.Material.Metal,Enum.PartType.Cylinder,left)
+		equip("AstralShield",Vector3.new(0.2,2.08,2.08),CFrame.new(-0.25,0,-0.37)*face,royal,Enum.Material.Metal,Enum.PartType.Cylinder,left)
+		for i=0,3 do
+			local long=i%2==0
+			-- Elipsoides afilam nas pontas e formam a estrela de oito pontas.
+			equip("ShieldStar",Vector3.new(if long then 0.3 else 0.2,if long then 1.75 else 1.1,0.05),CFrame.new(-0.25,0,-0.49)*CFrame.Angles(0,0,i*math.pi/4),gold,Enum.Material.Metal,Enum.PartType.Ball,left)
+		end
+		equip("ShieldSigil",Vector3.new(0.34,0.34,0.14),CFrame.new(-0.25,0,-0.52),color,Enum.Material.Neon,Enum.PartType.Ball,left)
+		-- Espada longa montada no próprio eixo (Y = lâmina) e encaixada no punho fechado:
+		-- o punho cruza a palma e a lâmina sai para frente (−Z da mão), inclinada ~20° para cima.
+		local hold=CFrame.new(0,-0.18,0)*CFrame.Angles(-1.22,0,0)
+		local function sword(name: string,size: Vector3,y: number,tint: Color3,material: Enum.Material,shape: Enum.PartType?,extra: CFrame?)
+			equip(name,size,hold*CFrame.new(0,y,0)*(extra or CFrame.identity),tint,material,shape,right)
+		end
+		sword("SwordGrip",Vector3.new(0.62,0.13,0.13),0,bark,Enum.Material.Leather,Enum.PartType.Cylinder,CFrame.Angles(0,0,math.pi/2))
+		sword("SwordPommel",Vector3.new(0.24,0.24,0.24),-0.38,gold,Enum.Material.Metal,Enum.PartType.Ball)
+		sword("SwordGuard",Vector3.new(0.86,0.12,0.16),0.37,gold,Enum.Material.Metal)
+		for _,side in {-1,1} do sword("SwordGuardCap",Vector3.new(0.16,0.16,0.16),0.37,gold,Enum.Material.Metal,Enum.PartType.Ball,CFrame.new(side*0.45,0,0)) end
+		sword("SwordBlade",Vector3.new(0.2,2.45,0.06),1.65,steel,Enum.Material.Metal)
+		sword("SwordFuller",Vector3.new(0.05,2.05,0.075),1.52,Color3.fromRGB(140,152,166),Enum.Material.Metal)
+		sword("SwordTip",Vector3.new(0.2,0.55,0.06),2.87,steel,Enum.Material.Metal,Enum.PartType.Ball)
 	elseif classId=="Explorer" then
-		equip("Quiver",Vector3.new(2,0.7,0.65),CFrame.new(0.65,0,0.8)*CFrame.Angles(0,0,1.3),bark,Enum.Material.Leather,Enum.PartType.Cylinder)
-		for i=1,3 do equip("Arrow",Vector3.new(0.06,2.5,0.06),CFrame.new(0.5+i*0.1,0.35,0.85),gold,Enum.Material.Wood) end
+		-- Aljava de couro encostada nas costas, na diagonal; flechas emplumadas saem do topo.
+		local quiver=CFrame.new(0.32,0.1,0.62)*CFrame.Angles(0,0,1.22)
+		equip("Quiver",Vector3.new(1.7,0.44,0.44),quiver,leather,Enum.Material.Leather,Enum.PartType.Cylinder)
+		equip("QuiverRim",Vector3.new(0.08,0.5,0.5),quiver*CFrame.new(0.82,0,0),gold,Enum.Material.Metal,Enum.PartType.Cylinder)
+		for i,o in {Vector2.new(0.09,0.08),Vector2.new(-0.1,0.05),Vector2.new(0,-0.1)} do
+			equip("Arrow",Vector3.new(0.5,0.05,0.05),quiver*CFrame.new(1.05,o.X,o.Y),Color3.fromRGB(150,118,80),Enum.Material.Wood,Enum.PartType.Cylinder)
+			equip("ArrowFletching",Vector3.new(0.26,0.16,0.03),quiver*CFrame.new(1.2,o.X,o.Y)*CFrame.Angles(i*1.05,0,0),if i==2 then Color3.fromRGB(171,62,49) else Color3.fromRGB(231,224,206),Enum.Material.Fabric,Enum.PartType.Ball)
+		end
 		-- O centro da empunhadura é a mão; a compensação mantém o arco vertical ao mirar.
 		local mount=equip("BowGrip",Vector3.new(0.05,0.05,0.05),CFrame.identity,bark,nil,nil,left)
 		mount.Transparency=1
@@ -385,8 +415,14 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 		end
 
 	else
-		equip("ArcaneFocus",Vector3.new(0.7,0.9,0.7),CFrame.new(0,0.25,-0.2),color,Enum.Material.Neon,Enum.PartType.Ball,right)
-		equip("FocusCage",Vector3.new(0.12,0.75,0.75),CFrame.new(0,0.25,-0.2),gold,Enum.Material.Metal,Enum.PartType.Cylinder,right)
+		-- Cristal de foco flutuando junto aos dedos, para fora do casaco e um pouco à frente.
+		-- Offset medido no Play: em repouso a mão do rig gerado fica girada (+X aponta para fora/baixo),
+		-- e este ponto cai ~1,2 stud à direita e 0,3 à frente da raiz. Neon grande antigo estourava no Bloom.
+		local focus=CFrame.new(0.42,-0.3,-0.28)
+		local core=equip("ArcaneFocus",Vector3.new(0.3,0.38,0.3),focus,color,Enum.Material.Neon,Enum.PartType.Ball,right)
+		local shell=equip("FocusShell",Vector3.new(0.56,0.66,0.56),focus,color:Lerp(Color3.new(1,1,1),0.3),Enum.Material.Glass,Enum.PartType.Ball,right)
+		shell.Transparency=0.5
+		local glow=Instance.new("PointLight") glow.Color=color glow.Range=6 glow.Brightness=1.1 glow.Shadows=false glow.Parent=core
 		equip("Harness",Vector3.new(0.3,2.2,0.1),CFrame.new(0.4,0,-0.65)*CFrame.Angles(0,0,-0.5),gold,Enum.Material.Metal)
 	end
 	if character:GetAttribute("PortalGeneratedRig") then

@@ -65,8 +65,30 @@ function Service.select(player: Player, classId: any): boolean
 	return true
 end
 
+-- Cópias estáticas dos rigs gerados para os retratos da tela de seleção (somente visual).
+local function publishPreviews()
+	local folder=Instance.new("Folder") folder.Name="ClassPreviews"
+	for classId,templateName in templates do
+		local template=game:GetService("ServerStorage"):FindFirstChild(templateName)
+		if template and template:IsA("Model") then
+			local preview=template:Clone()
+			preview.Name=classId
+			for _,item in preview:GetDescendants() do
+				if item:IsA("LuaSourceContainer") or item:IsA("Humanoid") then item:Destroy()
+				elseif item:IsA("BasePart") then item.Anchored=true item.CanCollide=false item.CanQuery=false item.CanTouch=false end
+			end
+			preview:SetAttribute("PortalGeneratedRig",true)
+			local definition=Classes[classId]
+			if definition then Art.equipment(preview,classId,definition.color) end
+			preview.Parent=folder
+		end
+	end
+	folder.Parent=ReplicatedStorage
+end
+
 function Service.init(remote: RemoteEvent)
 	remote.OnServerEvent:Connect(Service.select)
+	publishPreviews()
 end
 
 return Service

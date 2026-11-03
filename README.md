@@ -27,7 +27,7 @@ Q / ATACAR: ataque. R / habilidade: poder de classe. Shift / ESQUIVA: deslocamen
 
 Uma passagem completa com Artífice na revisão de gameplay de 02/11/2026 chegou a QuestIndex=6, fragmento=true e 200 moedas, sem duplicação ao repetir a coleta. As três classes, passadas, ataques, salto e respawn foram exercitados no Studio. A vegetação e o HUD receberam alterações posteriores; veja o escopo exato em [DEVELOPMENT_STATUS](docs/DEVELOPMENT_STATUS.md) e [PLAYTEST](docs/PLAYTEST.md).
 
-O aspecto atual ainda é procedural e provisório. Realismo final, cooperação completa, duração do capítulo e desempenho em aparelho móvel físico continuam pendentes. HTTP 403 do serviço de assets está afetando avatares/animações nativas; a contingência é visual, sem alterar controles ou conta. Emulação no desktop não comprova desempenho de celular.
+Uma passagem completa adicional com Guardião/Explorador em dois clientes validou chefe escalado para 2900 HP, crédito de apoio, selos individuais, morte/checkpoint e 200 moedas para cada um. O aspecto atual ainda é procedural e provisório. Realismo final, duração do capítulo, seis clientes e desempenho em aparelho móvel físico continuam pendentes. HTTP 403 do serviço de assets está afetando avatares/animações nativas; a contingência é visual, sem alterar controles ou conta. Emulação no desktop não comprova desempenho de celular.
 
 Nada foi publicado. Compras não foram implementadas nem ativadas.
 

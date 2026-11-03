@@ -31,7 +31,13 @@ local function lineOfSight(player: Player, record: any): boolean
 	if not root then return false end
 	local params=RaycastParams.new()
 	params.FilterType=Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances={player.Character :: Model,record.model}
+	-- Não existe PvP: companheiros não são cobertura contra ataques aliados.
+	-- A geometria do mundo continua no raio, preservando paredes/obstáculos.
+	local excluded: {Instance}={record.model}
+	for _,ally in Players:GetPlayers() do
+		if ally.Character then table.insert(excluded,ally.Character) end
+	end
+	params.FilterDescendantsInstances=excluded
 	return workspace:Raycast(root.Position,record.root.Position-root.Position,params)==nil
 end
 

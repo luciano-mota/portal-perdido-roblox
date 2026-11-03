@@ -22,8 +22,8 @@ Objetivo autorizado: completar o primeiro capítulo jogável da ideia inicial, p
 ## Em validação / a concluir antes de declarar pronto
 
 - Regressão após o acabamento visual, novas rotas de obstáculos, fontes de recuperação e aumento da vida do chefe (a primeira passagem usou 700 HP; a versão atual usa 1800 e escala cooperativa).
-- Artífice, habilidades, mortes/checkpoints, cooperação do capítulo inteiro e rejeição de pedidos inválidos.
-- Emulador em telas pequenas, qualidade gráfica, medidas sob combate, poses/armas e revisão de Output.
+- Dificuldade/duração com público real, seis clientes e casos adicionais de falhas/reconexão. A passagem Artífice solo e Guardião/Explorador em dupla está registrada abaixo.
+- Aparelho móvel físico, naturalidade final de poses/armas e acabamento artístico; resultados de emulador e medições sob combate registrados abaixo.
 - Documentação/manifesto finais e evidências no PR #30.
 
 ## Limites externos conhecidos
@@ -89,3 +89,39 @@ Medição durante o chefe, 600 frames no desktop com emulador: média 59,99 FPS,
 Capturas em docs/evidence/2026-11-02-chapter: seleção mobile de 49 px, diálogo/contingência visível, chefe em fase 2 e conclusão com Artífice. As datas/versões e o uso misto de entrada estão descritos em PLAYTEST.md.
 
 Ainda pendentes: cooperação completa na revisão atual, benchmark aquecido sob combate após arte nova, aparelho móvel físico, persistência real, naturalidade/realismo artístico final e duração do capítulo.
+
+## Cooperação completa e iluminação realista — 02/11/2026
+
+Base f00356d, com correção de linha de visão descrita abaixo. Teste local real de servidor e dois clientes: Player1 Guardião, Player2 Explorador. Arte/vegetação e HUD da revisão atual presentes.
+
+### Defeito reproduzido e corrigido
+
+O raio antigo atingiu `Workspace.Player1.UpperTorso` entre Explorador e Sentinela, impedindo o ataque. EnemyService agora exclui os personagens aliados do filtro, mantendo o cenário. Regressão: disparo através da posição do aliado reduziu Sentinela de 120 para 96. Um primeiro ensaio de parede foi inconclusivo porque o inimigo atravessou a posição da barreira; foi repetido com distância e raio confirmados. No ensaio válido, o raio atingiu `Workspace.CoopLOSWall`, RuneMoss ficou em 120 após Q e morreu somente depois de remover a barreira e atacar. Barreira temporária removida; nenhum objeto de teste incorporado à cena/código.
+
+### Passagem em dupla
+
+- Ilyra: ambos em quest 2, classes Guardian/Explorer e saúde 150/110.
+- Sentinela: Guardião usou Égide, Explorador atacou; ambos avançaram a quest 3 com 25 moedas. Apoio concedeu crédito mesmo sem golpe do Guardião.
+- Cada jogador leu Dawn/Root/Star após as derrotas compartilhadas: ambos em quest 4, três inscrições e 65 moedas.
+- Selos individuais: Player1 Dawn=1; Player2 Root primeiro foi rejeitado e permaneceu em 0, sem apagar Player1. Ambos completaram a sequência e chegaram a quest 5/100 moedas.
+- Morte induzida apenas para teste no Player2: reapareceu no checkpoint Temple com Explorer, 110 HP, três inscrições, quest 5 e 100 moedas. Progresso não foi alterado manualmente.
+- Ambos atravessaram o limiar. Chefe escalou de 1800 para 2900 HP; sequência observada 2801 → 2354 → 1889 → 1394 (fase 2) → 761 → 68 → 0. Ambos receberam BossDefeated=true.
+- Combate por Q/R com deslocamento automatizado usando Humanoid.MoveTo em percursos circulares. Não houve mudança direta de vida, dano, velocidade, moedas ou progresso para vencer. Essa automação não aprova dificuldade/duração para público real.
+- Ambos recolheram fragmento, receberam epílogo/conclusão, quest 6, HasFragment=true, checkpoint Village e 200 moedas. Repetir coleta manteve 200 para cada um. Retorno pela pedra levou ambos ao Vale e preservou a conclusão.
+- Snapshot final foi capturado após o chefe reaparecer (40 segundos): seus atributos já voltaram a 1800; as flags individuais de vitória/conclusão permaneceram. Não interpretar esse snapshot como estado instantâneo da derrota.
+- Pedidos de classe Admin e troca posterior para Artificer foram rejeitados; vinte remotes com alvo/dano/saldo falsos não afetaram chefe distante, classe Explorer ou saldo real 25. Atributo Coins alterado só no cliente foi restaurado e não mudou o saldo do servidor.
+- Sem erro de execução do jogo identificado no servidor; houve erros externos de meshes/animações e ícones de plugin.
+
+### Medida aquecida após a nova vegetação
+
+600 frames durante combate cooperativo no cliente Guardião: média 60,0006 FPS, mediana 59,9808, percentil lento 55,7063; memória total reportada pelo cliente Studio 2348 MB. Desktop com servidor/dois clientes locais, não medição de celular nem estimativa de memória do aplicativo publicado.
+
+### Realistic Lighting
+
+LightingStyle estava Soft. Agora o projeto Rojo serializa LightingStyle=Realistic e PrioritizeLightingQuality=true em `default.project.json`. Não configurar LightingStyle em script de runtime: o Studio atual exige capacidade de plugin para escrita. Uma tentativa inicial no WorldBuilder falhou, foi removida e o novo Play confirmou mapa pronto sem erro.
+
+Vista do vale comparada em RenderSettings.QualityLevel Level01 e Level21, sem mover o personagem e com HUD oculto apenas para inspeção artística. 300 frames em cada amostra: baixa média 59,9963 / mediana 60,0777 / percentil lento 55,6081; alta média 60,0035 / mediana 60,1594 / percentil lento 55,6068. Não é benchmark de GPU móvel nem promessa de fotorealismo. Qualidade automática, câmera Custom e HUD foram restaurados após o teste.
+
+Após essa configuração, Play com Guardião confirmou Ilyra → Sentinela → quest 3 e 25 moedas, sem novo erro do jogo. A passagem cooperativa completa precedeu somente essa troca de iluminação; não houve mudança adicional de combate.
+
+Pendências atuais: realismo/modelagem/animação final, teste humano de naturalidade e duração, aparelho móvel físico e persistência real. Escala de seis jogadores está implementada, mas a execução completa foi testada com dois.

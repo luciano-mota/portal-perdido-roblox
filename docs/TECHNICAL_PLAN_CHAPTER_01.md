@@ -10,7 +10,7 @@
 
 A narrativa é uma jornada curta: acidente no portal → despertar em Aetherion → encontro com Ilyra → floresta e três inscrições → templo → Guardião de Raízes → Fragmento da Aurora.
 
-**MVP comercial desejado:** 20–35 minutos na primeira jornada, três classes, um vale com vila/floresta/templo/arena, cinco missões encadeadas, três inimigos comuns, um chefão com duas fases, até seis jogadores por servidor. É uma meta de produto — atualmente só uma missão, um sentinela e um blockout estão implementados.
+**MVP comercial desejado:** 20–35 minutos na primeira jornada, três classes, um vale com vila/floresta/templo/arena, cinco missões encadeadas, três inimigos comuns, um chefão com duas fases, até seis jogadores por servidor. É uma meta de produto. A revisão atual implementa cinco missões, três inscrições, puzzle e chefe; uma passagem solo com Artífice e uma passagem com Guardião/Explorador em dupla foram testadas no Studio. Duração, arte final, aparelho físico e persistência real continuam pendentes.
 
 ### Prioridades e critérios
 
@@ -45,7 +45,7 @@ O estado decisório reside no servidor. O cliente só solicita ações, nunca es
 
 ### Dados e persistência (CPP-004)
 
-Proposta de perfil versionado (exemplo conceitual, ainda **não implementado**):
+Modelo conceitual original (a implementação atual usa schema v2 em ProfileStore; ver ARCHITECTURE.md e DEVELOPMENT_STATUS.md):
 
 \`\`\`luau
 {
@@ -119,7 +119,7 @@ Os diretórios atuais de código devem continuar intactos. \`assets/\` guarda fo
 ### Fase 0 — protótipo funcional
 - Já há evidência de Play Test MCP de movimento/classe/missão e dois jogadores em \`docs/PLAYTEST.md\`.
 - A issue #31 permanece aberta porque o travamento original ainda não foi explicado com segurança.
-- Falta persistência e há aviso de asset em Output a investigar.
+- O protocolo de perfil existe e foi testado com adapter; persistência real ainda não validada. Falhas externas de assets no Output continuam em investigação.
 
 ### Fase 1 — alpha privado
 - Cinco missões e boss implementados; DataStore estável; HUD mobile aprovado.

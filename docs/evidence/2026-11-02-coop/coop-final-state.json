@@ -1,0 +1,9 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"players\":{\"1\":{\"bossDefeated\":true,\"fragment\":true,\"name\":\"Player1\",\"checkpoint\":\"Village\",\"class\":\"Guardian\",\"quest\":6,\"coins\":200},\"2\":{\"bossDefeated\":true,\"fragment\":true,\"name\":\"Player2\",\"checkpoint\":\"Village\",\"class\":\"Explorer\",\"quest\":6,\"coins\":200}},\"bossMax\":1800,\"bossHealth\":1800,\"errors\":[]}"
+    }
+  ],
+  "isError": false
+}

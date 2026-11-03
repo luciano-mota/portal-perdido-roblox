@@ -32,7 +32,7 @@ Prompts de inscrições/selos/fragmento verificam distância e fase. Recompensas
 
 ## Cooperação e limites
 
-Inimigos são compartilhados. Crédito de derrota exige contribuição recente, personagem vivo e proximidade; Égide pode registrar apoio de seu conjurador. Vida do chefe escala no primeiro dano com participantes elegíveis, até seis. Ausência de alvo por 12 segundos reinicia o encontro. Essa implementação ainda exige teste cooperativo completo da revisão atual.
+Inimigos são compartilhados. Crédito de derrota exige contribuição recente, personagem vivo e proximidade; Égide pode registrar apoio de seu conjurador. Vida do chefe escala no primeiro dano com participantes elegíveis, até seis. Ausência de alvo por 12 segundos reinicia o encontro. Passagem completa com Guardião/Explorador em dois clientes foi validada no Studio; seis clientes, dificuldade/duração humanas e dispositivo físico ainda não foram aprovados. Aliados não bloqueiam o raycast de ataques; paredes continuam bloqueando.
 
 O protocolo de perfil foi testado com adapter determinístico, mas a integração real de DataStore permanece não comprovada: este lugar tem PlaceId=0. Falhas de carregamento não autorizam substituir perfis bons por vazios; o cliente informa progresso temporário.
 

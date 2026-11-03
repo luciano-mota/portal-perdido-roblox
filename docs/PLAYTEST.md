@@ -157,3 +157,32 @@ A captura de fase 2 é anterior à correção de estabilidade do layout: o tecla
 ![Conclusão com Artífice](evidence/2026-11-02-chapter/mobile-artificer-chapter-complete.jpg)
 
 A conclusão acima comprova o fluxo de epílogo, mas precede o ajuste final de espaçamento do texto. Ver DEVELOPMENT_STATUS.md para alterações posteriores e limites. Novo Play após a vegetação não apresentou erro Luau; falta repetir cooperação e benchmark aquecido. Não aprovar realismo final, duração, persistência real ou mobile físico por estas evidências.
+
+
+## Regressão cooperativa completa — 02/11/2026
+
+Base f00356d mais correção de LOS desta sessão, dois clientes reais e um servidor local. Guardião/Explorador completaram Ilyra, Sentinela, três inscrições individuais, puzzle individual, chefe compartilhado de 2900 HP em duas fases e fragmento. Ambos terminaram quest 6/200 moedas/fragmento=true; repetição não duplicou recompensa; retorno ao vale preservou progresso. Morte de teste antes da arena preservou classe/110 HP, inscrições, 100 moedas e checkpoint Temple.
+
+O combate aliado deixou de ser bloqueado pelo corpo do companheiro. Teste positivo: Sentinela 120 → 96 com aliado entre atacante e alvo. Teste de parede confirmado por raycast: RuneMoss permaneceu em 120 após Q, e recebeu dano depois de remover a parede. Artefato temporário removido.
+
+O Guardião obteve crédito na primeira missão ao usar Égide, sem atacar. Selos não são compartilhados: a sequência incorreta de Player2 não apagou a sequência de Player1. Remotes com classe/dano/alvo/saldo falsos não alteraram estado autoritativo.
+
+![Segunda fase em dupla](evidence/2026-11-02-coop/coop-guardian-explorer-phase2.jpg)
+
+![Guardião concluiu](evidence/2026-11-02-coop/coop-guardian-completed.jpg)
+
+![Explorador concluiu](evidence/2026-11-02-coop/coop-explorer-completed.jpg)
+
+[Snapshot do servidor após o respawn do chefe](evidence/2026-11-02-coop/coop-final-state.json). O chefe já havia reaparecido ao capturar o snapshot; o arquivo comprova os perfis concluídos, não sua vida no instante da derrota.
+
+600 frames em combate aquecido: média 60,0006 FPS, mediana 59,9808, percentil lento 55,7063. Teste no desktop com percursos Humanoid.MoveTo e ataques Q/R, não avaliação humana de dificuldade nem benchmark físico de celular.
+
+## Comparação da iluminação realista
+
+LightingStyle=Realistic serializado no projeto. Vista de spawn com RenderSettings Level01 e Level21, HUD oculto apenas para inspeção. Qualidade automática/câmera/HUD restaurados ao fim.
+
+![Qualidade baixa](evidence/2026-11-02-coop/realistic-lighting-quality01.jpg)
+
+![Qualidade alta](evidence/2026-11-02-coop/realistic-lighting-quality21.jpg)
+
+300 frames por condição, média 59,9963 e 60,0035 FPS respectivamente, no desktop. Novo teste Ilyra/Sentinela após a troca de iluminação: quest 3, 25 moedas, sem erro do jogo. Arte final e desempenho de celular físico continuam pendentes. A comparação mostra opções de renderização do Studio; não transforma a modelagem procedural em arte realista final.

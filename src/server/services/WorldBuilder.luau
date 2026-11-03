@@ -62,9 +62,20 @@ local function house(parent: Instance, p: Vector3, flip: number)
 		Art.part(m,"Roof",Vector3.new(7.5,0.5,13),CFrame.new(p+Vector3.new(x*0.55,8.8,0))*CFrame.Angles(0,0,if x>0 then -0.5 else 0.5),Color3.fromRGB(62,83,97),Enum.Material.Slate)
 	end
 	Art.part(m,"Door",Vector3.new(2.5,4.8,0.2),CFrame.new(p+Vector3.new(0,2.9,-5.12*flip)),wood,Enum.Material.WoodPlanks)
+	for _, y in {1.1,6.9} do
+		Art.part(m,"FacadeBeam",Vector3.new(11.4,0.28,0.35),CFrame.new(p+Vector3.new(0,y,-5.2*flip)),wood,Enum.Material.Wood)
+	end
+	for _, x in {-1.5,1.5} do
+		Art.part(m,"DoorPost",Vector3.new(0.3,5.2,0.4),CFrame.new(p+Vector3.new(x,3,-5.25*flip)),wood,Enum.Material.Wood)
+	end
+	Art.part(m,"DoorLintel",Vector3.new(3.3,0.35,0.4),CFrame.new(p+Vector3.new(0,5.6,-5.25*flip)),wood,Enum.Material.Wood)
+	Art.part(m,"DoorHandle",Vector3.new(0.12,0.36,0.15),CFrame.new(p+Vector3.new(0.8,2.9,-5.35*flip)),amber,Enum.Material.Metal)
 	for _, x in {-3.5,3.5} do
 		Art.part(m,"WindowFrame",Vector3.new(2.1,2.1,0.3),CFrame.new(p+Vector3.new(x,4.5,-5.15*flip)),wood,Enum.Material.Wood)
 		Art.part(m,"AmberGlass",Vector3.new(1.65,1.65,0.1),CFrame.new(p+Vector3.new(x,4.5,-5.35*flip)),amber,Enum.Material.Neon)
+		Art.part(m,"WindowMullion",Vector3.new(0.12,1.8,0.12),CFrame.new(p+Vector3.new(x,4.5,-5.44*flip)),wood,Enum.Material.Wood)
+		Art.part(m,"WindowTransom",Vector3.new(1.8,0.12,0.12),CFrame.new(p+Vector3.new(x,4.5,-5.44*flip)),wood,Enum.Material.Wood)
+		Art.part(m,"WindowSill",Vector3.new(2.5,0.22,0.7),CFrame.new(p+Vector3.new(x,3.35,-5.4*flip)),darkStone,Enum.Material.Slate)
 	end
 	Art.part(m,"Chimney",Vector3.new(2,5,2),CFrame.new(p+Vector3.new(3,9,2)),darkStone,Enum.Material.Cobblestone)
 	for i=1,3 do Art.part(m,"EntranceStep",Vector3.new(5,0.25*i,1.3),CFrame.new(p+Vector3.new(0,0.125*i,-(5+i)*flip)),stone,Enum.Material.Slate,nil,true) end

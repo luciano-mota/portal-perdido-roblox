@@ -12,6 +12,27 @@ local function apply(player: Player, character: Model, moveToCheckpoint: boolean
 	local root=character:WaitForChild("HumanoidRootPart",10)
 	local profile=Data.get(player)
 	if not profile or player.Character~=character or not humanoid or not humanoid:IsA("Humanoid") or not root then return end
+	if profile.classId=="Explorer" and not character:GetAttribute("PortalGeneratedRig") then
+		local template=game:GetService("ServerStorage"):FindFirstChild("ExplorerTemplate")
+		if template and template:IsA("Model") and template:FindFirstChild("HumanoidRootPart") and template:FindFirstChildOfClass("Humanoid") then
+			local replacement=template:Clone()
+			replacement.Name=player.Name
+			replacement:SetAttribute("PortalGeneratedRig",true)
+			for _,item in replacement:GetDescendants() do
+				if item:IsA("LuaSourceContainer") then item:Destroy()
+				elseif item:IsA("BasePart") then item.Anchored=false end
+			end
+			local loose=replacement:FindFirstChild("RBX_RIGID_neck",true)
+			if loose then loose:Destroy() end
+			local animate=character:FindFirstChild("Animate")
+			if animate then animate:Clone().Parent=replacement end
+			replacement:PivotTo(character:GetPivot())
+			replacement.Parent=workspace
+			player.Character=replacement
+			character:Destroy()
+			return
+		end
+	end
 	local definition=profile.classId and Classes[profile.classId]
 	if definition then
 		humanoid.MaxHealth=definition.health humanoid.Health=definition.health

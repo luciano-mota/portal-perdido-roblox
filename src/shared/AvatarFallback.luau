@@ -85,7 +85,7 @@ local function bind(player: Player,character: Model)
 			local loaded=false
 			local animator=humanoid:FindFirstChildOfClass("Animator")
 			if animator then for _,track in animator:GetPlayingAnimationTracks() do if track.Length>0 then loaded=true end end end
-			local needsMotion=failedAnimations>0 and not loaded
+			local needsMotion=(failedAnimations>0 or character:GetAttribute("PortalGeneratedRig")==true) and not loaded
 			local animate=character:FindFirstChild("Animate")
 			if player==Players.LocalPlayer and animate and animate:IsA("LocalScript") then
 				if needsMotion and animate.Enabled then actor.disabledAnimate=animate animate.Enabled=false

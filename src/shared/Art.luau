@@ -337,6 +337,10 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 		equip("FocusCage",Vector3.new(0.12,0.75,0.75),CFrame.new(0,0.25,-0.2),gold,Enum.Material.Metal,Enum.PartType.Cylinder,right)
 		equip("Harness",Vector3.new(0.3,2.2,0.1),CFrame.new(0.4,0,-0.65)*CFrame.Angles(0,0,-0.5),gold,Enum.Material.Metal)
 	end
+	if character:GetAttribute("PortalGeneratedRig") then
+		local baked={TravelBelt=true,BeltBuckle=true,TravelPouch=true,TravelScarf=true,LeatherBaldric=true,ShortCloak=true,Mantle=true,Crest=true}
+		for _,piece in folder:GetChildren() do if baked[piece.Name] then piece:Destroy() end end
+	end
 	folder.Parent=character
 end
 

@@ -2,6 +2,9 @@
   "name": "PortalPerdido",
   "tree": {
     "$className": "DataModel",
+    "ServerStorage": {
+      "ExplorerTemplate": { "$path": "assets/characters/models/explorer-generated-v1.rbxm" }
+    },
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"

@@ -382,28 +382,45 @@ local function vineGrab(record: any,target: Player,reach: number)
 			end
 		end
 		local stop=if caught then origin+direction*caughtAt else tip
+		local caughtCharacter=if caught then caught.Character else nil
 		notify:FireAllClients({kind="vine",from=origin,to=stop,travel=travel,caught=caught and caught.UserId or nil})
 		task.wait(travel)
+		local pulled=false
 		if caught and caught.Parent and record.hp>0 then
 			local part=playerRoot(caught)
-			if part then
+			local rel=if part then Vector3.new(part.Position.X-origin.X,0,part.Position.Z-origin.Z) else Vector3.zero
+			local along=rel:Dot(direction)
+			local side=(rel-direction*along).Magnitude
+			-- A captura só acontece na chegada: movimento, esquiva, morte ou
+			-- respawn durante o voo não podem deixar um alvo antigo preso.
+			if part and caught.Character==caughtCharacter and eligible(caught,record)
+				and not dodging(caught) and along>0 and along<=reach and side<=2.4 and lineOfSight(caught,record) then
 				local character=caught.Character :: Model
 				-- Puxa até a frente da criatura, dentro da área das raízes.
 				local landing=record.root.Position+record.root.CFrame.LookVector*math.max(3.5,record.stats.radius*0.45)
 				landing=Vector3.new(landing.X,part.Position.Y,landing.Z)
 				snare(caught,1.0,part.Position)
 				local start=part.Position
+				pulled=true
+				local params=RaycastParams.new()
+				params.FilterType=Enum.RaycastFilterType.Exclude
+				params.FilterDescendantsInstances={character,record.model}
 				for i=1,8 do
-					if not character.Parent then break end
+					if not character.Parent or caught.Character~=character or record.hp<=0
+						or not eligible(caught,record) or dodging(caught) then pulled=false break end
 					local p=start:Lerp(landing,i/8)
+					-- Não atravessar paredes durante a aproximação forçada.
+					if workspace:Raycast(part.Position,p-part.Position,params) then pulled=false break end
 					character:PivotTo(CFrame.lookAt(p,Vector3.new(record.root.Position.X,p.Y,record.root.Position.Z)))
 					task.wait(0.035)
 				end
-				hurtPlayer(caught,math.floor(record.stats.damage*0.4),landing)
+				if pulled and caught.Character==character and eligible(caught,record) and not dodging(caught) then
+					hurtPlayer(caught,math.floor(record.stats.damage*0.4),landing)
+				else pulled=false end
 			end
 		end
 		record.casting=false
-		if caught and record.hp>0 then rootBurst(record,caught,0.55) end
+		if pulled and caught and record.hp>0 then rootBurst(record,caught,0.55) end
 	end)
 end
 

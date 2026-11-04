@@ -11,6 +11,23 @@ local function part(parent: Instance,name: string,size: Vector3,position: Vector
 end
 
 local function arch(parent: Instance,center: Vector3,radius: number)
+	local template=game:GetService("ServerStorage"):FindFirstChild("LumenArchTemplate")
+	if Art.templateReady(template) and template and template:IsA("Model") then
+		local model=template:Clone() model.Name="WeatheredArch"
+		model:ScaleTo(model:GetScale()*(radius*2+4)/model:GetExtentsSize().X)
+		local size=model:GetExtentsSize()
+		model:PivotTo(CFrame.new(center+Vector3.new(0,size.Y*0.5,0)))
+		model:SetAttribute("GeneratedLandmark",true)
+		model.Parent=parent
+		-- Colisão simples nos pilares e coroamento, deixando a passagem aberta.
+		for _,side in {-1,1} do
+			local collider=part(model,"ArchCollision",Vector3.new(size.X*0.17,size.Y*0.75,size.Z*0.75),center+Vector3.new(side*size.X*0.38,size.Y*0.375,0),stone,Enum.Material.Rock,true)
+			collider.Transparency=1 collider.CastShadow=false
+		end
+		local top=part(model,"ArchCollision",Vector3.new(size.X*0.65,size.Y*0.12,size.Z*0.7),center+Vector3.new(0,size.Y*0.94,0),stone,Enum.Material.Rock,true)
+		top.Transparency=1 top.CastShadow=false
+		return model
+	end
 	local model=Instance.new("Model") model.Name="WeatheredArch" model.Parent=parent
 	for _,side in {-1,1} do
 		part(model,"Foundation",Vector3.new(4,1,5),center+Vector3.new(side*radius,0.5,0),stone,Enum.Material.Cobblestone,true)

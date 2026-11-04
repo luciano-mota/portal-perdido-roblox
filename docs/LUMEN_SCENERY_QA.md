@@ -24,3 +24,10 @@
 ## Ainda em desenvolvimento
 
 Qualidade de árvores/ruínas e composição natural; abertura com atuação/efeitos/áudio mais elaborados; revisão artística do chefe; chutes/outras ações; reforços finitos, patrulhas e grupos obrigatórios 3–6; testes reais multiplayer/mobile. Geração de árvore e ruína detalhadas iniciada para substituir peças provisórias, resultados ainda não aprovados neste registro inicial.
+
+## Ruína detalhada e controle de qualidade
+
+- Arco gerado: asset 117808560108743, generation e000113c-8480-497f-9e78-04f9617e79f5; três MeshParts, pedido de até 5000 triângulos (não medição). Exportado por SerializationService para assets/world/models/lumen-arch-v1.rbxm (45.862 bytes), mapeado em ServerStorage.LumenArchTemplate. Originais preservados em GeneratedReferences.
+- Captura inspecionada: pedra clara com desgaste, colunas e vegetação. Integrado em seis arcos com colisões simples nos pilares/coroamento, mantendo passagem aberta. No Play, GeneratedLandmark em seis instâncias; caminhada pelo arco de entrada até Z 85 e retorno ao spawn testada; nenhum erro no cliente.
+- Árvore asset 124848821691123, generation 1236bc84-94b6-4d70-8463-6560d5b2efbc: **rejeitada visualmente** por copa ausente e fragmentos desconectados. Preservada no Studio para revisão, não usada pelo gerador nem apresentada como arte entregue.
+- Modelos gerados dependem de meshes/texturas do Roblox. Art.templateReady mantém contingência se o template chegar sem MeshId durante sincronização do Rojo. Abrir o build ou lugar salvo preserva as meshes.

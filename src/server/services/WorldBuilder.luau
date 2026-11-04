@@ -3,6 +3,7 @@ local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Art = require(ReplicatedStorage.Shared.Art)
 local Chapter = require(ReplicatedStorage.Shared.Config.Chapter)
+local LumenScenery = require(script.Parent.LumenScenery)
 local WorldBuilder = {}
 local stone = Color3.fromRGB(126, 128, 137)
 local darkStone = Color3.fromRGB(86, 94, 108)
@@ -47,8 +48,8 @@ local function rock(parent: Instance, p: Vector3, size: Vector3, angle: number)
 end
 
 local function sign(parent: Instance, p: Vector3, title: string, subtitle: string)
-	Art.segment(parent,"SignPost",p,p+Vector3.new(0,4,0),0.3,wood,Enum.Material.Wood)
-	local board=Art.part(parent,"Wayfinder",Vector3.new(5,1.8,0.35),CFrame.new(p+Vector3.new(0,4,0)),wood,Enum.Material.Wood)
+	Art.segment(parent,"SignPost",p,p+Vector3.new(0,4,0),0.3,wood,Enum.Material.Wood,true)
+	local board=Art.part(parent,"Wayfinder",Vector3.new(5,1.8,0.35),CFrame.new(p+Vector3.new(0,4,0)),wood,Enum.Material.Wood,nil,true)
 	local gui=Instance.new("SurfaceGui") gui.Face=Enum.NormalId.Front gui.SizingMode=Enum.SurfaceGuiSizingMode.PixelsPerStud gui.PixelsPerStud=45 gui.Parent=board
 	local label=Instance.new("TextLabel") label.Size=UDim2.fromScale(1,1) label.BackgroundTransparency=1 label.TextColor3=Color3.fromRGB(244,229,199) label.Font=Enum.Font.GothamSemibold label.TextSize=20 label.TextWrapped=true label.Text=title.."\n"..subtitle label.Parent=gui
 end
@@ -258,6 +259,7 @@ function WorldBuilder.build()
 		Art.part(vistas,"DistantGrass",Vector3.new(48,4,49),CFrame.new(pos+Vector3.new(0,12,0)),Color3.fromRGB(65,104,85),Enum.Material.Grass,Enum.PartType.Ball)
 	end
 	folder(workspace,"PortalEnemies")
+	LumenScenery.build(world)
 	-- A superfície suave dos voxels termina em Y=2; alinhar a cenografia.
 	world:PivotTo(world:GetPivot()+Vector3.new(0,2,0))
 	world:SetAttribute("Ready",true)

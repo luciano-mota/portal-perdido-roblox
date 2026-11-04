@@ -45,6 +45,21 @@ function Art.part(parent: Instance, name: string, size: Vector3, cf: CFrame, col
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
 	p.Parent = parent
+	-- A esfera física usa o menor eixo, mas o SpecialMesh desenha um elipsoide.
+	-- Preencher o volume visível com esferas internas evita atravessar as pontas
+	-- de pedras achatadas sem criar uma caixa invisível nas bordas.
+	if shape==Enum.PartType.Ball and solid then
+		local diameter=math.min(size.X,size.Y,size.Z)
+		for _,offset in {Vector3.new((size.X-diameter)*0.5,0,0),Vector3.new(-(size.X-diameter)*0.5,0,0),Vector3.new(0,0,(size.Z-diameter)*0.5),Vector3.new(0,0,-(size.Z-diameter)*0.5)} do
+			if offset.Magnitude>0.1 then
+				local collider=Instance.new("Part") collider.Name="StoneCollision"
+				collider.Shape=Enum.PartType.Ball collider.Size=Vector3.one*diameter
+				collider.CFrame=cf*CFrame.new(offset) collider.Transparency=1
+				collider.Anchored=true collider.CanCollide=true collider.CanQuery=true collider.CanTouch=false
+				collider.CastShadow=false collider.Parent=p
+			end
+		end
+	end
 	return p
 end
 
@@ -402,7 +417,7 @@ function Art.portal(parent: Instance, position: Vector3, radius: number): Model
 	m.Name = "PortalPrimordial"
 	for i=1,16 do
 		local a=(i/16)*math.pi*2
-		local cf=CFrame.new(position+Vector3.new(math.cos(a)*radius, radius+math.sin(a)*radius,0))*CFrame.Angles(0,0,a)
+		local cf=CFrame.new(position+Vector3.new(math.cos(a)*radius, radius+math.sin(a)*radius,0))*CFrame.Angles(0,0,a+math.pi/2)
 		Art.part(m,"ArchStone",Vector3.new(radius*0.42,3.3,3.6),cf,stone,Enum.Material.Slate,nil,true)
 		Art.part(m,"ArcaneInset",Vector3.new(0.22,1.9,0.12),cf*CFrame.new(-1.1,0,-1.86),cyan,Enum.Material.Neon)
 	end

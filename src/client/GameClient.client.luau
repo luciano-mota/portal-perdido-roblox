@@ -164,30 +164,29 @@ local audioToggle=button(journal,"AudioToggle","ÁUDIO: LIGADO",UDim2.fromScale(
 audioToggle.Activated:Connect(function() Audio.muted=not Audio.muted audioToggle.Text=if Audio.muted then "ÁUDIO: DESLIGADO" else "ÁUDIO: LIGADO" end)
 journalButton.Activated:Connect(function() journal.Visible=not journal.Visible refresh() end)
 
-local intro=frame(screen,"Prologue",UDim2.fromScale(1,1),UDim2.fromScale(0,0),Color3.fromRGB(8,18,28)) intro.BackgroundTransparency=0.3 intro.Visible=false
+local intro=frame(screen,"Prologue",UDim2.fromScale(1,1),UDim2.fromScale(0,0),Color3.fromRGB(8,18,28)) intro.BackgroundTransparency=0.88 intro.Visible=false
 text(intro,"Kicker","PRÓLOGO · O ACIDENTE",13,UDim2.fromScale(0.1,0.12),UDim2.fromScale(0.8,0.1),amber)
-local introText=text(intro,"Story","",24,UDim2.fromScale(0.14,0.29),UDim2.fromScale(0.72,0.37)) introText.Font=Enum.Font.GothamSemibold
+local introText=text(intro,"Story","",24,UDim2.fromScale(0.1,0.62),UDim2.fromScale(0.8,0.15)) introText.Font=Enum.Font.GothamSemibold
 local introNext=button(intro,"Next","CONTINUAR",UDim2.fromScale(0.35,0.76),UDim2.fromScale(0.3,0.12))
 local introSkip=button(intro,"Skip","PULAR INTRODUÇÃO",UDim2.fromScale(0.3,0.91),UDim2.fromScale(0.4,0.065),ink) introSkip.TextSize=11
 local introPage=1
 local cameraTween: Tween?=nil
+local cinematic: any=nil
 local function finishIntro()
 	introDone=true intro.Visible=false
+	if cinematic then cinematic.stop() cinematic=nil end
 	if cameraTween then cameraTween:Cancel() end
 	local camera=workspace.CurrentCamera
 	if camera then camera.CameraType=Enum.CameraType.Custom local h=player.Character and player.Character:FindFirstChildOfClass("Humanoid") if h then camera.CameraSubject=h end end
 	refresh()
 end
 introSkip.Activated:Connect(finishIntro)
-introNext.Activated:Connect(function() introPage+=1 if introPage>#Chapter.Dialogues.Arrival then finishIntro() else introText.Text=Chapter.Dialogues.Arrival[introPage] end end)
+introNext.Activated:Connect(function() if cinematic then cinematic.next() end end)
 local function beginIntro()
 	introStarted=true intro.Visible=true introText.Text=Chapter.Dialogues.Arrival[1]
-	local camera=workspace.CurrentCamera
-	if camera then
-		camera.CameraType=Enum.CameraType.Scriptable
-		camera.CFrame=CFrame.lookAt(Vector3.new(38,23,65),Vector3.new(0,7,-28))
-		cameraTween=TweenService:Create(camera,TweenInfo.new(24,Enum.EasingStyle.Sine),{CFrame=CFrame.lookAt(Vector3.new(20,13,42),Vector3.new(0,6,-28))}) cameraTween:Play()
-	end
+	cinematic=require(ReplicatedStorage.Shared.ArrivalCinematic).start(function(page)
+		introPage=page introText.Text=Chapter.Dialogues.Arrival[page]
+	end,finishIntro)
 end
 
 local bloom=Instance.new("BloomEffect") bloom.Name="PortalPerdidoBloom" bloom.Intensity=0.14 bloom.Size=18 bloom.Threshold=1.7 bloom.Parent=Lighting
@@ -359,6 +358,7 @@ for _, attribute in {"ClassId","QuestIndex","Coins","RuneCount","SealProgress","
 
 FX.init()
 require(ReplicatedStorage.Shared.ObjectiveGuide).init()
+require(ReplicatedStorage.Shared.CollectedPresentation).init()
 require(ReplicatedStorage.Shared.AvatarFallback).init()
 require(ReplicatedStorage.Shared.ActorPresentation).init()
 notify.OnClientEvent:Connect(function(data)

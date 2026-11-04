@@ -1,5 +1,7 @@
 # Capítulo 1 — A Travessia
 
+Atualização 03/11: abertura passa a mostrar a demonstração imersiva, a ruptura e a chegada em três cenas 3D locais. Elenco de seis viajantes na encenação; objetivo de expedição solicitado pelo usuário: mínimo 3 jogadores, ideal 6. Direção e referências: [Aetherion](AETHERION_VISUAL_ROADMAP.md). A primeira encenação usa os avatares de fantasia como projeções da demonstração; atuação, som e acabamento cinematográfico ainda precisam de revisão.
+
 **Aetherion:** mundo de ilhas flutuantes, máquinas arcanas e portais fraturados.
 **Objetivo dramático:** obter o primeiro Fragmento da Aurora e entender por que o Portal Primordial está selado.
 

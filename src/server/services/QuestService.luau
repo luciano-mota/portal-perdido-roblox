@@ -60,6 +60,9 @@ end
 function Quest.register(player: Player)
 	local p=Data.get(player)
 	if not p then return end
+	-- Quem entra depois pode acompanhar uma expedição já parcialmente limpa.
+	if p.quest==2 and not guardAlive("FirstSentinel") then Quest.recordDefeat(player,"FirstSentinel") end
+	if p.quest==5 and not guardAlive("RootGuardian") then Quest.recordDefeat(player,"RootGuardian") end
 	message(player,if p.quest>5 then "O Fragmento da Aurora está seguro. O mistério do Portal Primordial continua." else Chapter.Quests[p.quest].objective)
 end
 
@@ -88,6 +91,7 @@ function Quest.init(notifyRemote: RemoteEvent, isGuardAlive: (string) -> boolean
 			dialogue(player,Chapter.Dialogues.IlyraFirst)
 			advance(player,1)
 			message(player,Chapter.Quests[2].objective)
+			if not guardAlive("FirstSentinel") then Quest.recordDefeat(player,"FirstSentinel") end
 		elseif p.quest==2 then dialogue(player,{"O Sentinela está além do arco antigo. Use seu ataque e sua habilidade de classe. Desvie das marcas no chão."})
 		elseif p.quest==3 then dialogue(player,Chapter.Dialogues.Runes)
 		elseif p.quest==4 then dialogue(player,{"A ordem no templo é Aurora, Raiz, Estrela. As inscrições não podem ser esquecidas."})
@@ -145,6 +149,7 @@ function Quest.init(notifyRemote: RemoteEvent, isGuardAlive: (string) -> boolean
 	prompt(world.Temple.ArenaGate,"Atravessar","Limiar do Santuário",function(player)
 		local p=Data.get(player)
 		if p.quest<5 then message(player,"O limiar permanece fechado. Complete os três selos.") return end
+		if not guardAlive("RootGuardian") and not p.bossDefeated then Quest.recordDefeat(player,"RootGuardian") end
 		-- Ferido demais para o chefe: lembra da Fonte do templo antes de entrar (não bloqueia).
 		local humanoid=player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 		if humanoid and humanoid.Health<humanoid.MaxHealth*0.7 and not p.bossDefeated then

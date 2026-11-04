@@ -1,5 +1,7 @@
 # Plano até o lançamento — Capítulo 1: A Travessia
 
+> **Nova prioridade do usuário (03/11):** cenários primeiro, com as dez referências preservadas; depois personagens e experiência narrativa. A direção de dificuldade passa a expedição de **3 a 6 jogadores**, substituindo a meta de lançamento solo abaixo. O modo de teste atual ainda aceita solo; bloqueio de grupo, reforços e equilíbrio cooperativo não estão entregues. Ver [plano visual atualizado](AETHERION_VISUAL_ROADMAP.md). Tabelas abaixo preservam o histórico, não aprovam o novo escopo por inferência.
+
 Atualizado em 03/11/2026. Fonte de verdade do andamento: commits/PR #30 e `DEVELOPMENT_STATUS.md`. Este arquivo ordena o que falta e quem precisa agir.
 
 ## Onde estamos

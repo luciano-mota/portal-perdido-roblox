@@ -40,7 +40,7 @@ return {
 		{id = "RootGuardian", kind = "Boss", position = Vector3.new(0, 7, -550), leash = 48},
 	},
 	Dialogues = {
-		Arrival = {"Uma demonstração. Um instante de luz. E então… a fenda.", "Você desperta sob um céu desconhecido. Ilhas flutuam além do horizonte.", "Um portal pulsa entre as ruínas. Alguém espera no caminho."},
+		Arrival = {"Seis amigos testam uma aventura de realidade imersiva. O portal deveria ser apenas uma simulação.", "O sistema perde o controle. A fenda se torna real e arrasta o grupo para outro mundo.", "A travessia termina em Aetherion. No Vale de Lúmen, Ilyra pode ajudar vocês a encontrar o caminho de casa."},
 		IlyraFirst = {"Respire. Você está no Vale de Lúmen. Meu nome é Ilyra.", "O Portal Primordial foi selado. Sua chegada não deveria ser possível.", "As raízes da floresta estão inquietas. Afaste o Sentinela do caminho; depois procure as três inscrições antigas."},
 		Runes = {"As inscrições respondem à sua presença. Aurora, Raiz, Estrela…", "Lembre a ordem. Os selos do templo guardam uma memória mais antiga que o próprio vale."},
 		Temple = {"As portas reconhecem as três inscrições. Um tremor percorre a pedra.", "O Guardião de Raízes protege o Fragmento da Aurora. Observe o chão: suas raízes anunciam cada ataque.", "Quando seu núcleo mudar de cor, o combate entrará em uma segunda fase. Mantenha-se em movimento."},

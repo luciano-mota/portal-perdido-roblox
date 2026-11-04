@@ -158,13 +158,9 @@ local function damage(player: Player,record: any,amount: number)
 		for _, piece in record.model:GetChildren() do
 			if piece:IsA("BasePart") and piece~=record.root then TweenService:Create(piece,TweenInfo.new(0.6),{Transparency=1}):Play() end
 		end
-		local delaySeconds=if record.definition.kind=="Boss" then 40 else 30
-		task.delay(delaySeconds,function()
-			if records[record.definition.id]==record then
-				record.model:Destroy()
-				makeRecord(record.definition)
-			end
-		end)
+		-- Encontro concluído nesta expedição. Reforços terão encontros próprios;
+		-- não ressuscitar a mesma criatura enquanto o grupo explora ou coleta.
+		record.model:SetAttribute("EncounterCompleted",true)
 	end
 end
 

@@ -145,6 +145,10 @@ local function damage(player: Player,record: any,amount: number)
 	end
 	if record.hp==0 then
 		record.root.CanQuery=false
+		-- O corpo visual desaparece; sua colisão não pode bloquear a trilha
+		-- ou o altar até o próximo respawn.
+		record.root.CanCollide=false
+		record.root.CanTouch=false
 		if record.motion then record.motion:Cancel() end
 		for contributor,time in record.contributors do
 			local root=playerRoot(contributor)

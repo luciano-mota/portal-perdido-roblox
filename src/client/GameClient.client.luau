@@ -18,6 +18,7 @@ local attackRemote=remotes:WaitForChild("AttackEnemy") :: RemoteEvent
 local skillRemote=remotes:WaitForChild("UseSkill") :: RemoteEvent
 local dashRemote=remotes:WaitForChild("Dash") :: RemoteEvent
 local blockRemote=remotes:WaitForChild("Block") :: RemoteEvent
+local kickRemote=remotes:WaitForChild("Kick") :: RemoteEvent
 local notify=remotes:WaitForChild("Notify") :: RemoteEvent
 local gui=player:WaitForChild("PlayerGui")
 local old=gui:FindFirstChild("PortalPerdidoHUD") if old then old:Destroy() end
@@ -105,6 +106,7 @@ local skillButton=button(screen,"SkillButton","HABILIDADE",UDim2.new(1,-290,1,-9
 local dashButton=button(screen,"DashButton","ESQUIVA",UDim2.new(1,-174,1,-142),UDim2.fromOffset(150,42),ink) dashButton.Visible=false
 -- Defesa do Guardião: segurar F ou o botão (toque) mantém o escudo erguido; o servidor valida.
 local blockButton=button(screen,"BlockButton","DEFENDER [F]",UDim2.new(1,-290,1,-142),UDim2.fromOffset(106,42),Color3.fromRGB(46,72,128)) blockButton.Visible=false
+local kickButton=button(screen,"KickButton","CHUTAR [C]",UDim2.new(1,-174,1,-194),UDim2.fromOffset(150,44),ink) kickButton.Visible=false
 local boss=frame(screen,"BossHealth",UDim2.new(0.86,0,0,40),UDim2.new(0.5,0,0,116),Color3.fromRGB(51,32,41)) boss.AnchorPoint=Vector2.new(0.5,0) limit(boss,500,40) boss.Visible=false
 local bossText=text(boss,"Name","",12,UDim2.new(0.03,0,0,3),UDim2.new(0.94,0,0,20),parchment)
 local bossFill=frame(boss,"Fill",UDim2.new(0.94,0,0,6),UDim2.new(0.03,0,0,28),Color3.fromRGB(196,114,87))
@@ -251,6 +253,8 @@ local function layout()
 	blockButton.Position=if touch then UDim2.new(1,-230,1,-180) else UDim2.new(1,-290,1,-142)
 	blockButton.Size=if touch then UDim2.fromOffset(100,48) else UDim2.fromOffset(106,42)
 	blockButton.Text=if touch then "DEFENDER" else "DEFENDER [F]"
+	kickButton.Position=if touch then UDim2.new(1,-120,1,-236) else UDim2.new(1,-174,1,-194)
+	kickButton.Size=if touch then UDim2.fromOffset(100,48) else UDim2.fromOffset(150,44)
 	attackButton.Text=if touch then "ATACAR" else "ATACAR [Q]"
 	journalButton.Text=if touch then "DIÁRIO" else "DIÁRIO [J]"
 	journalButton.Size=UDim2.fromOffset(100,if touch then 44 else 32)
@@ -296,6 +300,10 @@ local function attack()
 	task.delay(class.cooldown,function() attackButton.BackgroundColor3=Color3.fromRGB(169,89,65) end)
 end
 attackButton.Activated:Connect(attack)
+local function kick()
+	if humanoid and humanoid.Health>0 and not dialogue.Visible and not journal.Visible and not intro.Visible and not ending.Visible then kickRemote:FireServer() end
+end
+kickButton.Activated:Connect(kick)
 skillButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then skillRemote:FireServer() end end)
 dashButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then dashRemote:FireServer(dodgeDirection()) end end)
 local blocking=false
@@ -318,6 +326,7 @@ end)
 UIS.InputBegan:Connect(function(input,processed)
 	if processed then return end
 	if input.KeyCode==Enum.KeyCode.Q then attack()
+	elseif input.KeyCode==Enum.KeyCode.C then kick()
 	elseif input.KeyCode==Enum.KeyCode.R then if not dialogue.Visible and not intro.Visible and not journal.Visible then skillRemote:FireServer() end
 	elseif input.KeyCode==Enum.KeyCode.LeftShift then if not intro.Visible and not dialogue.Visible and not journal.Visible then dashRemote:FireServer(dodgeDirection()) end
 	elseif input.KeyCode==Enum.KeyCode.F then setBlock(true)
@@ -338,6 +347,7 @@ refresh=function()
 	journalButton.Visible=gameplay and not dialogue.Visible and not ending.Visible
 	local controls=gameplay and not dialogue.Visible and not journal.Visible and not ending.Visible
 	attackButton.Visible=controls skillButton.Visible=controls dashButton.Visible=controls
+	kickButton.Visible=controls
 	blockButton.Visible=controls and classId=="Guardian"
 	if not blockButton.Visible then setBlock(false) end
 	if index<=5 then
@@ -345,6 +355,9 @@ refresh=function()
 		objective.Text=Chapter.Quests[index].objective..(if index==3 then "  ("..tostring(player:GetAttribute("RuneCount") or 0).."/3)" elseif index==4 then "  ("..tostring(player:GetAttribute("SealProgress") or 0).."/3)" else "")
 		if index==5 and player:GetAttribute("BossDefeated")==true then
 			objective.Text="Recolha o Fragmento da Aurora no altar do santuário."
+		end
+		if not workspace:GetAttribute("ExpeditionStarted") then
+			objective.Text="Reúna o grupo: "..tostring(workspace:GetAttribute("ExpeditionReadyPlayers") or 0).."/3 prontos · ideal: 6. Falem com Ilyra."
 		end
 	else heading.Text="A TRAVESSIA · CONCLUÍDA" objective.Text="O Fragmento da Aurora está seguro. Explore o vale ou retorne a Ilyra." end
 	coins.Text="Moedas: "..tostring(player:GetAttribute("Coins") or 0).."\n"..(if player:GetAttribute("DataStatus")=="Saved" then "Salvo" elseif player:GetAttribute("DataStatus")=="StudioMemory" then "Progresso temporário" else "Não salvo")
@@ -355,6 +368,8 @@ refresh=function()
 	updateHealth()
 end
 for _, attribute in {"ClassId","QuestIndex","Coins","RuneCount","SealProgress","HasFragment","DataStatus","ShieldUntil","BossDefeated"} do player:GetAttributeChangedSignal(attribute):Connect(refresh) end
+workspace:GetAttributeChangedSignal("ExpeditionStarted"):Connect(refresh)
+workspace:GetAttributeChangedSignal("ExpeditionReadyPlayers"):Connect(refresh)
 
 FX.init()
 require(ReplicatedStorage.Shared.ObjectiveGuide).init()
@@ -382,6 +397,8 @@ RunService.RenderStepped:Connect(function(dt)
 	local id=player:GetAttribute("ClassId")
 	local class=if typeof(id)=="string" then Classes[id] else nil
 	if class then
+		local kickTime=math.max(0,(player:GetAttribute("KickReadyAt") or 0)-workspace:GetServerTimeNow())
+		kickButton.Text=if kickTime>0 then "CHUTE "..math.ceil(kickTime).." s" elseif UIS.PreferredInput==Enum.PreferredInput.Touch then "CHUTAR" else "CHUTAR [C]"
 		local remaining=math.max(0,(player:GetAttribute("SkillReadyAt") or 0)-workspace:GetServerTimeNow())
 		skillButton.Text=class.skillName..(if remaining>0 then "\n"..math.ceil(remaining).." s" elseif UIS.PreferredInput==Enum.PreferredInput.Touch then "" else " [R]")
 		skillButton.BackgroundColor3=if remaining>0 then Color3.fromRGB(55,67,76) else Color3.fromRGB(43,106,115)

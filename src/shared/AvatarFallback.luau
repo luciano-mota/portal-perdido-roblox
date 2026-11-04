@@ -128,6 +128,8 @@ function Fallback.init()
 			local dashStarted=character:GetAttribute("PortalDashStarted")
 			local dashProgress=if typeof(dashStarted)=="number" then (time-dashStarted)/Motion.Timing.Dash.duration else 2
 			local dashing=dashProgress>=0 and dashProgress<=1
+			local kickStarted=character:GetAttribute("PortalKickStarted")
+			local kickProgress=if typeof(kickStarted)=="number" then (time-kickStarted)/Motion.Timing.Kick.duration else 2
 			-- Defesa (atributo do jogador, replicado): entra rápido e sai suave.
 			local blockingNow=actor.player:GetAttribute("Blocking")==true
 			actor.block=(actor.block or 0)+((if blockingNow then 1 else 0)-(actor.block or 0))*(1-math.exp(-dt*(if blockingNow then 16 else 8)))
@@ -250,6 +252,7 @@ function Fallback.init()
 				combo=character:GetAttribute("PortalCombo") or 1,
 				skill=if skilling then skillProgress else nil,
 				dash=if dashing then dashProgress else nil,
+				kick=if kickProgress>=0 and kickProgress<=1 then kickProgress else nil,
 				dashDir=character:GetAttribute("PortalDashDir"),
 				blocking=if actor.block>0.02 then actor.block else nil,
 			}

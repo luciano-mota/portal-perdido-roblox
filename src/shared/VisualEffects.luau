@@ -267,6 +267,11 @@ function FX.play(data: any)
 		return
 	end
 	-- Gestos não dependem do orçamento de partículas decorativas.
+	if data.kind=="kick" then
+		local actor=typeof(data.userId)=="number" and Players:GetPlayerByUserId(data.userId)
+		if actor and actor.Character then actor.Character:SetAttribute("PortalKickStarted",os.clock()) end
+		return
+	end
 	if data.kind=="strike" then
 		local actor=typeof(data.userId)=="number" and Players:GetPlayerByUserId(data.userId)
 		local timing=Motion.Timing[data.classId] or Motion.Timing.Guardian

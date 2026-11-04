@@ -3,6 +3,18 @@
 local Players=game:GetService("Players")
 local Chapter=require(script.Parent.Config.Chapter)
 local Guide={}
+local function livingEncounter(id: string,position: Vector3): Model?
+	local enemies=workspace:FindFirstChild("PortalEnemies")
+	if not enemies then return nil end
+	local target: Model?=nil local nearest=math.huge
+	for _,enemy in enemies:GetChildren() do
+		if enemy:IsA("Model") and enemy.PrimaryPart and enemy:GetAttribute("EncounterGroup")==id and (enemy:GetAttribute("Health") or 0)>0 then
+			local distance=(enemy.PrimaryPart.Position-position).Magnitude
+			if distance<nearest then nearest=distance target=enemy end
+		end
+	end
+	return target
+end
 
 function Guide.init()
 	local player=Players.LocalPlayer
@@ -31,8 +43,8 @@ function Guide.init()
 					if npc and npc:IsA("Model") then target=npc.PrimaryPart title="CONVERSE COM ILYRA" end
 				elseif quest==2 then
 					local enemies=workspace:FindFirstChild("PortalEnemies")
-					local enemy=enemies and enemies:FindFirstChild("FirstSentinel")
-					if enemy and enemy:IsA("Model") then target=enemy.PrimaryPart title="SENTINELA DE MUSGO" end
+					local enemy=livingEncounter("FirstSentinel",root.Position) or (enemies and enemies:FindFirstChild("FirstSentinel"))
+					if enemy and enemy:IsA("Model") then target=enemy.PrimaryPart title=if enemy.Name=="FirstSentinel" then "SENTINELA DE MUSGO" else "ELIMINE OS REFORÇOS" end
 				elseif quest==3 then
 					local runes=world:FindFirstChild("Runes")
 					local nearest=math.huge
@@ -71,8 +83,8 @@ function Guide.init()
 						if fragment and fragment:IsA("BasePart") then target=fragment title="RECOLHA O FRAGMENTO" end
 					else
 						local enemies=workspace:FindFirstChild("PortalEnemies")
-						local boss=enemies and enemies:FindFirstChild("RootGuardian")
-						if boss and boss:IsA("Model") then target=boss.PrimaryPart title="GUARDIÃO DE RAÍZES" end
+						local boss=livingEncounter("RootGuardian",root.Position) or (enemies and enemies:FindFirstChild("RootGuardian"))
+						if boss and boss:IsA("Model") then target=boss.PrimaryPart title=if boss.Name=="RootGuardian" then "GUARDIÃO DE RAÍZES" else "ELIMINE OS REFORÇOS" end
 					end
 				elseif typeof(quest)=="number" and quest>5 and root.Position.Z<Chapter.Checkpoints.Arena.Z+15 then
 					local arena=world:FindFirstChild("Arena")

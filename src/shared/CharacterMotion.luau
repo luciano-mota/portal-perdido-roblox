@@ -13,6 +13,7 @@ Motion.Timing={
 	Artificer={duration=0.56,release=0.5},
 	Skill={duration=0.95},
 	Dash={duration=0.35},
+	Kick={duration=0.6},
 }
 -- Arqueiro gira o corpo de lado para o alvo (ombro esquerdo à frente) enquanto atira.
 Motion.StanceYaw={Explorer=-1.0}
@@ -121,7 +122,7 @@ local function toCFrame(v: {number}): CFrame
 	return CFrame.new(v[4] or 0,v[5] or 0,v[6] or 0)*CFrame.Angles(v[1] or 0,v[2] or 0,v[3] or 0)
 end
 
-export type Context={classId: string,attack: number?,combo: number?,skill: number?,dash: number?,dashDir: Vector3?,blocking: number?}
+export type Context={classId: string,attack: number?,combo: number?,skill: number?,dash: number?,kick: number?,dashDir: Vector3?,blocking: number?}
 
 -- Sobreposição de combate para uma articulação, ou nil se nada a mover.
 function Motion.overlay(name: string,ctx: Context): CFrame?
@@ -179,6 +180,18 @@ function Motion.overlay(name: string,ctx: Context): CFrame?
 			for i=1,6 do out[i]=(base[i] or 0)+(add[i] or 0) end
 			result=out
 		end
+	end
+	if ctx.kick then
+		local t=ctx.kick
+		local lift=ease(t/0.28)*(1-ease((t-0.6)/0.4))
+		local extension=ease((t-0.18)/0.18)*(1-ease((t-0.48)/0.28))
+		if name=="righthip" then result={-1.25*lift,0,0}
+		elseif name=="rightknee" then result={-1.1*lift*(1-extension),0,0}
+		elseif name=="rightankle" then result={0.15*lift,0,0}
+		elseif name=="lefthip" then result={0.12*lift,0,0}
+		elseif name=="leftknee" then result={-0.15*lift,0,0}
+		elseif name=="waist" then result={0.15*lift,-0.12*lift,0}
+		elseif name=="root" then result={0,0,0.08*lift,-0.12*lift,-0.06*lift,0} end
 	end
 	return if result then toCFrame(result) else nil
 end

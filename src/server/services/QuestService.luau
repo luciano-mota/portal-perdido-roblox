@@ -3,6 +3,7 @@ local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
 local Data=require(script.Parent.PlayerDataService)
+local Expedition=require(script.Parent.ExpeditionService)
 local Quest={}
 local notify: RemoteEvent
 local guardAlive: (string) -> boolean = function() return true end
@@ -88,11 +89,19 @@ function Quest.init(notifyRemote: RemoteEvent, isGuardAlive: (string) -> boolean
 		local p=Data.get(player)
 		if not p.classId then message(player,"Escolha sua classe para iniciar a travessia.") return end
 		if p.quest==1 then
+			local ready,count=Expedition.tryBegin()
+			if not ready then
+				dialogue(player,{"A travessia exige companheiros. Reúnam pelo menos três viajantes com suas classes escolhidas.","Temos "..count.." de 3 prontos. Com seis, cada um poderá proteger o outro. Eu esperarei aqui."})
+				message(player,"Reúna o grupo: "..count.."/3 viajantes prontos; recomendado: 6.")
+				return
+			end
 			dialogue(player,Chapter.Dialogues.IlyraFirst)
 			advance(player,1)
 			message(player,Chapter.Quests[2].objective)
 			if not guardAlive("FirstSentinel") then Quest.recordDefeat(player,"FirstSentinel") end
-		elseif p.quest==2 then dialogue(player,{"O Sentinela está além do arco antigo. Use seu ataque e sua habilidade de classe. Desvie das marcas no chão."})
+		elseif p.quest==2 then
+			if not guardAlive("FirstSentinel") then Quest.recordDefeat(player,"FirstSentinel")
+			else dialogue(player,{"O Sentinela está além do arco antigo. Use seu ataque e sua habilidade de classe. Desvie das marcas no chão."}) end
 		elseif p.quest==3 then dialogue(player,Chapter.Dialogues.Runes)
 		elseif p.quest==4 then dialogue(player,{"A ordem no templo é Aurora, Raiz, Estrela. As inscrições não podem ser esquecidas."})
 		elseif p.quest==5 then

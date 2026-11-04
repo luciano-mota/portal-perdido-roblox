@@ -8,11 +8,13 @@ local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
 local Classes=require(ReplicatedStorage.Shared.Config.Classes)
 local Art=require(ReplicatedStorage.Shared.Art)
 local Data=require(script.Parent.PlayerDataService)
+local Expedition=require(script.Parent.ExpeditionService)
 local Service={}
 local records: {[string]: any}={}
 local lastAttack: {[Player]: number}={}
 local lastSkill: {[Player]: number}={}
 local lastDash: {[Player]: number}={}
+local lastKick: {[Player]: number}={}
 local notify: RemoteEvent
 local quests: any
 
@@ -33,7 +35,9 @@ local function lineOfSight(player: Player, record: any): boolean
 	params.FilterType=Enum.RaycastFilterType.Exclude
 	-- Não existe PvP: companheiros não são cobertura contra ataques aliados.
 	-- A geometria do mundo continua no raio, preservando paredes/obstáculos.
-	local excluded: {Instance}={record.model}
+	-- Criaturas agrupadas não podem se tornar cobertura mútua invulnerável.
+	-- O alvo mais próximo continua recebendo o golpe; cenário permanece no raio.
+	local excluded: {Instance}={workspace.PortalEnemies}
 	for _,ally in Players:GetPlayers() do
 		if ally.Character then table.insert(excluded,ally.Character) end
 	end
@@ -44,7 +48,8 @@ end
 local function eligible(player: Player, record: any): boolean
 	local root=playerRoot(player)
 	if not root then return false end
-	if record.definition.kind=="Boss" then
+	if not Expedition.hasStarted() then return false end
+	if record.definition.kind=="Boss" or record.definition.group=="RootGuardian" then
 		local p=Data.get(player)
 		return p.quest==5 and (root.Position-record.origin).Magnitude<=48
 	end
@@ -58,6 +63,7 @@ local function makeRecord(definition: any)
 	local model=Art.enemy(workspace.PortalEnemies,definition.kind,origin,kind.color)
 	model.Name=definition.id
 	model:SetAttribute("EnemyKind",definition.kind)
+	model:SetAttribute("EncounterGroup",definition.group or definition.id)
 	model:SetAttribute("DisplayName",kind.name)
 	model:SetAttribute("Health",kind.health)
 	model:SetAttribute("MaxHealth",kind.health)
@@ -71,7 +77,27 @@ end
 
 function Service.isAlive(id: string): boolean
 	local r=records[id]
-	return r~=nil and r.hp>0
+	if r and (r.hp>0 or r.pendingReinforcements) then return true end
+	for _,child in records do if child.definition.group==id and child.hp>0 then return true end end
+	return false
+end
+
+local function callReinforcements(record: any)
+	if record.definition.group or record.reinforcementsCalled then return end
+	record.reinforcementsCalled=true record.pendingReinforcements=true
+	local count=if Expedition.readyCount()>=5 then 3 else 2
+	notify:FireAllClients({kind="toast",text=record.stats.name.." chamou reforços! Protejam os companheiros."})
+	record.model:SetAttribute("ReinforcementsCalled",true)
+	task.delay(2,function()
+		for i=1,count do
+			local a=i*math.pi*2/count+0.8
+			local pos=record.origin+Vector3.new(math.cos(a)*10,0,math.sin(a)*10)
+			-- Novos encontros finitos; nunca renascer o inimigo derrotado.
+			makeRecord({id=record.definition.id.."_Reinforcement_"..i,kind=if i%2==0 then "Wisp" else "Thorn",
+				position=Vector3.new(pos.X,3,pos.Z),leash=record.definition.leash,group=record.definition.id})
+		end
+		record.pendingReinforcements=false
+	end)
 end
 
 local function hurtPlayer(player: Player,amount: number,position: Vector3)
@@ -119,6 +145,7 @@ end
 
 local function damage(player: Player,record: any,amount: number)
 	if record.hp<=0 then return end
+	callReinforcements(record)
 	if record.definition.kind=="Boss" and not record.engaged then
 		record.engaged=true local count=0
 		for _, participant in Players:GetPlayers() do if eligible(participant,record) then count+=1 end end
@@ -146,13 +173,31 @@ local function damage(player: Player,record: any,amount: number)
 	if record.hp==0 then
 		record.root.CanQuery=false
 		-- O corpo visual desaparece; sua colisão não pode bloquear a trilha
-		-- ou o altar até o próximo respawn.
+		-- ou o altar após a derrota.
 		record.root.CanCollide=false
 		record.root.CanTouch=false
 		if record.motion then record.motion:Cancel() end
-		for contributor,time in record.contributors do
-			local root=playerRoot(contributor)
-			if contributor.Parent==Players and root and os.clock()-time<45 and (root.Position-record.root.Position).Magnitude<100 then quests.recordDefeat(contributor,record.definition.id) end
+		local encounter=record.definition.group or record.definition.id
+		if not Service.isAlive(encounter) then
+			local credited: {[Player]: boolean}={}
+			for _,member in records do
+				if member.definition.id==encounter or member.definition.group==encounter then
+					for contributor,time in member.contributors do
+						local root=playerRoot(contributor)
+						if not credited[contributor] and contributor.Parent==Players and root and os.clock()-time<45 and (root.Position-record.root.Position).Magnitude<100 then
+							credited[contributor]=true quests.recordDefeat(contributor,encounter)
+						end
+					end
+				end
+			end
+			-- Objetivo narrativo da equipe: companheiros vivos presentes também
+			-- avançam, mesmo quando protegem/atraem inimigos sem causar dano.
+			for _,companion in Players:GetPlayers() do
+				local root=playerRoot(companion)
+				if not credited[companion] and root and (root.Position-record.root.Position).Magnitude<100 then
+					quests.recordDefeat(companion,encounter)
+				end
+			end
 		end
 		notify:FireAllClients({kind="defeat",position=record.root.Position,color=record.stats.color})
 		for _, piece in record.model:GetChildren() do
@@ -176,6 +221,7 @@ local function targets(player: Player,range: number): {any}
 end
 
 local function attack(player: Player)
+	if (player:GetAttribute("KickBusyUntil") or 0)>workspace:GetServerTimeNow() then return end
 	local root=playerRoot(player)
 	local p=Data.get(player)
 	if not root or not p then return end
@@ -192,6 +238,7 @@ local function attack(player: Player)
 end
 
 local function skill(player: Player)
+	if (player:GetAttribute("KickBusyUntil") or 0)>workspace:GetServerTimeNow() then return end
 	local root,humanoid=playerRoot(player)
 	local p=Data.get(player)
 	if not root or not humanoid or not p then return end
@@ -564,17 +611,45 @@ local function navigate(record: any,wanted: Vector3): Vector3?
 	return nil
 end
 
-function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRemote: RemoteEvent,notifyRemote: RemoteEvent,questService: any,blockRemote: RemoteEvent?)
+local function kick(player: Player)
+	local root=playerRoot(player)
+	local now=os.clock()
+	if not root or not Expedition.hasStarted() or now-(lastKick[player] or -math.huge)<2.4 then return end
+	if now-(lastAttack[player] or -math.huge)<0.7 or now-(lastSkill[player] or -math.huge)<0.95 then return end
+	lastKick[player]=now
+	player:SetAttribute("KickReadyAt",workspace:GetServerTimeNow()+2.4)
+	player:SetAttribute("KickBusyUntil",workspace:GetServerTimeNow()+0.6)
+	setBlocking(player,false)
+	local character=player.Character
+	notify:FireAllClients({kind="kick",userId=player.UserId,position=root.Position})
+	-- O contato acontece na extensão da perna; cliente não escolhe alvo/dano.
+	task.delay(0.22,function()
+		local current=playerRoot(player)
+		if not current or player.Character~=character then return end
+		for _,enemy in targets(player,7) do
+			local delta=enemy.root.Position-current.Position
+			local flat=Vector3.new(delta.X,0,delta.Z)
+			if flat.Magnitude>0.1 and current.CFrame.LookVector:Dot(flat.Unit)>0.5 then
+				damage(player,enemy,12)
+				if enemy.definition.kind~="Boss" then enemy.slowUntil=os.clock()+1.2 end
+				break
+			end
+		end
+	end)
+end
+
+function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRemote: RemoteEvent,notifyRemote: RemoteEvent,questService: any,blockRemote: RemoteEvent?,kickRemote: RemoteEvent?)
 	notify=notifyRemote quests=questService
 	for _, definition in Chapter.Encounters do makeRecord(definition) end
 	if blockRemote then blockRemote.OnServerEvent:Connect(setBlocking) end
+	if kickRemote then kickRemote.OnServerEvent:Connect(kick) end
 	Players.PlayerAdded:Connect(function(player) player.CharacterAdded:Connect(function() player:SetAttribute("Blocking",false) end) end)
 	for _, player in Players:GetPlayers() do player.CharacterAdded:Connect(function() player:SetAttribute("Blocking",false) end) end
 	attackRemote.OnServerEvent:Connect(attack)
 	skillRemote.OnServerEvent:Connect(skill)
 	dashRemote.OnServerEvent:Connect(dash)
 	Players.PlayerRemoving:Connect(function(player)
-		lastAttack[player]=nil lastSkill[player]=nil lastDash[player]=nil
+		lastAttack[player]=nil lastSkill[player]=nil lastDash[player]=nil lastKick[player]=nil
 		for _, r in records do r.contributors[player]=nil end
 	end)
 	local elapsed=0
@@ -600,7 +675,10 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 					for _, piece in r.model:GetChildren() do if piece:IsA("BasePart") and (piece.Name=="Core" or piece.Name=="Eye") then piece.Color=Color3.fromRGB(76,201,205) end end
 				end
 			end
-			local wanted=point or r.origin
+			-- Patrulha visível mesmo sem jogadores por perto; raio curto, sem spawn infinito.
+			local patrolAngle=os.clock()*0.13+#r.definition.id
+			local patrol=if r.definition.kind=="Boss" then r.origin else r.origin+Vector3.new(math.sin(patrolAngle)*5,0,math.cos(patrolAngle)*5)
+			local wanted=point or patrol
 			local delta=Vector3.new(wanted.X-r.root.Position.X,0,wanted.Z-r.root.Position.Z)
 			local boss=r.definition.kind=="Boss"
 			local kind=r.definition.kind

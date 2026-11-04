@@ -20,10 +20,11 @@ function Guide.init()
 			local world=workspace:FindFirstChild("PortalChapter")
 			local character=player.Character
 			local root=character and character:FindFirstChild("HumanoidRootPart")
+			local humanoid=character and character:FindFirstChildOfClass("Humanoid")
 			local target: BasePart?=nil
 			local title=""
 			local quest=player:GetAttribute("QuestIndex")
-			if world and root and root:IsA("BasePart") and player:GetAttribute("ClassId") then
+			if world and root and root:IsA("BasePart") and humanoid and humanoid.Health>0 and player:GetAttribute("ClassId") then
 				if quest==1 then
 					local village=world:FindFirstChild("Village")
 					local npc=village and village:FindFirstChild("Ilyra")
@@ -43,6 +44,40 @@ function Guide.init()
 							if distance<nearest then nearest=distance target=core title=definition.name end
 						end
 					end
+				elseif quest==4 then
+					local temple=world:FindFirstChild("Temple")
+					local seals=temple and temple:FindFirstChild("Seals")
+					local progress=player:GetAttribute("SealProgress")
+					local index=if typeof(progress)=="number" then math.clamp(math.floor(progress)+1,1,3) else 1
+					local seal=seals and seals:FindFirstChild(Chapter.SealOrder[index])
+					local core=seal and seal:FindFirstChild("Core")
+					if core and core:IsA("BasePart") then target=core title="SELO "..({"AURORA","RAIZ","ESTRELA"})[index] end
+				elseif quest==5 then
+					local arena=world:FindFirstChild("Arena")
+					local inArena=root.Position.Z<Chapter.Checkpoints.Arena.Z+15
+					if not inArena then
+						if humanoid.Health<humanoid.MaxHealth*0.7 and not player:GetAttribute("BossDefeated") then
+							local shrines=world:FindFirstChild("RestShrines")
+							local shrine=shrines and shrines:FindFirstChild("Temple")
+							local core=shrine and shrine:FindFirstChild("Core")
+							if core and core:IsA("BasePart") then target=core title="RECUPERE SUA VIDA" end
+						else
+							local temple=world:FindFirstChild("Temple")
+							local gate=temple and temple:FindFirstChild("ArenaGate")
+							if gate and gate:IsA("BasePart") then target=gate title="ATRAVESSE O LIMIAR" end
+						end
+					elseif player:GetAttribute("BossDefeated") then
+						local fragment=arena and arena:FindFirstChild("AuroraFragment")
+						if fragment and fragment:IsA("BasePart") then target=fragment title="RECOLHA O FRAGMENTO" end
+					else
+						local enemies=workspace:FindFirstChild("PortalEnemies")
+						local boss=enemies and enemies:FindFirstChild("RootGuardian")
+						if boss and boss:IsA("Model") then target=boss.PrimaryPart title="GUARDIÃO DE RAÍZES" end
+					end
+				elseif typeof(quest)=="number" and quest>5 and root.Position.Z<Chapter.Checkpoints.Arena.Z+15 then
+					local arena=world:FindFirstChild("Arena")
+					local stone=arena and arena:FindFirstChild("ReturnStone")
+					if stone and stone:IsA("BasePart") then target=stone title="RETORNE AO VALE" end
 				end
 			end
 			gui.Adornee=target gui.Enabled=target~=nil

@@ -7,3 +7,9 @@ Play no Studio: seleção real de Explorador, marcador em Village.Ilyra.Root; co
 Rojo confirmou módulo e chamada no cliente sincronizados. Build passou antes do teste. Ainda falta avaliar sobreposição dos marcadores em celular físico e validar os demais objetivos com público real.
 
 Geração de Ilyra humanizada iniciada nesta sessão. A chamada expirou aos 300 segundos; nenhuma nova instância apareceu até a última inspeção. Não há integração nova de Ilyra nesta revisão. Conferir eventual conclusão tardia antes de repetir o pedido.
+
+## Extensão ao templo e conclusão — 03/11/2026
+
+Após a passagem registrada em CHAPTER_COMPLETION_REGRESSION.md, ObjectiveGuide foi estendido às missões 4–6. Selo atual usa SealProgress; antes da arena, vida abaixo de 70% aponta a fonte do templo; com vida recuperada aponta o limiar. Na arena aponta chefe, depois fragmento e, após conclusão, pedra de retorno. Ao voltar à vila o marcador de conclusão desaparece. Personagem morto não recebe marcador. Mantido um BillboardGui, alcance 220 e intervalo 0,5 s.
+
+Teste de interface no Play com Explorador selecionado: atributos de apresentação, posição e vida foram preparados **localmente no cliente**, sem usar o teste como prova de progressão. Alvos confirmados: Ilyra; Dawn/Core, Root/Core, Star/Core; RestShrines/Temple/Core; ArenaGate; RootGuardian/Root; AuroraFragment; ReturnStone; desativado na vila após conclusão. Nenhum MessageError no cliente. Sessão encerrada, descartando os estados preparados. Build Rojo aprovado. Ainda falta revisão visual em celular físico e percurso humano com os marcadores novos.

@@ -31,3 +31,10 @@ Qualidade de árvores/ruínas e composição natural; abertura com atuação/efe
 - Captura inspecionada: pedra clara com desgaste, colunas e vegetação. Integrado em seis arcos com colisões simples nos pilares/coroamento, mantendo passagem aberta. No Play, GeneratedLandmark em seis instâncias; caminhada pelo arco de entrada até Z 85 e retorno ao spawn testada; nenhum erro no cliente.
 - Árvore asset 124848821691123, generation 1236bc84-94b6-4d70-8463-6560d5b2efbc: **rejeitada visualmente** por copa ausente e fragmentos desconectados. Preservada no Studio para revisão, não usada pelo gerador nem apresentada como arte entregue.
 - Modelos gerados dependem de meshes/texturas do Roblox. Art.templateReady mantém contingência se o template chegar sem MeshId durante sincronização do Rojo. Abrir o build ou lugar salvo preserva as meshes.
+
+## Composição e vegetação — 04/11/2026
+
+- Árvores da vila redistribuídas em grupos assimétricos e clareiras. Floresta com deslocamentos determinísticos, evitando fileiras e protegendo acesso lateral às inscrições. 39 árvores no conjunto observado.
+- 24 tufos de vegetação nas margens do caminho, 120 lâminas estáticas: todas sem colisão, consulta física, toque e sombra. Captura desktop inspecionada. Ainda é cenário procedural em acabamento, longe da fidelidade da referência 2.
+- Nova medição de 180 frames em 1092×743: 59,995 FPS médios, p95 de frame 18,168 ms. É desktop, não aprovação de smartphone.
+- Duas novas gerações de árvore rejeitadas e preservadas em ServerStorage.GeneratedReferences: v2 generation c436b9b1-a1f4-4ea3-bae3-2df5068e185e (asset 115671667649704, pedido 4500 triângulos); v3 generation 46993370-59c1-4e86-97ae-bcde21127b00 (pedido 12000). Copas fragmentadas/facetadas não justificam substituir o cenário. Não foram integradas nem exportadas como assets aprovados.

@@ -144,6 +144,22 @@ function Scenery.build(world: Model)
 		Art.part(scene,"IslandMeadow",Vector3.new(34+i*3,3,29),CFrame.new(pos+Vector3.new(0,10,0)),moss,Enum.Material.Grass,Enum.PartType.Ball)
 		arch(scene,pos+Vector3.new(0,11,0),4)
 	end
+	-- Vegetação baixa perto do caminho dá escala e variação sem bloquear o percurso.
+	-- 120 lâminas estáticas, sem sombra, toque, consulta física ou atualização por frame.
+	for i=1,24 do
+		local side=if i%2==0 then -1 else 1
+		local center=Vector3.new(side*rng:NextNumber(11,21),0,70-i*6)
+		for blade=1,5 do
+			local angle=rng:NextNumber(0,math.pi*2)
+			local height=rng:NextNumber(0.55,1.25)
+			local leaf=Instance.new("WedgePart") leaf.Name="MeadowGrass"
+			leaf.Size=Vector3.new(0.04,height,rng:NextNumber(0.18,0.35))
+			leaf.CFrame=CFrame.new(center+Vector3.new(math.cos(angle)*0.35,height*0.5,math.sin(angle)*0.35))*CFrame.Angles(0,angle,rng:NextNumber(-0.3,0.3))
+			leaf.Color=moss:Lerp(Color3.fromRGB(153,158,84),rng:NextNumber(0.1,0.55))
+			leaf.Material=Enum.Material.Grass leaf.Anchored=true leaf.CastShadow=false
+			leaf.CanCollide=false leaf.CanTouch=false leaf.CanQuery=false leaf.Parent=scene
+		end
+	end
 	scene:SetAttribute("ReferenceImage","02-vale-de-lumen.png")
 end
 

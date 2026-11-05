@@ -162,19 +162,23 @@ function WorldBuilder.build()
 	Art.npc(village,Chapter.Ilyra)
 	sign(village,Vector3.new(-8,0,12),"VALE DE LÚMEN","Refúgio dos viajantes")
 	sign(village,Vector3.new(9,0,-100),"FLORESTA ESQUECIDA","As três inscrições")
-	for i=1,8 do
-		local x=if i%2==0 then -22-i*2 else 25+i*2
-		Art.tree(village,rooted(x,75-i*14),i,false)
+	-- Clareiras e grupos assimétricos: evitar a aparência de avenida arborizada.
+	for i,point in {Vector2.new(-53,62),Vector2.new(59,72),Vector2.new(-61,18),Vector2.new(55,16),Vector2.new(-31,-46),Vector2.new(37,-58),Vector2.new(-54,-81),Vector2.new(61,-87)} do
+		Art.tree(village,rooted(point.X,point.Y),i,false)
 	end
 	task.wait()
 	local forest=folder(world,"Forest")
+	local forestRng=Random.new(49621)
 	for i=1,36 do
 		local side=if i%2==0 then -1 else 1
-		local z=-115-math.floor(i/2)*13
-		local x=side*(30+(i%5)*15)
+		local z=-115-math.floor(i/2)*13+forestRng:NextNumber(-8,8)
+		local x=side*(30+(i%5)*15+forestRng:NextNumber(-5,8))
 		-- Corredor central desobstruído; árvores fora dos pontos de inscrição.
 		local clear=true
-		for _, rune in Chapter.Runes do if (Vector3.new(x,0,z)-rune.position).Magnitude<18 then clear=false end end
+		for _, rune in Chapter.Runes do
+			if (Vector3.new(x,0,z)-rune.position).Magnitude<18 then clear=false end
+			if math.abs(z-rune.position.Z)<12 and x*rune.position.X>0 and math.abs(x)<math.abs(rune.position.X)+8 then clear=false end
+		end
 		if clear then Art.tree(forest,rooted(x,z),80+i,true) end
 		if i%8==0 then task.wait() end
 	end

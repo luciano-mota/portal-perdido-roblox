@@ -179,6 +179,8 @@ local function damage(player: Player,record: any,amount: number)
 		if record.motion then record.motion:Cancel() end
 		local encounter=record.definition.group or record.definition.id
 		if not Service.isAlive(encounter) then
+			local leader=records[encounter]
+			if leader then leader.model:SetAttribute("EncounterCleared",true) end
 			local credited: {[Player]: boolean}={}
 			for _,member in records do
 				if member.definition.id==encounter or member.definition.group==encounter then

@@ -36,3 +36,4 @@ Este teste aprova o primeiro encontro e o avanço compartilhado, não o equilíb
 - Chute disparado no cliente: PortalKickStarted registrado e transformação do RightHip mudou durante o golpe (componente de rotação ~1,16 rad em 0,25 s). Isso comprova acionamento da articulação, **não aprovação estética final**.
 - Nenhum MessageError no servidor e em cada um dos seis clientes na consulta final.
 - UI inclui CHUTAR [C] e botão touch 100×48; teclado Espaço continua sendo salto nativo. Revisão visual em tela pequena e teste de obstáculos/alcance do chute ainda necessários.
+- Guia de recuperação: EncounterCleared publicado pelo servidor ao terminar o grupo; jogador na missão 2 vê RETORNE A ILYRA. Verificação de apresentação isolada no cliente confirmou alvo Ilyra.HumanoidRootPart; atributos preparados foram restaurados e servidor permaneceu missão 1. Interface desktop de 1092×743 inspecionada com os cinco botões separados.

@@ -43,8 +43,15 @@ function Guide.init()
 					if npc and npc:IsA("Model") then target=npc.PrimaryPart title="CONVERSE COM ILYRA" end
 				elseif quest==2 then
 					local enemies=workspace:FindFirstChild("PortalEnemies")
-					local enemy=livingEncounter("FirstSentinel",root.Position) or (enemies and enemies:FindFirstChild("FirstSentinel"))
-					if enemy and enemy:IsA("Model") then target=enemy.PrimaryPart title=if enemy.Name=="FirstSentinel" then "SENTINELA DE MUSGO" else "ELIMINE OS REFORÇOS" end
+					local leader=enemies and enemies:FindFirstChild("FirstSentinel")
+					if leader and leader:GetAttribute("EncounterCleared") then
+						local village=world:FindFirstChild("Village")
+						local npc=village and village:FindFirstChild("Ilyra")
+						if npc and npc:IsA("Model") then target=npc.PrimaryPart title="RETORNE A ILYRA" end
+					else
+						local enemy=livingEncounter("FirstSentinel",root.Position) or leader
+						if enemy and enemy:IsA("Model") then target=enemy.PrimaryPart title=if (enemy:GetAttribute("Health") or 0)<=0 then "REFORÇOS A CAMINHO" elseif enemy.Name=="FirstSentinel" then "SENTINELA DE MUSGO" else "ELIMINE OS REFORÇOS" end
+					end
 				elseif quest==3 then
 					local runes=world:FindFirstChild("Runes")
 					local nearest=math.huge

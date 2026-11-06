@@ -1,3 +1,9 @@
+# Backlog — atualização de escopo para seis fases
+
+> **REVISÃO CANÔNICA 06/11/2026:** Priorizar a implementação da campanha e dos lobbies antes de considerar o capítulo como concluído. G0 protótipo Vale continua aproveitável. Leia primeiro [CAMPAIGN_SIX_PHASES.md](CAMPAIGN_SIX_PHASES.md) e [GAME_MODES_AND_MATCHMAKING.md](GAME_MODES_AND_MATCHMAKING.md). O material abaixo é preservado como histórico do protótipo do Vale; NÃO é a história total nem comprovação das outras cinco fases.
+
+---
+
 # Backlog — Capítulo 1: A Travessia (V2.0)
 
 Backlog vivo das **29 issues CPP-001…CPP-029** já existentes, mais **5 issues CPP-030…CPP-034** criadas para a mudança de estilo para **fantasia semirrealista**. São **34 cards CPP** no total, além de issues operacionais (bug e release).
@@ -47,3 +53,12 @@ O vale em camadas (commit `f496994`, detalhes em `docs/LUMEN_SCENERY_QA.md`) foi
 - [ ] **Limiar** — testar a passagem pelo ProximityPrompt real (não só teleporte de QA).
 - [ ] **Regressão completa** — passagem inteira do capítulo no relevo novo, solo e com 3+ jogadores.
 - [ ] **Personagens e criaturas** — etapa visual seguinte ao relevo.
+
+
+## Novas entregas P0 (não implementadas neste commit)
+- [ ] Salas solo, amigos, código e fila online, com rota congelada por quantidade 1–3/4–6.
+- [ ] Heróis 4–6: definição futura, seleção temporária no grupo 4–6 e desbloqueio permanente no solo/trio.
+- [ ] Campanha das seis fases: configurar fases e construir regiões 2–6 em evolução incremental.
+- [ ] Sorteio autoritativo das quatro regiões e reencontro da fase 5, com eliminação apenas na sessão cooperativa 4–6.
+- [ ] Corrigir narrativas do prólogo para despertar por região e testar solo e grupos de 2–6.
+- [ ] Integrar múltiplos lugares/teleportes apenas quando houver experiência privada publicada e autorização.

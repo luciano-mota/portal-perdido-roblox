@@ -1,3 +1,9 @@
+# Roadmap visual — campanha definitiva V3
+
+> **REVISÃO CANÔNICA 06/11/2026:** O antigo plano de expedição obrigatória de 3–6 foi substituído por rotas A (1–3) e B (4–6). Incluímos cenário novo para fase 5. Referências continuam válidas para cada região, mas o Vale é só fase 1. Leia primeiro [CAMPAIGN_SIX_PHASES.md](CAMPAIGN_SIX_PHASES.md) e [GAME_MODES_AND_MATCHMAKING.md](GAME_MODES_AND_MATCHMAKING.md). O material abaixo é preservado como histórico do protótipo do Vale; NÃO é a história total nem comprovação das outras cinco fases.
+
+---
+
 # Aetherion — cenários e experiência
 
 Direção atualizada pelo usuário em 03/11/2026. Substitui a prioridade anterior de novas classes antes dos cenários e a meta de campanha solo. Catálogo: [dez imagens originais](../assets/world/references/README.md).

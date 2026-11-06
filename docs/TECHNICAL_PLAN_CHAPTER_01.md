@@ -1,3 +1,9 @@
+# Plano técnico — reclassificação V3
+
+> **REVISÃO CANÔNICA 06/11/2026:** O plano antigo de cinco missões, 20–35 minutos e um cenário era escopo do protótipo da fase 1. O novo escopo real tem SEIS fases, solo obrigatório e co-op disperso para 4–6. Leia primeiro [CAMPAIGN_SIX_PHASES.md](CAMPAIGN_SIX_PHASES.md) e [GAME_MODES_AND_MATCHMAKING.md](GAME_MODES_AND_MATCHMAKING.md). O material abaixo é preservado como histórico do protótipo do Vale; NÃO é a história total nem comprovação das outras cinco fases.
+
+---
+
 # Plano técnico — Capítulo 1: A Travessia (V2.0)
 
 **Produto:** As Crônicas do Portal Perdido  

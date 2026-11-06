@@ -1,3 +1,9 @@
+# Fase 1 — Vale de Lúmen (antigo capítulo completo)
+
+> **REVISÃO CANÔNICA 06/11/2026:** O Vale é a fase 1 na rota A e apenas um dos quatro pontos de queda na rota B. O prólogo da feira de ciências é compartilhado; o despertar é adaptado ao modo. Leia primeiro [CAMPAIGN_SIX_PHASES.md](CAMPAIGN_SIX_PHASES.md) e [GAME_MODES_AND_MATCHMAKING.md](GAME_MODES_AND_MATCHMAKING.md). O material abaixo é preservado como histórico do protótipo do Vale; NÃO é a história total nem comprovação das outras cinco fases.
+
+---
+
 # Capítulo 1 — A Travessia
 
 Atualização 06/11: abertura trocada por feira de ciências → apagão → despertar (ver seção "Nova abertura"). Registro anterior, 03/11: abertura passa a mostrar a demonstração imersiva, a ruptura e a chegada em três cenas 3D locais. Elenco de seis viajantes na encenação; objetivo de expedição solicitado pelo usuário: mínimo 3 jogadores, ideal 6. Direção e referências: [Aetherion](AETHERION_VISUAL_ROADMAP.md). A primeira encenação usa os avatares de fantasia como projeções da demonstração; atuação, som e acabamento cinematográfico ainda precisam de revisão.

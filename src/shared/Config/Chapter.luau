@@ -11,7 +11,7 @@ return {
 		GateZ = -455, VoidY = -40,
 		-- Depois do limiar: início do caminho de pedras flutuantes até a arena.
 		Threshold = Vector3.new(0, 30, -463),
-		Gorge = {z = -108, halfWidth = 12, bottom = -14},
+		Gorge = {z = -108, halfWidth = 12, bottom = -22},
 	},
 	Checkpoints = {
 		Village = Vector3.new(0, 5, 32),

@@ -55,3 +55,33 @@ Evidência no Play (Studio, desktop):
 - Capturas inspecionadas: ruínas sobre as elevações junto ao rio, portal com espiral legível, nuvens visíveis.
 
 Não aprovado: fidelidade à referência 2, aparência das bases (ainda leem como blocos retos), aparelho móvel físico.
+
+## Vale em camadas: relevo, saltos e caminho suspenso — 07/11/2026
+
+Pedido do proprietário: cenário menos plano, mais próximo da referência 2, com subidas, saltos e caminho mais difícil até o chefe. Personagens e criaturas ficam para a etapa seguinte.
+
+Implementado (`LumenRelief.luau`, alturas em `Chapter.Relief`):
+- Mesa do Portal (piso 21,5) com escadaria monumental a partir do arco de entrada.
+- Garganta entre vila e floresta (fundo −22, paredes de ardósia), ponte em arcos no caminho, aqueduto antigo, cascata do rio, névoa e duas escadas de saída.
+- Inscrição I na Colina da Aurora (piso 16, escadaria); II na Mesa da Raiz (piso 22, seis pilares de salto); III na Ilha da Estrela flutuante (piso 30, nove pedras em espiral, cascata).
+- Santuário no platô (piso 26,5) com escadaria; muro com o limiar como única passagem. O limiar leva ao início do caminho suspenso, não mais direto ao chefe.
+- Arena em ilha suspensa (piso 40) sobre o vazio, base em cone de rocha, alcançada por seis pedras flutuantes. Checkpoint "Arena" só ao pisar na ilha.
+- Queda abaixo de Y −40 devolve ao checkpoint com 10 de dano, sem morte.
+- Criaturas nascem pelo piso real, não avançam onde não há piso na cota do encontro, marcas no nível do chão e acerto exige proximidade vertical. Correntes dos guardas dos platôs reduzidas (16/12/14).
+- Penhascos de voxel em ardósia (calcário liso parecia massa); pedra das peças mais escura e quente.
+
+Evidência no Play (Studio, solo com QAFixtures; movimento real do Humanoid):
+- Mundo gerado sem erro Luau em cliente/servidor (aviso externo 203785492 continua). 2652 BaseParts.
+- Criaturas nas cotas corretas: Sentinela da Aurora 19, Predador da Raiz 25, Eco da Estrela 33, Guardião 47.
+- Pathfinding do spawn: Sentinela, ponte, floresta, colina, mesa do portal, templo e selos = sucesso; mesa da Raiz, ilha da Estrela e arena = sem caminho a pé (exigem salto/limiar, como projetado).
+- Saltos com física (pulo pelo estado Jumping, MoveTo, decolagem a ~1,2 stud): Raiz 7/7, Estrela 10/10, caminho suspenso 7/7 pousos confirmados por raycast no piso-alvo.
+- Pulo medido: 7,27 de altura, ~8,8 de avanço no ar (padrão Roblox).
+- Queda no vazio: retorno ao checkpoint em 1,4 s, vivo, 110 → 100.
+- Muro do limiar bloqueou caminhada (parou em z −454,2). Pisar na ilha gravou Checkpoint=Arena.
+- Predador perseguindo na borda da Mesa da Raiz: 40 amostras sempre 3 studs acima do piso (não saiu andando no ar). Reduziu o jogador de 110 para 4 em ~10 s.
+- Capturas inspecionadas: garganta profunda com arcos corretos, mesa da Raiz em rocha, ilha da Estrela, arena suspensa em cone.
+
+Não aprovado / pendente:
+- FPS: medição inválida. Studio sem foco limitou a renderização a 15–20 FPS inclusive olhando só o céu (Heartbeat 60). Repetir com a janela em foco e em aparelho físico.
+- Fidelidade à referência 2 ainda parcial: pôr do sol rosado, montanha com arco de rocha, mais névoa em camadas, praça da Aurora ainda lê como disco, escadarias muito retas.
+- Teste do limiar pelo ProximityPrompt real, da passagem completa do capítulo e com 3+ jogadores.

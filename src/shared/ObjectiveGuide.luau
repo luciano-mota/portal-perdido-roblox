@@ -73,7 +73,7 @@ function Guide.init()
 					if core and core:IsA("BasePart") then target=core title="SELO "..({"AURORA","RAIZ","ESTRELA"})[index] end
 				elseif quest==5 then
 					local arena=world:FindFirstChild("Arena")
-					local inArena=root.Position.Z<Chapter.Checkpoints.Arena.Z+15
+					local inArena=root.Position.Z<Chapter.Relief.GateZ-3
 					if not inArena then
 						if humanoid.Health<humanoid.MaxHealth*0.7 and not player:GetAttribute("BossDefeated") then
 							local shrines=world:FindFirstChild("RestShrines")
@@ -93,7 +93,7 @@ function Guide.init()
 						local boss=livingEncounter("RootGuardian",root.Position) or (enemies and enemies:FindFirstChild("RootGuardian"))
 						if boss and boss:IsA("Model") then target=boss.PrimaryPart title=if boss.Name=="RootGuardian" then "GUARDIÃO DE RAÍZES" else "ELIMINE OS REFORÇOS" end
 					end
-				elseif typeof(quest)=="number" and quest>5 and root.Position.Z<Chapter.Checkpoints.Arena.Z+15 then
+				elseif typeof(quest)=="number" and quest>5 and root.Position.Z<Chapter.Relief.GateZ-3 then
 					local arena=world:FindFirstChild("Arena")
 					local stone=arena and arena:FindFirstChild("ReturnStone")
 					if stone and stone:IsA("BasePart") then target=stone title="RETORNE AO VALE" end

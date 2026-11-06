@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Art = require(ReplicatedStorage.Shared.Art)
 local Chapter = require(ReplicatedStorage.Shared.Config.Chapter)
 local LumenScenery = require(script.Parent.LumenScenery)
+local LumenRelief = require(script.Parent.LumenRelief)
 local WorldBuilder = {}
 local stone = Color3.fromRGB(126, 128, 137)
 local darkStone = Color3.fromRGB(86, 94, 108)
@@ -102,7 +103,7 @@ function WorldBuilder.build()
 	terrain:FillBlock(CFrame.new(0,-16,-275),Vector3.new(310,32,790),Enum.Material.Rock)
 	terrain:FillBlock(CFrame.new(0,-2,-275),Vector3.new(308,4,786),Enum.Material.LeafyGrass)
 	local coast=folder(world,"Cliffs")
-	for i=1,18 do
+	for i=1,13 do
 		local z=110-i*43
 		for _, side in {-1,1} do
 			terrain:FillBall(Vector3.new(side*(142+(i%3)*4),-8,z),22+(i%3)*4,Enum.Material.Rock)
@@ -120,19 +121,24 @@ function WorldBuilder.build()
 		end
 		if clear then terrain:FillBall(center,34+(i%3),Enum.Material.LeafyGrass) end
 	end
+	-- Relevo em camadas (referência 2) antes de enraizar árvores e pedras.
+	LumenRelief.sculpt(terrain)
 	local groundParams=RaycastParams.new() groundParams.FilterType=Enum.RaycastFilterType.Include groundParams.FilterDescendantsInstances={terrain}
 	local function rooted(x: number,z: number): Vector3
 		local hit=workspace:Raycast(Vector3.new(x,80,z),Vector3.new(0,-150,0),groundParams)
 		return Vector3.new(x,if hit then hit.Position.Y-2 else 0,z)
 	end
 	local paths=folder(world,"Paths")
-	local nodes={Vector3.new(0,0.12,70),Vector3.new(0,0.12,-70),Vector3.new(10,0.12,-120),Vector3.new(0,0.12,-185),Vector3.new(18,0.12,-245),Vector3.new(-8,0.12,-315),Vector3.new(0,0.12,-390),Vector3.new(0,0.12,-520)}
+	-- Caminho até a escadaria do santuário; o trecho 3→4 é a ponte em arcos sobre a garganta.
+	local nodes={Vector3.new(0,0.12,70),Vector3.new(0,0.12,-70),Vector3.new(5,0.12,-91),Vector3.new(5,0.12,-125),Vector3.new(0,0.12,-185),Vector3.new(18,0.12,-245),Vector3.new(-8,0.12,-315),Vector3.new(0,0.12,-339)}
 	for i=1,#nodes-1 do
+		if i==3 then continue end
 		local a,b=nodes[i],nodes[i+1]
 		Art.part(paths,"PilgrimPath",Vector3.new(if i<3 then 9 else 7,0.25,(b-a).Magnitude+1),CFrame.lookAt((a+b)*0.5,b),Color3.fromRGB(112,105,88),if i<3 then Enum.Material.Cobblestone else Enum.Material.Ground,nil,true)
 	end
-	for i=1,15 do
+	for i=1,10 do
 		local z=35-i*34
+		if math.abs(z-Chapter.Relief.Gorge.z)<Chapter.Relief.Gorge.halfWidth+3 then continue end
 		Art.part(paths,"Waystone",Vector3.new(1.2,0.5,2),CFrame.new(-6,0.3,z),darkStone,Enum.Material.Slate)
 		Art.part(paths,"Waylight",Vector3.new(0.2,0.08,0.8),CFrame.new(-6,0.58,z),cyan,Enum.Material.Neon)
 	end
@@ -164,10 +170,10 @@ function WorldBuilder.build()
 	end
 	Art.npc(village,Chapter.Ilyra)
 	sign(village,Vector3.new(-8,0,12),"VALE DE LÚMEN","Refúgio dos viajantes")
-	sign(village,Vector3.new(9,0,-100),"FLORESTA ESQUECIDA","As três inscrições")
+	sign(village,Vector3.new(13,0,-86),"FLORESTA ESQUECIDA","Atravesse a ponte da garganta")
 	-- Clareiras e grupos assimétricos: evitar a aparência de avenida arborizada.
 	for i,point in {Vector2.new(-53,62),Vector2.new(59,72),Vector2.new(-61,18),Vector2.new(55,16),Vector2.new(-31,-46),Vector2.new(37,-58),Vector2.new(-54,-81),Vector2.new(61,-87)} do
-		Art.tree(village,rooted(point.X,point.Y),i,false)
+		if not LumenRelief.blocked(point.X,point.Y,3) then Art.tree(village,rooted(point.X,point.Y),i,false) end
 	end
 	task.wait()
 	local forest=folder(world,"Forest")
@@ -182,27 +188,33 @@ function WorldBuilder.build()
 			if (Vector3.new(x,0,z)-rune.position).Magnitude<18 then clear=false end
 			if math.abs(z-rune.position.Z)<12 and x*rune.position.X>0 and math.abs(x)<math.abs(rune.position.X)+8 then clear=false end
 		end
-		if clear then Art.tree(forest,rooted(x,z),80+i,true) end
+		if clear and not LumenRelief.blocked(x,z,4) then Art.tree(forest,rooted(x,z),80+i,true) end
 		if i%8==0 then task.wait() end
 	end
 	for i=1,24 do
 		local side=if i%2==0 then -1 else 1
 		local x=side*(16+(i%4)*17)
 		local z=-125-i*9
-		rock(forest,Vector3.new(x,0.8,z),Vector3.new(4+i%3,2.5,5),i)
-		Art.part(forest,"AmberMushroom",Vector3.new(0.9,0.5,0.9),CFrame.new(x+2,0.8,z),amber,Enum.Material.Neon,Enum.PartType.Ball)
+		if LumenRelief.blocked(x,z,3) then continue end
+		local ground=rooted(x,z)
+		rock(forest,Vector3.new(x,ground.Y+0.8,z),Vector3.new(4+i%3,2.5,5),i)
+		Art.part(forest,"AmberMushroom",Vector3.new(0.9,0.5,0.9),CFrame.new(x+2,ground.Y+0.8,z),amber,Enum.Material.Neon,Enum.PartType.Ball)
 	end
-	-- Trilhas laterais legíveis levam às inscrições, sem obstáculos decorativos.
+	-- Trilhas levam ao acesso vertical de cada inscrição: escadaria, pilares e pedras flutuantes.
+	local access={Vector3.new(-12,0.16,-179),Vector3.new(21,0.16,-243),Vector3.new(-24,0.16,-309)}
+	local hints={"Suba a escadaria da colina","Salte pelos pilares","Suba pelas pedras flutuantes"}
 	for i, definition in Chapter.Runes do
 		local a=Vector3.new(if i==2 then 16 else -2,0.16,definition.position.Z+8)
-		local b=definition.position+Vector3.new(0,0.16,5)
+		local b=access[i]
 		Art.part(paths,"RuneTrail",Vector3.new(4,0.3,(b-a).Magnitude),CFrame.lookAt((a+b)*0.5,b),Color3.fromRGB(124,113,94),Enum.Material.Ground,nil,true)
-		sign(forest,Vector3.new(if i==2 then 12 else -10,0,definition.position.Z+12),"INSCRIÇÃO "..definition.symbol,if i==2 then "Trilha à direita" else "Trilha à esquerda")
+		sign(forest,Vector3.new(if i==2 then 12 else -10,0,definition.position.Z+12),"INSCRIÇÃO "..definition.symbol,hints[i])
 	end
+	local floors={Dawn=Chapter.Relief.DawnHill,Root=Chapter.Relief.RootMesa,Star=Chapter.Relief.StarIsland}
 	local runes=folder(world,"Runes")
 	for index, definition in Chapter.Runes do
 		local m=Instance.new("Model") m.Name=definition.id m.Parent=runes
-		local pos=definition.position
+		-- Coordenadas locais: o mundo inteiro sobe +2 no final.
+		local pos=Vector3.new(definition.position.X,(floors[definition.id] or 2)-2,definition.position.Z)
 		Art.part(m,"AncientPlinth",Vector3.new(7,0.7,7),CFrame.new(pos+Vector3.new(0,0.3,0)),darkStone,Enum.Material.Slate,nil,true)
 		Art.part(m,"InscribedStone",Vector3.new(2.6,5,1.5),CFrame.new(pos+Vector3.new(0,3,0)),stone,Enum.Material.Slate,nil,true)
 		local core=Art.part(m,"Core",Vector3.new(0.55,1.9,0.15),CFrame.new(pos+Vector3.new(0,3,-0.85)),if index==1 then amber elseif index==2 then cyan else Color3.fromRGB(158,130,215),Enum.Material.Neon)
@@ -211,45 +223,51 @@ function WorldBuilder.build()
 	end
 	task.wait()
 	local temple=folder(world,"Temple")
-	sign(temple,Vector3.new(-10,0,-377),"SANTUÁRIO DA AURORA","Aurora / Raiz / Estrela")
-	Art.part(temple,"TempleFoundation",Vector3.new(72,1,70),CFrame.new(0,0,-425),darkStone,Enum.Material.Slate,nil,true)
-	for i=1,5 do Art.part(temple,"TempleStep",Vector3.new(32,0.2*i,3),CFrame.new(0,0.1*i,-388-i*3),stone,Enum.Material.Slate,nil,true) end
+	sign(temple,Vector3.new(-16,0,-334),"SANTUÁRIO DA AURORA","Suba a escadaria · Aurora / Raiz / Estrela")
+	-- Santuário no alto do platô: `ty` desloca a antiga cota 0 para o piso elevado.
+	local ty=Chapter.Relief.Temple-2.5
+	Art.part(temple,"TempleFoundation",Vector3.new(84,6,94),CFrame.new(0,ty-2.5,-423),darkStone,Enum.Material.Slate,nil,true)
 	for _, x in {-27,27} do
 		for _, z in {-408,-433,-450} do
-			Art.part(temple,"ColumnBase",Vector3.new(7,1,7),CFrame.new(x,1,z),stone,Enum.Material.Slate,nil,true)
-			Art.segment(temple,"AncientColumn",Vector3.new(x,1,z),Vector3.new(x,21,z),4,stone,Enum.Material.Marble,true)
-			Art.part(temple,"ColumnCrown",Vector3.new(6,1.2,6),CFrame.new(x,21,z),stone,Enum.Material.Slate)
+			Art.part(temple,"ColumnBase",Vector3.new(7,1,7),CFrame.new(x,ty+1,z),stone,Enum.Material.Slate,nil,true)
+			Art.segment(temple,"AncientColumn",Vector3.new(x,ty+1,z),Vector3.new(x,ty+21,z),4,stone,Enum.Material.Marble,true)
+			Art.part(temple,"ColumnCrown",Vector3.new(6,1.2,6),CFrame.new(x,ty+21,z),stone,Enum.Material.Slate)
 		end
 	end
-	Art.part(temple,"Entablature",Vector3.new(61,4,7),CFrame.new(0,23,-408),stone,Enum.Material.Slate)
+	Art.part(temple,"Entablature",Vector3.new(61,4,7),CFrame.new(0,ty+23,-408),stone,Enum.Material.Slate)
 	local seals=folder(temple,"Seals")
 	for i, id in Chapter.SealOrder do
 		local m=Instance.new("Model") m.Name=id m.Parent=seals
-		local pos=Vector3.new((i-2)*12,1,-420)
+		local pos=Vector3.new((i-2)*12,ty+1,-420)
 		Art.part(m,"Pedestal",Vector3.new(3,3,3),CFrame.new(pos+Vector3.new(0,1,0)),stone,Enum.Material.Slate,nil,true)
 		local core=Art.part(m,"Core",Vector3.new(1,1,1),CFrame.new(pos+Vector3.new(0,3,0)),if i==1 then amber elseif i==2 then cyan else Color3.fromRGB(158,130,215),Enum.Material.Neon,Enum.PartType.Ball)
 		Art.label(core,if i==1 then "AURORA" elseif i==2 then "RAIZ" else "ESTRELA",nil,nil,2)
 	end
-	local gate=Art.part(temple,"ArenaGate",Vector3.new(15,13,0.4),CFrame.new(0,7,-455),Color3.fromRGB(102,112,173),Enum.Material.Neon)
+	-- Limiar sólido no muro do santuário: o prompt é a única passagem para o caminho suspenso.
+	local gate=Art.part(temple,"ArenaGate",Vector3.new(15,13,0.6),CFrame.new(0,ty+7,Chapter.Relief.GateZ),Color3.fromRGB(102,112,173),Enum.Material.Neon,nil,true)
 	gate.Transparency=0.65
 	Art.label(gate,"O LIMIAR","Os três selos guardam a passagem",nil,7)
+	-- Arena suspensa: `ay` desloca a antiga cota 0 para o topo da ilha.
+	local ay=Chapter.Relief.Arena-2.6
 	local arena=folder(world,"Arena")
-	Art.part(arena,"SanctumFloor",Vector3.new(1.2,91,91),CFrame.new(0,0,-550)*CFrame.Angles(0,0,math.pi/2),darkStone,Enum.Material.Slate,Enum.PartType.Cylinder,true)
+	Art.part(arena,"SanctumFloor",Vector3.new(1.2,91,91),CFrame.new(0,ay,-550)*CFrame.Angles(0,0,math.pi/2),darkStone,Enum.Material.Slate,Enum.PartType.Cylinder,true)
 	for i=1,12 do
 		local angle=i*math.pi*2/12
-		local pos=Vector3.new(math.cos(angle)*44,0,math.sin(angle)*44-550)
+		local pos=Vector3.new(math.cos(angle)*44,ay,math.sin(angle)*44-550)
+		-- Abertura ao norte para o caminho de pedras flutuantes.
+		if math.abs(math.cos(angle))<0.3 and math.sin(angle)>0 then continue end
 		Art.part(arena,"BrokenPillar",Vector3.new(4,10+(i%3)*3,4),CFrame.new(pos+Vector3.new(0,5,0))*CFrame.Angles(0,angle,0),stone,Enum.Material.Slate,nil,true)
 		Art.part(arena,"RuneLight",Vector3.new(0.35,3,0.1),CFrame.new(pos+Vector3.new(0,4,-2.1)),cyan,Enum.Material.Neon)
 	end
-	local fragment=Art.part(arena,"AuroraFragment",Vector3.new(1.5,3,1.5),CFrame.new(0,4,-578)*CFrame.Angles(0,0,0.4),amber,Enum.Material.Neon)
-	Art.part(arena,"FragmentAltar",Vector3.new(6,2,6),CFrame.new(0,1,-578),stone,Enum.Material.Marble,nil,true)
+	local fragment=Art.part(arena,"AuroraFragment",Vector3.new(1.5,3,1.5),CFrame.new(0,ay+4,-578)*CFrame.Angles(0,0,0.4),amber,Enum.Material.Neon)
+	Art.part(arena,"FragmentAltar",Vector3.new(6,2,6),CFrame.new(0,ay+1,-578),stone,Enum.Material.Marble,nil,true)
 	Art.label(fragment,"FRAGMENTO DA AURORA","Uma memória entre mundos",amber,4)
 	for i=1,32 do
 		local a=i*math.pi*2/32 local b=(i+1)*math.pi*2/32
-		Art.segment(arena,"SanctumBoundary",Vector3.new(math.cos(a)*46,0.68,math.sin(a)*46-550),Vector3.new(math.cos(b)*46,0.68,math.sin(b)*46-550),0.12,cyan,Enum.Material.Neon)
+		Art.segment(arena,"SanctumBoundary",Vector3.new(math.cos(a)*46,ay+0.68,math.sin(a)*46-550),Vector3.new(math.cos(b)*46,ay+0.68,math.sin(b)*46-550),0.12,cyan,Enum.Material.Neon)
 	end
 	local rests=folder(world,"RestShrines")
-	for _, definition in {{"Forest",Vector3.new(12,0,-145)},{"Temple",Vector3.new(-15,0,-390)}} do
+	for _, definition in {{"Forest",Vector3.new(12,0,-145)},{"Temple",Vector3.new(-15,ty,-390)}} do
 		local m=Instance.new("Model") m.Name=definition[1] m.Parent=rests
 		local pos=definition[2]
 		Art.part(m,"Basin",Vector3.new(4,1.3,4),CFrame.new(pos+Vector3.new(0,0.6,0)),stone,Enum.Material.Marble,Enum.PartType.Ball,true)
@@ -257,7 +275,7 @@ function WorldBuilder.build()
 		local core=Art.part(m,"Core",Vector3.new(0.8,2,0.8),CFrame.new(pos+Vector3.new(0,2.5,0)),cyan,Enum.Material.Neon,Enum.PartType.Ball)
 		Art.label(core,"FONTE DE LÚMEN","Descanso e ponto de retorno",nil,3)
 	end
-	local home=Art.part(arena,"ReturnStone",Vector3.new(2,4,2),CFrame.new(22,2,-529),cyan,Enum.Material.Neon)
+	local home=Art.part(arena,"ReturnStone",Vector3.new(2,4,2),CFrame.new(22,ay+2,-529),cyan,Enum.Material.Neon)
 	Art.label(home,"VALE DE LÚMEN","Retornar ao refúgio",nil,3)
 	local vistas=folder(world,"DistantIslands")
 	for i=1,6 do
@@ -269,6 +287,8 @@ function WorldBuilder.build()
 	LumenScenery.build(world)
 	-- A superfície suave dos voxels termina em Y=2; alinhar a cenografia.
 	world:PivotTo(world:GetPivot()+Vector3.new(0,2,0))
+	-- Estruturas do relevo usam alturas absolutas (Chapter.Relief): depois do ajuste.
+	LumenRelief.build(world)
 	world:SetAttribute("Ready",true)
 	print("[PortalPerdido] Vale, floresta e templo construídos.")
 end

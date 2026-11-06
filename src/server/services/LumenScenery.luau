@@ -2,6 +2,7 @@
 -- Referência principal: assets/world/references/02-vale-de-lumen.png.
 -- Massas distantes simples; água nativa; nenhuma luz dinâmica adicional.
 local Art=require(game:GetService("ReplicatedStorage").Shared.Art)
+local Chapter=require(game:GetService("ReplicatedStorage").Shared.Config.Chapter)
 local Scenery={}
 local stone=Color3.fromRGB(137,139,123)
 local moss=Color3.fromRGB(84,114,66)
@@ -67,8 +68,9 @@ function Scenery.build(world: Model)
 		terrain:FillBall(knoll[1],knoll[2],Enum.Material.LeafyGrass)
 	end
 	-- Rio lateral: longe das inscrições e do corredor principal. Leito contido
-	-- no domínio do gerador, sem apagar terreno externo ao projeto.
-	for i=0,14 do
+	-- no domínio do gerador, sem apagar terreno externo ao projeto. Termina
+	-- despencando na garganta (LumenRelief), como as cascatas da referência.
+	for i=0,16 do
 		local z=100-i*12
 		local x=94+math.sin(i*0.43)*9
 		terrain:FillBlock(CFrame.new(x,-4,z),Vector3.new(24,16,16),Enum.Material.Air)
@@ -138,20 +140,22 @@ function Scenery.build(world: Model)
 	end
 	-- Portal marco do vale: patamar próprio, fora da passagem do jogador.
 	local old=world.Village:FindFirstChild("PortalPrimordial") if old then old:Destroy() end
-	part(scene,"PortalTerrace",Vector3.new(58,3,44),Vector3.new(-80,0,-35),stone,Enum.Material.Cobblestone,true)
-	local portal=Art.portal(scene,Vector3.new(-80,2,-40),22)
+	-- No alto da Mesa do Portal (LumenRelief): `my` eleva a antiga cota do patamar.
+	-- A escadaria monumental é construída pelo LumenRelief, a partir do arco de entrada.
+	local my=Chapter.Relief.PortalMesa-3.5
+	part(scene,"PortalTerrace",Vector3.new(58,3,44),Vector3.new(-80,my,-35),stone,Enum.Material.Cobblestone,true)
+	local portal=Art.portal(scene,Vector3.new(-80,my+2,-40),22)
 	portal:SetAttribute("ReferenceImage","02-vale-de-lumen.png")
-	for i=1,6 do part(scene,"TerraceStep",Vector3.new(20,0.45*i,3),Vector3.new(-80,0.225*i,-8-i*3),stone,Enum.Material.Limestone,true) end
 	arch(scene,Vector3.new(-80,0,17),7)
 	for _,side in {-1,1} do
-		part(scene,"PortalButtress",Vector3.new(4,25,5),Vector3.new(-80+side*27,12,-40),stone,Enum.Material.Limestone,true)
-		crystal(scene,Vector3.new(-80+side*27,27,-40),2.2)
+		part(scene,"PortalButtress",Vector3.new(4,25,5),Vector3.new(-80+side*27,my+12,-40),stone,Enum.Material.Limestone,true)
+		crystal(scene,Vector3.new(-80+side*27,my+27,-40),2.2)
 	end
 	-- Cristal suspenso e anel: silhueta marcante da referência.
-	crystal(scene,Vector3.new(-80,55,-40),4)
+	crystal(scene,Vector3.new(-80,my+55,-40),4)
 	for i=1,24 do
 		local a=i*math.pi*2/24 local b=(i+1)*math.pi*2/24
-		Art.segment(scene,"CrownRing",Vector3.new(-80+math.cos(a)*10,55,-40+math.sin(a)*10),Vector3.new(-80+math.cos(b)*10,55,-40+math.sin(b)*10),0.3,Color3.fromRGB(182,166,109),Enum.Material.Metal)
+		Art.segment(scene,"CrownRing",Vector3.new(-80+math.cos(a)*10,my+55,-40+math.sin(a)*10),Vector3.new(-80+math.cos(b)*10,my+55,-40+math.sin(b)*10),0.3,Color3.fromRGB(182,166,109),Enum.Material.Metal)
 	end
 	-- Ruínas enquadram a chegada sem bloquear Ilyra nem os controles.
 	arch(scene,Vector3.new(0,0,68),10)
@@ -164,7 +168,7 @@ function Scenery.build(world: Model)
 	for i=1,32 do
 		local x=if i<=16 then rng:NextNumber(64,77) else rng:NextNumber(-109,-102)
 		local z=rng:NextNumber(-55,65)
-		local p=Vector3.new(x,0.5,z)
+		local p=surface(x,z)+Vector3.new(0,0.5,0)
 		Art.segment(scene,"FlowerStem",p,p+Vector3.new(0,0.9,0),0.07,moss,Enum.Material.Grass)
 		for j=1,3 do
 			local a=j*math.pi*2/3

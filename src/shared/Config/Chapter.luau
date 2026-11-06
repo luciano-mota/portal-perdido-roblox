@@ -1,14 +1,23 @@
 --!strict
 -- Universo e coordenadas originais de As Crônicas do Portal Perdido.
 return {
-	Version = 2,
+	Version = 3,
 	Title = "A TRAVESSIA",
 	GroundY = 2,
+	-- Alturas absolutas dos pisos jogáveis (referência 2: vale em camadas).
+	-- Pisos são peças com altura exata; o terreno de voxels só dá a massa natural.
+	Relief = {
+		PortalMesa = 21.5, DawnHill = 16, RootMesa = 22, StarIsland = 30, Temple = 26.5, Arena = 40,
+		GateZ = -455, VoidY = -40,
+		-- Depois do limiar: início do caminho de pedras flutuantes até a arena.
+		Threshold = Vector3.new(0, 30, -463),
+		Gorge = {z = -108, halfWidth = 12, bottom = -14},
+	},
 	Checkpoints = {
 		Village = Vector3.new(0, 5, 32),
 		Forest = Vector3.new(0, 5, -145),
-		Temple = Vector3.new(0, 5, -392),
-		Arena = Vector3.new(0, 5, -510),
+		Temple = Vector3.new(0, 29, -384),
+		Arena = Vector3.new(0, 43, -515),
 	},
 	Ilyra = Vector3.new(12, 0, 14),
 	Quests = {
@@ -19,9 +28,10 @@ return {
 		{title = "O GUARDIÃO DE RAÍZES", objective = "Vença o Guardião e recolha o Fragmento da Aurora.", reward = 100},
 	},
 	Runes = {
-		{id = "Dawn", name = "Inscrição da Aurora", symbol = "I", position = Vector3.new(-62, 0, -182), guard = "RuneMoss"},
-		{id = "Root", name = "Inscrição da Raiz", symbol = "II", position = Vector3.new(65, 0, -255), guard = "RuneThorn"},
-		{id = "Star", name = "Inscrição da Estrela", symbol = "III", position = Vector3.new(-38, 0, -322), guard = "RuneWisp"},
+		-- Y é resolvido pelo piso do platô (Relief); aqui só X/Z.
+		{id = "Dawn", name = "Inscrição da Aurora", symbol = "I", position = Vector3.new(-62, 0, -184), guard = "RuneMoss"},
+		{id = "Root", name = "Inscrição da Raiz", symbol = "II", position = Vector3.new(67, 0, -255), guard = "RuneThorn"},
+		{id = "Star", name = "Inscrição da Estrela", symbol = "III", position = Vector3.new(-42, 0, -325), guard = "RuneWisp"},
 	},
 	SealOrder = {"Dawn", "Root", "Star"},
 	EnemyTypes = {
@@ -32,9 +42,10 @@ return {
 	},
 	Encounters = {
 		{id = "FirstSentinel", kind = "Moss", position = Vector3.new(0, 3, -68), leash = 28},
-		{id = "RuneMoss", kind = "Moss", position = Vector3.new(-52, 3, -175), leash = 26},
-		{id = "RuneThorn", kind = "Thorn", position = Vector3.new(57, 3, -244), leash = 28},
-		{id = "RuneWisp", kind = "Wisp", position = Vector3.new(-29, 3, -311), leash = 27},
+		-- Guardas das inscrições ficam nos platôs; corrente curta para não saírem do piso.
+		{id = "RuneMoss", kind = "Moss", position = Vector3.new(-54, 3, -176), leash = 16},
+		{id = "RuneThorn", kind = "Thorn", position = Vector3.new(64, 3, -248), leash = 12},
+		{id = "RuneWisp", kind = "Wisp", position = Vector3.new(-38, 3, -318), leash = 14},
 		{id = "ForestThorn", kind = "Thorn", position = Vector3.new(40, 3, -142), leash = 22},
 		{id = "TempleWisp", kind = "Wisp", position = Vector3.new(32, 3, -358), leash = 22},
 		{id = "RootGuardian", kind = "Boss", position = Vector3.new(0, 7, -550), leash = 48},

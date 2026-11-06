@@ -28,6 +28,29 @@ local function playerRoot(player: Player): (BasePart?,Humanoid?)
 	return root,humanoid
 end
 
+-- Chão do vale em camadas: terreno e peças do mundo (pisos de platôs, ilhas, pedras).
+local function groundParams(): RaycastParams
+	local params=RaycastParams.new() params.FilterType=Enum.RaycastFilterType.Include
+	local world=workspace:FindFirstChild("PortalChapter")
+	params.FilterDescendantsInstances=if world then {world,workspace.Terrain} else {workspace.Terrain}
+	-- Copas, névoa e flores não colidem: não contam como chão.
+	params.RespectCanCollide=true
+	return params
+end
+
+local function groundAt(position: Vector3): number
+	local hit=workspace:Raycast(Vector3.new(position.X,position.Y+60,position.Z),Vector3.new(0,-(position.Y+160),0),groundParams())
+	return if hit then hit.Position.Y else Chapter.GroundY
+end
+
+-- Criaturas andam no plano do encontro: só avançam onde há piso perto dessa cota,
+-- para não caminhar no ar além da borda de platôs, ilhas e garganta.
+local function hasFloor(record: any,position: Vector3): boolean
+	local from=Vector3.new(position.X,record.groundY+4,position.Z)
+	local hit=workspace:Raycast(from,Vector3.new(0,-7,0),groundParams())
+	return hit~=nil and hit.Position.Y>record.groundY-2.5
+end
+
 local function lineOfSight(player: Player, record: any): boolean
 	local root=playerRoot(player)
 	if not root then return false end
@@ -58,8 +81,9 @@ end
 
 local function makeRecord(definition: any)
 	local kind=Chapter.EnemyTypes[definition.kind]
-	local origin=definition.position+Vector3.new(0,2,0)
-	if definition.kind=="Boss" then origin=Vector3.new(origin.X,9,origin.Z) end
+	-- Altura pelo piso real do local (platôs, ilha da arena), não por cota fixa.
+	local ground=groundAt(Vector3.new(definition.position.X,200,definition.position.Z))
+	local origin=Vector3.new(definition.position.X,ground+(if definition.kind=="Boss" then 7 else 3),definition.position.Z)
 	local model=Art.enemy(workspace.PortalEnemies,definition.kind,origin,kind.color)
 	model.Name=definition.id
 	model:SetAttribute("EnemyKind",definition.kind)
@@ -72,7 +96,7 @@ local function makeRecord(definition: any)
 	-- Corpo lógico sólido: jogadores não atravessam a criatura (a malha visual continua sem colisão).
 	root.CanCollide=true
 	Art.label(root,kind.name,nil,Color3.fromRGB(234,224,202),if definition.kind=="Boss" then 11 else 5)
-	records[definition.id]={definition=definition,stats=kind,model=model,root=root,origin=origin,hp=kind.health,max=kind.health,phase=1,contributors={},casting=false,nextCast=0,slowUntil=0,engaged=false}
+	records[definition.id]={definition=definition,stats=kind,model=model,root=root,origin=origin,groundY=ground,hp=kind.health,max=kind.health,phase=1,contributors={},casting=false,nextCast=0,slowUntil=0,engaged=false}
 end
 
 function Service.isAlive(id: string): boolean
@@ -91,7 +115,9 @@ local function callReinforcements(record: any)
 	task.delay(2,function()
 		for i=1,count do
 			local a=i*math.pi*2/count+0.8
-			local pos=record.origin+Vector3.new(math.cos(a)*10,0,math.sin(a)*10)
+			-- Dentro do piso do encontro: platôs pequenos usam corrente curta.
+			local spread=math.min(10,record.definition.leash*0.6)
+			local pos=record.origin+Vector3.new(math.cos(a)*spread,0,math.sin(a)*spread)
 			-- Novos encontros finitos; nunca renascer o inimigo derrotado.
 			makeRecord({id=record.definition.id.."_Reinforcement_"..i,kind=if i%2==0 then "Wisp" else "Thorn",
 				position=Vector3.new(pos.X,3,pos.Z),leash=record.definition.leash,group=record.definition.id})
@@ -366,7 +392,7 @@ rootBurst=function(record: any,target: Player,windupOverride: number?)
 	beginCast(record,"RootBurst",windup)
 	faceTowards(record,root.Position)
 	local radius=if boss and record.phase==2 then 10 else record.stats.radius
-	local centers={if boss then Vector3.new(root.Position.X,2.75,root.Position.Z) else Vector3.new(record.root.Position.X,2.75,record.root.Position.Z)}
+	local centers={if boss then Vector3.new(root.Position.X,root.Position.Y-2.25,root.Position.Z) else Vector3.new(record.root.Position.X,record.groundY+0.75,record.root.Position.Z)}
 	if boss and record.phase==2 then
 		for _, offset in {Vector3.new(12,0,3),Vector3.new(-9,0,-7)} do table.insert(centers,centers[1]+offset) end
 	end
@@ -381,7 +407,7 @@ rootBurst=function(record: any,target: Player,windupOverride: number?)
 				if playerPart and eligible(player,record) then
 					for _, center in centers do
 						local flat=Vector3.new(playerPart.Position.X,center.Y,playerPart.Position.Z)
-						if not hit[player] and (flat-center).Magnitude<=radius then
+						if not hit[player] and (flat-center).Magnitude<=radius and math.abs(playerPart.Position.Y-2.25-center.Y)<6 then
 							hit[player]=true
 							if not dodging(player) then
 								hurtPlayer(player,record.stats.damage+(if record.phase==2 then 3 else 0),center)
@@ -483,7 +509,7 @@ local function bite(record: any,target: Player)
 	beginCast(record,"Bite",windup)
 	faceTowards(record,root.Position)
 	local front=record.root.Position+record.root.CFrame.LookVector*3.2
-	notify:FireAllClients({kind="telegraph",position=Vector3.new(front.X,2.75,front.Z),radius=2.6,duration=windup,small=true})
+	notify:FireAllClients({kind="telegraph",position=Vector3.new(front.X,record.groundY+0.75,front.Z),radius=2.6,duration=windup,small=true})
 	record.nextCast=os.clock()+record.stats.cooldown*0.8+windup
 	task.delay(windup,function()
 		if record.hp<=0 or not record.model.Parent then record.casting=false return end
@@ -509,7 +535,7 @@ local function claw(record: any,target: Player)
 	beginCast(record,"Claw",windup)
 	faceTowards(record,root.Position)
 	local front=record.root.Position+record.root.CFrame.LookVector*3
-	notify:FireAllClients({kind="telegraph",position=Vector3.new(front.X,2.75,front.Z),radius=3.6,duration=windup,small=true})
+	notify:FireAllClients({kind="telegraph",position=Vector3.new(front.X,record.groundY+0.75,front.Z),radius=3.6,duration=windup,small=true})
 	record.nextCast=os.clock()+record.stats.cooldown+windup
 	task.delay(windup,function()
 		if record.hp<=0 or not record.model.Parent then record.casting=false return end
@@ -535,9 +561,7 @@ local function blink(record: any,target: Player)
 	-- Respeita a corrente (leash) e só aceita destino com chão.
 	local fromOrigin=Vector3.new(wanted.X-record.origin.X,0,wanted.Z-record.origin.Z)
 	if fromOrigin.Magnitude>record.definition.leash-2 then wanted=record.origin+fromOrigin.Unit*(record.definition.leash-2)+Vector3.new(0,record.root.Position.Y-record.origin.Y,0) end
-	local params=RaycastParams.new() params.FilterType=Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances={workspace:FindFirstChild("PortalChapter") or workspace.Terrain,workspace.Terrain}
-	if not workspace:Raycast(wanted+Vector3.new(0,6,0),Vector3.new(0,-20,0),params) then return end
+	if not hasFloor(record,wanted) then return end
 	local from=record.root.Position
 	if record.motion then record.motion:Cancel() end
 	record.root.CFrame=CFrame.lookAt(Vector3.new(wanted.X,from.Y,wanted.Z),Vector3.new(root.Position.X,from.Y,root.Position.Z))
@@ -553,7 +577,7 @@ local function cast(record: any,target: Player)
 	if not root then record.casting=false return end
 	local boss=record.definition.kind=="Boss"
 	local ranged=record.definition.kind=="Wisp" or boss
-	local centers={if ranged then Vector3.new(root.Position.X,2.75,root.Position.Z) else Vector3.new(record.root.Position.X,2.75,record.root.Position.Z)}
+	local centers={if ranged then Vector3.new(root.Position.X,root.Position.Y-2.25,root.Position.Z) else Vector3.new(record.root.Position.X,record.groundY+0.75,record.root.Position.Z)}
 	local radius=if boss and record.phase==2 then 10 else record.stats.radius
 	local windup=if record.phase==2 then 1.2 else record.stats.windup
 	record.model:SetAttribute("CastKind","Spell")
@@ -573,7 +597,7 @@ local function cast(record: any,target: Player)
 				if playerPart and eligible(player,record) then
 					for _, center in centers do
 						local flat=Vector3.new(playerPart.Position.X,center.Y,playerPart.Position.Z)
-						if not hit[player] and (flat-center).Magnitude<=radius then hit[player]=true if not dodging(player) then hurtPlayer(player,record.stats.damage+(if record.phase==2 then 3 else 0),center) end end
+						if not hit[player] and (flat-center).Magnitude<=radius and math.abs(playerPart.Position.Y-2.25-center.Y)<6 then hit[player]=true if not dodging(player) then hurtPlayer(player,record.stats.damage+(if record.phase==2 then 3 else 0),center) end end
 					end
 				end
 			end
@@ -718,6 +742,7 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 					local stepVec=Vector3.new(wantedPos.X-r.root.Position.X,0,wantedPos.Z-r.root.Position.Z)
 					if stepVec.Magnitude>0.2 then
 						local pos=r.root.Position+stepVec.Unit*math.min(stepVec.Magnitude,r.stats.speed*0.7*step)
+						if not hasFloor(r,pos) then r.circle=-(r.circle or 1) continue end
 						if r.motion then r.motion:Cancel() end
 						r.motion=TweenService:Create(r.root,TweenInfo.new(0.16,Enum.EasingStyle.Linear),{CFrame=CFrame.lookAt(pos,Vector3.new((point :: Vector3).X,pos.Y,(point :: Vector3).Z))})
 						r.motion:Play()
@@ -735,6 +760,7 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 				delta=Vector3.new(nextPoint.X-r.root.Position.X,0,nextPoint.Z-r.root.Position.Z)
 				if delta.Magnitude<0.1 then continue end
 				local pos=r.root.Position+delta.Unit*math.min(delta.Magnitude,speed*step)
+				if not hasFloor(r,pos) then if r.motion then r.motion:Cancel() end continue end
 				if r.motion then r.motion:Cancel() end
 				r.motion=TweenService:Create(r.root,TweenInfo.new(0.16,Enum.EasingStyle.Linear),{CFrame=CFrame.lookAt(pos,pos+delta.Unit)})
 				r.motion:Play()

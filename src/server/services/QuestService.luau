@@ -169,8 +169,34 @@ function Quest.init(notifyRemote: RemoteEvent, isGuardAlive: (string) -> boolean
 				return
 			end
 		end
-		Data.mutate(player,function(profile) profile.checkpoint="Arena" end)
-		if player.Character then player.Character:PivotTo(CFrame.new(Chapter.Checkpoints.Arena)) end
+		-- O limiar não leva direto ao chefe: abre o caminho de pedras flutuantes.
+		-- O checkpoint da Arena só é gravado ao pisar na ilha (laço abaixo).
+		if player.Character then player.Character:PivotTo(CFrame.new(Chapter.Relief.Threshold,Chapter.Relief.Threshold+Vector3.new(0,0,-10))) end
+		if p.checkpoint~="Arena" then message(player,"Salte pelas pedras flutuantes até o santuário suspenso. Uma queda devolve você ao templo.") end
+	end)
+	-- Quedas no vazio voltam ao último ponto seguro, com pouco dano; não matam.
+	task.spawn(function()
+		while true do
+			for _, player in Players:GetPlayers() do
+				local character=player.Character
+				local root=character and character:FindFirstChild("HumanoidRootPart")
+				local humanoid=character and character:FindFirstChildOfClass("Humanoid")
+				local p=Data.get(player)
+				if character and root and root:IsA("BasePart") and humanoid and humanoid.Health>0 and p then
+					if root.Position.Y<Chapter.Relief.VoidY then
+						local point=Chapter.Checkpoints[p.checkpoint] or Chapter.Checkpoints.Village
+						root.AssemblyLinearVelocity=Vector3.zero
+						character:PivotTo(CFrame.new(point))
+						humanoid:TakeDamage(math.max(0,math.min(10,humanoid.Health-1)))
+						message(player,"O vazio devolveu você ao último ponto seguro.")
+					elseif p.quest==5 and p.checkpoint~="Arena" and root.Position.Z<-506 and root.Position.Y>Chapter.Relief.Arena-2 then
+						Data.mutate(player,function(profile) profile.checkpoint="Arena" end)
+						message(player,"Santuário suspenso alcançado. Este é seu novo ponto de retorno.")
+					end
+				end
+			end
+			task.wait(0.4)
+		end
 	end)
 	prompt(world.Arena.AuroraFragment,"Recolher fragmento","Fragmento da Aurora",function(player)
 		local p=Data.get(player)

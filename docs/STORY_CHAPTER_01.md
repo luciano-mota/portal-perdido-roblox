@@ -9,12 +9,13 @@ Atualização 06/11: abertura trocada por feira de ciências → apagão → des
 
 Pedido do proprietário: os seis jovens estão num evento escolar assistindo a um experimento; acontece um apagão, eles desmaiam e, ao acordar, estão em outra realidade vestidos como aventureiros.
 
-Prólogo em quatro cenas (`src/shared/ArrivalCinematic.luau`; textos e títulos em `Chapter.Dialogues.Arrival` / `ArrivalTitles`):
+Prólogo (atualizado no mesmo dia para cinco cenas, ver `docs/PROLOGUE_QA.md`) (`src/shared/ArrivalCinematic.luau`; textos e títulos em `Chapter.Dialogues.Arrival` / `ArrivalTitles`):
 
-1. **A feira de ciências:** ginásio da escola, faixa "FEIRA DE CIÊNCIAS", bancadas de projetos. Os seis jovens, de uniforme escolar (camiseta clara, calça escura, tênis, algumas mochilas), assistem a uma bobina com esfera condutora soltando faíscas.
+1. **A feira de ciências:** ginásio da escola, faixa "FEIRA DE CIÊNCIAS", bancadas de projetos. O ginásio está cheio de alunos, pais e o professor que opera o experimento. Os seis jovens, de uniforme escolar (camiseta clara, calça escura, tênis, algumas mochilas), assistem a uma bobina com esfera condutora soltando faíscas.
 2. **O apagão:** a bobina sobrecarrega, a câmera treme, as luzes piscam e apagam, a esfera dá um último clarão e escurece. Os seis desmaiam.
 3. **O silêncio:** tela escura; a luz volta devagar e mostra o grupo deitado na grama do Vale de Lúmen, já com os trajes das classes.
-4. **Outra realidade:** os seis se levantam, e a câmera recua revelando a vila, Ilyra e o portal.
+4. **O despertar:** um a um, eles se mexem, sentam tontos com a mão na cabeça, apoiam um joelho e se levantam.
+5. **Outra realidade:** confusos, olham em volta, uns para os outros e para as roupas novas ("Onde... a gente está?"); a câmera revela a vila, Ilyra e o portal.
 
 O motivo do apagão e a ligação do experimento com o Portal Primordial ficam em aberto, como mistério da campanha.
 

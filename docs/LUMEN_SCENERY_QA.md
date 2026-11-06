@@ -38,3 +38,20 @@ Qualidade de árvores/ruínas e composição natural; abertura com atuação/efe
 - 24 tufos de vegetação nas margens do caminho, 120 lâminas estáticas: todas sem colisão, consulta física, toque e sombra. Captura desktop inspecionada. Ainda é cenário procedural em acabamento, longe da fidelidade da referência 2.
 - Nova medição de 180 frames em 1092×743: 59,995 FPS médios, p95 de frame 18,168 ms. É desktop, não aprovação de smartphone.
 - Duas novas gerações de árvore rejeitadas e preservadas em ServerStorage.GeneratedReferences: v2 generation c436b9b1-a1f4-4ea3-bae3-2df5068e185e (asset 115671667649704, pedido 4500 triângulos); v3 generation 46993370-59c1-4e86-97ae-bcde21127b00 (pedido 12000). Copas fragmentadas/facetadas não justificam substituir o cenário. Não foram integradas nem exportadas como assets aprovados.
+
+## Margens do rio, luz de fim de tarde e portal — 06/11/2026
+
+Implementado:
+- Três elevações de terreno (LeafyGrass) a leste, fora do eixo das missões; caminho de 15 lajes (RiverWalk) até a ponte, assentado por raycast no terreno.
+- Duas ruínas ribeirinhas (arco gerado reutilizado, base de calcário, três blocos caídos e árvore cada). A base desce até o ponto mais baixo da encosta sob seus quatro cantos.
+- Luz: ClockTime 16,8, exposição 0,18, saturação +0,03, atmosfera mais quente e `Clouds` no Terrain (cobertura 0,38).
+- Portal: disco central mais translúcido (0,72) com duas espirais estáticas de 20 segmentos neon cada, sem sombra/emissor/animação.
+
+Evidência no Play (Studio, desktop):
+- Cenário construído; 2 RiversideRuin, 2 RuinFooting, 15 RiverWalk, 6 FallenMasonry, 40 PortalSpiral; 2547 BaseParts no Workspace.
+- Captura revelou base retangular saliente na encosta; corrigido. Raycast de cima para baixo: todos os cantos das duas bases ficam 1,2–3 studs abaixo da superfície. Lajes do caminho com folga 0–0,07.
+- Pathfinding do spawn até Ilyra, RuneMoss, RuneThorn, RuneWisp, templo e arena (z −500): sucesso.
+- 240 frames em 1350×632: 59,91 FPS médios, p95 19,40 ms. Zero erros Luau em cliente e servidor (único aviso externo segue sendo 203785492).
+- Capturas inspecionadas: ruínas sobre as elevações junto ao rio, portal com espiral legível, nuvens visíveis.
+
+Não aprovado: fidelidade à referência 2, aparência das bases (ainda leem como blocos retos), aparelho móvel físico.

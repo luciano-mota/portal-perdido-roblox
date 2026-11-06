@@ -422,7 +422,20 @@ function Art.portal(parent: Instance, position: Vector3, radius: number): Model
 		Art.part(m,"ArcaneInset",Vector3.new(0.22,1.9,0.12),cf*CFrame.new(-1.1,0,-1.86),cyan,Enum.Material.Neon)
 	end
 	local rift=Art.part(m,"Rift",Vector3.new(radius*1.45,radius*1.7,0.3),CFrame.new(position+Vector3.new(0,radius,0)),cyan,Enum.Material.Neon,Enum.PartType.Ball)
-	rift.Transparency=0.32
+	rift.Transparency=0.72
+	-- Espirais originais dão profundidade ao portal, evitando um disco neon opaco.
+	-- Geometria estática reutilizável; sem emissores, sombras ou animação por segmento.
+	for arm=1,2 do
+		for step=1,20 do
+			local function point(t: number): Vector3
+				local angle=t*math.pi*3.1+arm*math.pi
+				local reach=radius*(0.08+t*0.62)
+				return position+Vector3.new(math.cos(angle)*reach,radius+math.sin(angle)*reach,-0.36)
+			end
+			local line=Art.segment(m,"PortalSpiral",point((step-1)/20),point(step/20),radius*0.016,if arm==1 then Color3.fromRGB(148,237,239) else Color3.fromRGB(74,157,202),Enum.Material.Neon)
+			line.Transparency=0.22+step/20*0.36 line.CastShadow=false
+		end
+	end
 	local light=Instance.new("PointLight")
 	light.Color=cyan
 	light.Brightness=0.9

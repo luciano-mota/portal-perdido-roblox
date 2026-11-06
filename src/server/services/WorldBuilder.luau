@@ -12,13 +12,13 @@ local cyan = Color3.fromRGB(76, 201, 205)
 local amber = Color3.fromRGB(230, 185, 110)
 
 local function lighting()
-	Lighting.ClockTime = 15.6
+	Lighting.ClockTime = 16.8
 	Lighting.GeographicLatitude = 35
 	Lighting.Brightness = 2.2
-	Lighting.ExposureCompensation = 0.05
+	Lighting.ExposureCompensation = 0.18
 	Lighting.Ambient = Color3.fromRGB(78,88,105)
 	Lighting.OutdoorAmbient = Color3.fromRGB(115,130,145)
-	Lighting.EnvironmentDiffuseScale = 0.45
+	Lighting.EnvironmentDiffuseScale = 0.65
 	Lighting.EnvironmentSpecularScale = 0.6
 	Lighting.ShadowSoftness = 0.4
 	for _, v in Lighting:GetChildren() do
@@ -27,14 +27,17 @@ local function lighting()
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
 	atmosphere.Name = "PortalPerdidoAtmosphere"
 	atmosphere.Density = 0.24 atmosphere.Offset = 0.15
-	atmosphere.Color = Color3.fromRGB(199,216,235)
+	atmosphere.Color = Color3.fromRGB(222,218,202)
 	atmosphere.Decay = Color3.fromRGB(116,139,165)
 	atmosphere.Haze = 1.1 atmosphere.Glare = 0.06
 	atmosphere.Parent = Lighting
+	local clouds=workspace.Terrain:FindFirstChild("LumenClouds")
+	if not clouds then clouds=Instance.new("Clouds") clouds.Name="LumenClouds" clouds.Parent=workspace.Terrain end
+	if clouds:IsA("Clouds") then clouds.Cover=0.38 clouds.Density=0.45 clouds.Color=Color3.fromRGB(255,239,216) end
 	local color = Lighting:FindFirstChild("PortalPerdidoColor")
 	if not color or not color:IsA("ColorCorrectionEffect") then color = Instance.new("ColorCorrectionEffect") end
 	if color:IsA("ColorCorrectionEffect") then
-		color.Name = "PortalPerdidoColor" color.Contrast = 0.08 color.Saturation = -0.08
+		color.Name = "PortalPerdidoColor" color.Contrast = 0.08 color.Saturation = 0.03
 		color.TintColor = Color3.fromRGB(255,247,235) color.Parent = Lighting
 	end
 end

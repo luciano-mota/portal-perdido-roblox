@@ -61,6 +61,11 @@ function Scenery.build(world: Model)
 	for _,p in {Vector3.new(-135,-18,65),Vector3.new(-130,-19,-82),Vector3.new(65,-20,93),Vector3.new(130,-19,-65)} do
 		terrain:FillBall(p,31,Enum.Material.LeafyGrass)
 	end
+	-- Planos intermediários do vale: margens altas enquadram o rio e as ruínas,
+	-- longe do eixo da missão e dos locais já habitados pela vila.
+	for _,knoll in {{Vector3.new(67,-15,-27),23},{Vector3.new(65,-16,-81),26},{Vector3.new(125,-14,36),25}} do
+		terrain:FillBall(knoll[1],knoll[2],Enum.Material.LeafyGrass)
+	end
 	-- Rio lateral: longe das inscrições e do corredor principal. Leito contido
 	-- no domínio do gerador, sem apagar terreno externo ao projeto.
 	for i=0,14 do
@@ -82,6 +87,36 @@ function Scenery.build(world: Model)
 	for _,z in {20,30} do
 		for i=0,6 do part(scene,"BridgePost",Vector3.new(1,3.8,1),Vector3.new(77+i*6,1.9,z),stone,Enum.Material.Limestone,true) end
 		part(scene,"BridgeParapet",Vector3.new(37,0.7,0.65),Vector3.new(95,3.1,z),stone,Enum.Material.Limestone,true)
+	end
+	local ground=RaycastParams.new() ground.FilterType=Enum.RaycastFilterType.Include ground.FilterDescendantsInstances={terrain}
+	local function surface(x: number,z: number): Vector3
+		local hit=workspace:Raycast(Vector3.new(x,80,z),Vector3.new(0,-140,0),ground)
+		-- O mundo recebe +2 Y ao final de WorldBuilder; terreno não recebe esse deslocamento.
+		return Vector3.new(x,if hit then hit.Position.Y-2 else 0,z)
+	end
+	-- Caminho lateral legível até a ponte: peças baixas e irregulares sobre o solo.
+	for i=1,15 do
+		local p=surface(10+i*4.3,25+math.sin(i*0.28)*2)
+		local slab=part(scene,"RiverWalk",Vector3.new(4.8,0.22,5.5),p+Vector3.new(0,0.1,0),stone,Enum.Material.Cobblestone,true)
+		slab.CFrame*=CFrame.Angles(0,math.sin(i)*0.08,0)
+	end
+	for index,point in {Vector2.new(65,-26),Vector2.new(64,-80)} do
+		local base=surface(point.X,point.Y)
+		-- Base desce até o ponto mais baixo da encosta sob ela: nenhum canto flutua.
+		local low=base.Y
+		for _,offset in {Vector2.new(-7,-3),Vector2.new(7,-3),Vector2.new(-7,3),Vector2.new(7,3)} do
+			low=math.min(low,surface(point.X+offset.X,point.Y+offset.Y).Y)
+		end
+		local top=base.Y+0.8
+		part(scene,"RuinFooting",Vector3.new(14,top-low+1.2,6),Vector3.new(base.X,(top+low-1.2)/2,base.Z),stone,Enum.Material.Limestone,true)
+		local ruin=arch(scene,base+Vector3.new(0,0.8,0),5)
+		ruin.Name="RiversideRuin" ruin:SetAttribute("ReferenceImage","02-vale-de-lumen.png")
+		for j=1,3 do
+			local p=surface(point.X-10+j*5,point.Y+9)
+			local block=part(scene,"FallenMasonry",Vector3.new(3.2,1.6,2.2),p+Vector3.new(0,0.8,0),stone,Enum.Material.Limestone,true)
+			block.CFrame*=CFrame.Angles(0,j*0.7,0.12)
+		end
+		Art.tree(scene,surface(76,point.Y+11),630+index,false)
 	end
 	-- Cascata contínua do rio para fora da borda da ilha.
 	for i=1,7 do

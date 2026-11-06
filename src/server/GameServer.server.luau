@@ -30,4 +30,18 @@ Data.init(function(player)
 	Classes.register(player)
 	Quests.register(player)
 end)
+-- Ganchos de QA apenas no Studio: BindableFunction em ServerStorage não é acessível
+-- pelo cliente e não existe em servidores publicados. Usado por testes via MCP, que
+-- executam em outra VM e não compartilham o estado dos módulos.
+if game:GetService("RunService"):IsStudio() then
+	local qa=Instance.new("BindableFunction") qa.Name="QAFixtures"
+	qa.OnInvoke=function(op: string,player: Player?,value: any)
+		if op=="beginSolo" then Expedition.MinimumPlayers=1 return Expedition.tryBegin() end
+		if op=="setQuest" and player and typeof(value)=="number" then
+			Data.mutate(player,function(profile) profile.quest=value end) return Data.get(player).quest
+		end
+		return nil
+	end
+	qa.Parent=game:GetService("ServerStorage")
+end
 print("[PortalPerdido] Capítulo 1 pronto: cinco missões, três classes, floresta, templo e Guardião.")

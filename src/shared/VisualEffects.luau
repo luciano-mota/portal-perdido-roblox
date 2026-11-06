@@ -159,7 +159,7 @@ function FX.play(data: any)
 			p.CFrame=CFrame.new(data.position)*CFrame.Angles(0,0,math.pi/2) p.Transparency=0.55
 			return
 		end
-		ring(data.position,data.radius,if data.style=="roots" then Color3.fromRGB(176,112,62) else Color3.fromRGB(233,109,73),data.duration,true)
+		ring(data.position,data.radius,if data.boss then Color3.fromRGB(245,168,72) elseif data.style=="roots" then Color3.fromRGB(176,112,62) else Color3.fromRGB(233,109,73),data.duration,true)
 		if data.style=="roots" then
 			-- Brotos tremem no chão antes da erupção.
 			task.delay(math.max(0,data.duration-0.35),function()

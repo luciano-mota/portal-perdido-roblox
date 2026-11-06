@@ -28,3 +28,23 @@ Substitui o chefe procedural (esferas e galhos) por uma criatura original gerada
 
 - Duração/dificuldade da luta não aprovadas por automação; precisa de teste humano e em celular.
 - Predador de Espinhos e Eco do Vazio continuam procedurais.
+
+## Equilíbrio do chefe e gancho de QA — 06/11/2026
+
+Diagnóstico pelo código (LAUNCH_PLAN P0 #2): o combo vinha → puxão (lentidão 1,0 s, velocidade 3) → raízes com 0,55 s de aviso era praticamente inevitável sem esquiva; na fase 1, raio 15 a velocidade 16 deixava menos de 0,5 s de reação. O lembrete da Fonte antes do limiar já existia (QuestService).
+
+Implementado (somente chefe):
+- Combo: aviso das raízes após o puxão 0,55 → 1,0 s; lentidão do puxão 1,0 → 0,5 s. Sentinela mantém os valores anteriores.
+- Fase 1: raio das raízes 15 → 12 (Chapter.EnemyTypes.Boss.radius).
+- Fase 2: aviso 1,05 → 1,2 s; bônus de dano +5 → +3 (27 → 25).
+- Marca no chão do chefe em âmbar claro (245,168,72), distinta do marrom do Sentinela.
+- `ServerStorage.QAFixtures` (BindableFunction) criado **apenas quando RunService:IsStudio()**: `beginSolo` (mínimo 1 para a expedição) e `setQuest`. Necessário porque `require` via MCP roda em outra VM sem estado compartilhado. Cliente não enxerga ServerStorage (verificado).
+
+Evidência no Play (Studio, solo com gancho de QA, Guardião escolhido pelo remote normal; nenhuma alteração de vida/dano):
+- Marcas emitidas na fase 1: raio 12, aviso 1,40 s (9 ocorrências). Combo após puxão: aviso 1,00 s (1 ocorrência).
+- Fuga controlada pelo servidor com 0,35 s de reação e caminho livre: 12,7 studs percorridos em 1,05 s, sem dano. Velocidade medida 16.
+- Falhas de fuga nas outras tentativas foram do bot: fugia sempre em linha reta e travava na parede da arena (z ≈ −491, velocidade 0). Jogador humano contorna; não é defeito do jogo.
+- Primeiro golpe no chefe chama 2 reforços (Predador e Eco). Solo, o jogador enfrenta três inimigos e morre em ~12 s sem estratégia: coerente com a meta 3–6, mas registra que a dificuldade solo não é parâmetro.
+- Zero erros Luau no servidor (aviso externo 203785492 continua).
+
+Não testado: fase 2 em jogo (bot não causou 900 de dano), equilíbrio com 3 e 6 jogadores, avaliação humana do desafio.

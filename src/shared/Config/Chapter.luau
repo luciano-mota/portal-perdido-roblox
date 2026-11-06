@@ -28,7 +28,7 @@ return {
 		Moss = {name = "Sentinela de Musgo", health = 120, damage = 10, speed = 7, radius = 7, windup = 0.9, cooldown = 2.8, color = Color3.fromRGB(74, 117, 86)},
 		Thorn = {name = "Predador de Espinhos", health = 100, damage = 12, speed = 11, radius = 6, windup = 0.7, cooldown = 2.4, color = Color3.fromRGB(126, 106, 76)},
 		Wisp = {name = "Eco do Vazio", health = 85, damage = 13, speed = 6, radius = 9, windup = 1.1, cooldown = 3.2, color = Color3.fromRGB(129, 108, 190)},
-		Boss = {name = "Guardião de Raízes", health = 1800, damage = 22, speed = 4, radius = 15, windup = 1.4, cooldown = 3.8, color = Color3.fromRGB(103, 125, 83)},
+		Boss = {name = "Guardião de Raízes", health = 1800, damage = 22, speed = 4, radius = 12, windup = 1.4, cooldown = 3.8, color = Color3.fromRGB(103, 125, 83)},
 	},
 	Encounters = {
 		{id = "FirstSentinel", kind = "Moss", position = Vector3.new(0, 3, -68), leash = 28},

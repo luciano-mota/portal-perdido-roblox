@@ -362,7 +362,7 @@ rootBurst=function(record: any,target: Player,windupOverride: number?)
 	local root=playerRoot(target)
 	if not root then return end
 	local boss=record.definition.kind=="Boss"
-	local windup=windupOverride or (if record.phase==2 then 1.05 else record.stats.windup)
+	local windup=windupOverride or (if record.phase==2 then 1.2 else record.stats.windup)
 	beginCast(record,"RootBurst",windup)
 	faceTowards(record,root.Position)
 	local radius=if boss and record.phase==2 then 10 else record.stats.radius
@@ -384,7 +384,7 @@ rootBurst=function(record: any,target: Player,windupOverride: number?)
 						if not hit[player] and (flat-center).Magnitude<=radius then
 							hit[player]=true
 							if not dodging(player) then
-								hurtPlayer(player,record.stats.damage+(if record.phase==2 then 5 else 0),center)
+								hurtPlayer(player,record.stats.damage+(if record.phase==2 then 3 else 0),center)
 								snare(player,if boss then 0.9 else 1.1,playerPart.Position)
 							end
 						end
@@ -448,7 +448,7 @@ local function vineGrab(record: any,target: Player,reach: number)
 				-- Puxa até a frente da criatura, dentro da área das raízes.
 				local landing=record.root.Position+record.root.CFrame.LookVector*math.max(3.5,record.stats.radius*0.45)
 				landing=Vector3.new(landing.X,part.Position.Y,landing.Z)
-				snare(caught,1.0,part.Position)
+				snare(caught,if record.definition.kind=="Boss" then 0.5 else 1.0,part.Position)
 				local start=part.Position
 				pulled=true
 				local params=RaycastParams.new()
@@ -469,7 +469,8 @@ local function vineGrab(record: any,target: Player,reach: number)
 			end
 		end
 		record.casting=false
-		if pulled and caught and record.hp>0 then rootBurst(record,caught,0.55) end
+		-- Chefe: aviso mais longo após o puxão, para a esquiva ser uma resposta possível.
+		if pulled and caught and record.hp>0 then rootBurst(record,caught,if record.definition.kind=="Boss" then 1.0 else 0.55) end
 	end)
 end
 
@@ -554,7 +555,7 @@ local function cast(record: any,target: Player)
 	local ranged=record.definition.kind=="Wisp" or boss
 	local centers={if ranged then Vector3.new(root.Position.X,2.75,root.Position.Z) else Vector3.new(record.root.Position.X,2.75,record.root.Position.Z)}
 	local radius=if boss and record.phase==2 then 10 else record.stats.radius
-	local windup=if record.phase==2 then 1.05 else record.stats.windup
+	local windup=if record.phase==2 then 1.2 else record.stats.windup
 	record.model:SetAttribute("CastKind","Spell")
 	record.model:SetAttribute("CastStartedAt",workspace:GetServerTimeNow())
 	record.model:SetAttribute("CastEndsAt",workspace:GetServerTimeNow()+windup)
@@ -572,7 +573,7 @@ local function cast(record: any,target: Player)
 				if playerPart and eligible(player,record) then
 					for _, center in centers do
 						local flat=Vector3.new(playerPart.Position.X,center.Y,playerPart.Position.Z)
-						if not hit[player] and (flat-center).Magnitude<=radius then hit[player]=true if not dodging(player) then hurtPlayer(player,record.stats.damage+(if record.phase==2 then 5 else 0),center) end end
+						if not hit[player] and (flat-center).Magnitude<=radius then hit[player]=true if not dodging(player) then hurtPlayer(player,record.stats.damage+(if record.phase==2 then 3 else 0),center) end end
 					end
 				end
 			end

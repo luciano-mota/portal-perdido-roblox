@@ -167,7 +167,7 @@ audioToggle.Activated:Connect(function() Audio.muted=not Audio.muted audioToggle
 journalButton.Activated:Connect(function() journal.Visible=not journal.Visible refresh() end)
 
 local intro=frame(screen,"Prologue",UDim2.fromScale(1,1),UDim2.fromScale(0,0),Color3.fromRGB(8,18,28)) intro.BackgroundTransparency=0.88 intro.Visible=false
-text(intro,"Kicker","PRÓLOGO · O ACIDENTE",13,UDim2.fromScale(0.1,0.12),UDim2.fromScale(0.8,0.1),amber)
+local introKicker=text(intro,"Kicker",Chapter.Dialogues.ArrivalTitles[1],13,UDim2.fromScale(0.1,0.12),UDim2.fromScale(0.8,0.1),amber)
 local introText=text(intro,"Story","",24,UDim2.fromScale(0.1,0.62),UDim2.fromScale(0.8,0.15)) introText.Font=Enum.Font.GothamSemibold
 local introNext=button(intro,"Next","CONTINUAR",UDim2.fromScale(0.35,0.76),UDim2.fromScale(0.3,0.12))
 local introSkip=button(intro,"Skip","PULAR INTRODUÇÃO",UDim2.fromScale(0.3,0.91),UDim2.fromScale(0.4,0.065),ink) introSkip.TextSize=11
@@ -187,7 +187,7 @@ introNext.Activated:Connect(function() if cinematic then cinematic.next() end en
 local function beginIntro()
 	introStarted=true intro.Visible=true introText.Text=Chapter.Dialogues.Arrival[1]
 	cinematic=require(ReplicatedStorage.Shared.ArrivalCinematic).start(function(page)
-		introPage=page introText.Text=Chapter.Dialogues.Arrival[page]
+		introPage=page introText.Text=Chapter.Dialogues.Arrival[page] introKicker.Text=Chapter.Dialogues.ArrivalTitles[page]
 	end,finishIntro)
 end
 

@@ -1,13 +1,26 @@
 # Capítulo 1 — A Travessia
 
-Atualização 03/11: abertura passa a mostrar a demonstração imersiva, a ruptura e a chegada em três cenas 3D locais. Elenco de seis viajantes na encenação; objetivo de expedição solicitado pelo usuário: mínimo 3 jogadores, ideal 6. Direção e referências: [Aetherion](AETHERION_VISUAL_ROADMAP.md). A primeira encenação usa os avatares de fantasia como projeções da demonstração; atuação, som e acabamento cinematográfico ainda precisam de revisão.
+Atualização 06/11: abertura trocada por feira de ciências → apagão → despertar (ver seção "Nova abertura"). Registro anterior, 03/11: abertura passa a mostrar a demonstração imersiva, a ruptura e a chegada em três cenas 3D locais. Elenco de seis viajantes na encenação; objetivo de expedição solicitado pelo usuário: mínimo 3 jogadores, ideal 6. Direção e referências: [Aetherion](AETHERION_VISUAL_ROADMAP.md). A primeira encenação usa os avatares de fantasia como projeções da demonstração; atuação, som e acabamento cinematográfico ainda precisam de revisão.
 
 **Aetherion:** mundo de ilhas flutuantes, máquinas arcanas e portais fraturados.
 **Objetivo dramático:** obter o primeiro Fragmento da Aurora e entender por que o Portal Primordial está selado.
 
+## Nova abertura — 06/11/2026 (substitui a demonstração imersiva)
+
+Pedido do proprietário: os seis jovens estão num evento escolar assistindo a um experimento; acontece um apagão, eles desmaiam e, ao acordar, estão em outra realidade vestidos como aventureiros.
+
+Prólogo em quatro cenas (`src/shared/ArrivalCinematic.luau`; textos e títulos em `Chapter.Dialogues.Arrival` / `ArrivalTitles`):
+
+1. **A feira de ciências:** ginásio da escola, faixa "FEIRA DE CIÊNCIAS", bancadas de projetos. Os seis jovens, de uniforme escolar (camiseta clara, calça escura, tênis, algumas mochilas), assistem a uma bobina com esfera condutora soltando faíscas.
+2. **O apagão:** a bobina sobrecarrega, a câmera treme, as luzes piscam e apagam, a esfera dá um último clarão e escurece. Os seis desmaiam.
+3. **O silêncio:** tela escura; a luz volta devagar e mostra o grupo deitado na grama do Vale de Lúmen, já com os trajes das classes.
+4. **Outra realidade:** os seis se levantam, e a câmera recua revelando a vila, Ilyra e o portal.
+
+O motivo do apagão e a ligação do experimento com o Portal Primordial ficam em aberto, como mistério da campanha.
+
 ## Sequência planejada
 
-1. **O acidente:** demonstração de uma tecnologia de realidade imersiva falha; os viajantes atravessam uma fenda.
+1. **O apagão:** um experimento numa feira de ciências escolar provoca um apagão; os seis jovens desmaiam e acordam em Aetherion. *(Antes: demonstração de realidade imersiva com fenda — substituída em 06/11/2026.)*
 2. **O despertar:** Vale de Lúmen, vila de acolhimento e seleção de classe.
 3. **A floresta esquecida:** primeiros combates e três inscrições para a passagem do templo.
 4. **Guardião de Raízes:** boss de duas fases com ataques telegrafados.

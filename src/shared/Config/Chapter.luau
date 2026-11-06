@@ -51,7 +51,9 @@ return {
 		{id = "RootGuardian", kind = "Boss", position = Vector3.new(0, 7, -550), leash = 48},
 	},
 	Dialogues = {
-		Arrival = {"Seis amigos testam uma aventura de realidade imersiva. O portal deveria ser apenas uma simulação.", "O sistema perde o controle. A fenda se torna real e arrasta o grupo para outro mundo.", "A travessia termina em Aetherion. No Vale de Lúmen, Ilyra pode ajudar vocês a encontrar o caminho de casa."},
+		-- Prólogo: uma página por cena de ArrivalCinematic (escola, apagão, desmaio, despertar).
+		ArrivalTitles = {"PRÓLOGO · A FEIRA DE CIÊNCIAS", "PRÓLOGO · O APAGÃO", "PRÓLOGO · O SILÊNCIO", "PRÓLOGO · OUTRA REALIDADE"},
+		Arrival = {"Seis jovens assistem a um experimento na feira de ciências da escola. A bobina estala, e todos se aproximam para ver melhor.", "Uma descarga atravessa o ginásio. As luzes piscam e tudo se apaga. Os seis desmaiam no escuro.", "Silêncio. Nenhuma voz, nenhum barulho da escola. Só um vento morno e cheiro de grama.", "Quando acordam, estão em outra realidade, vestidos como aventureiros. No Vale de Lúmen, Ilyra pode ajudar vocês a encontrar o caminho de casa."},
 		IlyraFirst = {"Respire. Você está no Vale de Lúmen. Meu nome é Ilyra.", "O Portal Primordial foi selado. Sua chegada não deveria ser possível.", "As raízes da floresta estão inquietas. Afaste o Sentinela do caminho; depois procure as três inscrições antigas."},
 		Runes = {"As inscrições respondem à sua presença. Aurora, Raiz, Estrela…", "Lembre a ordem. Os selos do templo guardam uma memória mais antiga que o próprio vale."},
 		Temple = {"As portas reconhecem as três inscrições. Um tremor percorre a pedra.", "O Guardião de Raízes protege o Fragmento da Aurora. Observe o chão: suas raízes anunciam cada ataque.", "Quando seu núcleo mudar de cor, o combate entrará em uma segunda fase. Mantenha-se em movimento."},

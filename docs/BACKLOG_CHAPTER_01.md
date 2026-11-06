@@ -34,3 +34,16 @@ Backlog vivo das **29 issues CPP-001…CPP-029** já existentes, mais **5 issues
 - Fonte de verdade do estado: **GitHub Issues + PRs**, não esta cópia estática.
 
 Veja \`docs/TECHNICAL_PLAN_CHAPTER_01.md\` e \`docs/ART_DIRECTION_SEMIREALISTIC.md\` para critérios detalhados.
+
+## Cenário de Vale de Lúmen — em standby (06/11/2026)
+
+O vale em camadas (commit `f496994`, detalhes em `docs/LUMEN_SCENERY_QA.md`) foi validado no Studio e pausado para priorizar a nova introdução da história. Pendências registradas para retomar depois (CPP-006 / CPP-033 / CPP-032 / CPP-023):
+
+- [ ] **FPS válido** — repetir a medição com a janela do Studio em foco (a última ficou limitada a 15–20 FPS por falta de foco) e depois em aparelho móvel físico.
+- [ ] **Fidelidade à referência 2** — pôr do sol rosado, montanha com arco de rocha, névoa em camadas.
+- [ ] **Praça da Aurora** — ainda lê como disco; dar forma orgânica.
+- [ ] **Escadarias** — muito retas; quebrar com curvas, patamares e degraus irregulares.
+- [ ] **Bases das ruínas ribeirinhas** — ainda leem como blocos retos.
+- [ ] **Limiar** — testar a passagem pelo ProximityPrompt real (não só teleporte de QA).
+- [ ] **Regressão completa** — passagem inteira do capítulo no relevo novo, solo e com 3+ jogadores.
+- [ ] **Personagens e criaturas** — etapa visual seguinte ao relevo.

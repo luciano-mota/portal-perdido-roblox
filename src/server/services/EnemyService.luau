@@ -137,7 +137,9 @@ end
 local function callReinforcements(record: any)
 	if record.definition.group or record.reinforcementsCalled then return end
 	record.reinforcementsCalled=true record.pendingReinforcements=true
-	local count=if Expedition.readyCount()>=5 then 3 else 2
+	-- Reforços pela quantidade de viajantes: 1 sozinho, 2 em grupo pequeno, 3 com 5–6.
+	local players=Expedition.readyCount()
+	local count=if players>=5 then 3 elseif players>=2 then 2 else 1
 	notify:FireAllClients({kind="toast",text=record.stats.name.." chamou reforços! Protejam os companheiros."})
 	record.model:SetAttribute("ReinforcementsCalled",true)
 	-- Reforços da fauna da região (o Vale usa Predador e Eco; cada mundo tem as suas criaturas).
@@ -328,6 +330,20 @@ local function damage(player: Player,record: any,amount: number)
 					local root=playerRoot(witness)
 					if root and (root.Position-center).Magnitude<160 then
 						notify:FireClient(witness,{kind="vision",style=record.definition.visionStyle or "flashback",region=vision,center=center})
+					end
+				end
+			end)
+		end
+		-- Chefe final da campanha (Regente): progresso da fase 6 e epílogo para quem estava no átrio.
+		if record.definition.finale then
+			local center=record.origin
+			if Service.onBossDefeated then task.spawn(Service.onBossDefeated,record.definition.region,center) end
+			notify:FireAllClients({kind="bossPhase",text="O Regente do Vazio se desfaz em poeira violeta...",position=record.root.Position})
+			task.delay(3.5,function()
+				for _,witness in Players:GetPlayers() do
+					local root=playerRoot(witness)
+					if (root and (root.Position-center).Magnitude<220) or Expedition.isEliminated(witness) then
+						notify:FireClient(witness,{kind="finale"})
 					end
 				end
 			end)
@@ -565,6 +581,8 @@ end
 
 local function beginCast(record: any,kind: string,windup: number)
 	record.casting=true
+	-- Vez de atacar (ver crowded no laço da IA).
+	record.lastStrikeAt=os.clock() record.lastStrikeTarget=record.pendingTarget
 	if record.motion then record.motion:Cancel() end
 	record.model:SetAttribute("CastKind",kind)
 	record.model:SetAttribute("CastStartedAt",serverNow())
@@ -853,6 +871,33 @@ local function blink(record: any,target: Player)
 	notify:FireAllClients({kind="blink",from=from,to=record.root.Position,color=record.stats.color})
 end
 
+-- Passo do Vazio (Regente, fase 2+): marca o ponto ao lado do alvo, some e reaparece ali.
+-- O aviso no chão dura 0,7 s, dando tempo de se afastar antes do golpe seguinte.
+local function voidStep(record: any,target: Player)
+	if record.casting or record.hp<=0 then return end
+	local root=playerRoot(target)
+	if not root then return end
+	local toward=Vector3.new(record.root.Position.X-root.Position.X,0,record.root.Position.Z-root.Position.Z)
+	toward=if toward.Magnitude>0.1 then toward.Unit else Vector3.new(0,0,1)
+	local wanted=Vector3.new(root.Position.X,record.root.Position.Y,root.Position.Z)+toward*9
+	local fromOrigin=Vector3.new(wanted.X-record.origin.X,0,wanted.Z-record.origin.Z)
+	if fromOrigin.Magnitude>record.definition.leash-2 then return end
+	if not hasFloor(record,wanted) then return end
+	record.nextStep=os.clock()+(if record.phase>=3 then 6 else 9)
+	beginCast(record,"VoidStep",0.7)
+	notify:FireAllClients({kind="telegraph",position=Vector3.new(wanted.X,record.groundY+0.75,wanted.Z),radius=6,duration=0.7,boss=true,style="void"})
+	task.delay(0.7,function()
+		if record.hp<=0 or not record.model.Parent then return end
+		local from=record.root.Position
+		if record.motion then record.motion:Cancel() end
+		record.root.CFrame=CFrame.lookAt(wanted,Vector3.new(root.Position.X,wanted.Y,root.Position.Z))
+		notify:FireAllClients({kind="blink",from=from,to=wanted,color=record.stats.color})
+		heraldImpact(record,{Vector3.new(wanted.X,record.groundY+0.75,wanted.Z)},6,math.floor(record.stats.damage*0.8),"void")
+		record.nextCast=os.clock()+0.9
+		record.casting=false
+	end)
+end
+
 local function cast(record: any,target: Player)
 	if record.casting or record.hp<=0 then return end
 	record.casting=true
@@ -1064,6 +1109,16 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 			-- Escolha de movimento por tipo de criatura.
 			if target and sees then
 				local t=target :: Player
+				r.pendingTarget=t
+				-- Vez de atacar: no máximo 2 criaturas comuns iniciam golpes contra o mesmo jogador
+				-- ao mesmo tempo; as outras rodeiam e esperam (grupos legíveis, solo viável).
+				if ready and not boss then
+					local busy=0
+					for _,other in records do
+						if other~=r and other.hp>0 and other.lastStrikeTarget==t and os.clock()-(other.lastStrikeAt or -math.huge)<1.6 and not (other.definition.kind=="Boss" or colossus(other)) then busy+=1 end
+					end
+					if busy>=2 then ready=false end
+				end
 				if kind=="Moss" then
 					if distance<=r.stats.radius+1 and ready then rootBurst(r,t) continue end
 					if distance>r.stats.radius+1 and distance<=20 and now>=(r.nextGrab or 0) and ready then vineGrab(r,t,20) continue end
@@ -1071,6 +1126,7 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 					if distance>14 and distance<=32 and now>=(r.nextGrab or 0) and ready then vineGrab(r,t,32) continue end
 					if distance<=42 and ready then rootBurst(r,t) continue end
 				elseif kind=="Herald" then
+					if r.stats.voidStep and r.phase>=2 and distance>12 and ready and now>=(r.nextStep or 0) then voidStep(r,t) continue end
 					if distance<=15 and ready and now>=(r.nextRing or 0) then heraldRing(r) continue end
 					if distance<=46 and ready then heraldStrike(r,t) continue end
 				elseif kind=="Thorn" then

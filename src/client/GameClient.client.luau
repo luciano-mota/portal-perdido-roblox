@@ -484,6 +484,12 @@ notify.OnClientEvent:Connect(function(data)
 	elseif data.kind=="toast" or data.kind=="bossPhase" then showToast(data.text)
 	elseif data.kind=="quest" then Audio.quest() showToast(data.text..(if data.coins>0 then "  +"..data.coins.." moedas" else ""))
 	elseif data.kind=="hurt" then if data.shielded then showToast("ÉGIDE: dano reduzido") end
+	elseif data.kind=="finale" then
+		-- Fim da campanha (Regente vencido na fase 6): a mesma tela de conclusão, com o epílogo final.
+		ending.Chapter.Text="CAMPANHA CONCLUÍDA"
+		ending.Title.Text="O PORTAL\nPRIMORDIAL"
+		ending.Epilogue.Text="O Regente do Vazio se desfaz em poeira violeta. Pela primeira vez, o Portal Primordial se abre — e, do outro lado, as luzes do ginásio piscam.\n\nMas a coroa caída ainda pulsa no chão do átrio. Algo no vazio continua acordado."
+		pendingEnding=true if not dialogue.Visible then pendingEnding=false ending.Visible=true refresh() end
 	elseif data.kind=="vision" then
 		-- Visão do Regente do Vazio depois do chefe final de uma região.
 		local Vision=require(ReplicatedStorage.Shared.RegentVision)

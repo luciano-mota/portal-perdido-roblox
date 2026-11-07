@@ -204,13 +204,10 @@ local GENERATED: {[string]: any}={
 		},
 	},
 	Herald={
-		-- Arauto Partido: rig R15 gerado em escala de colosso; tronco, cabeça e braços articulados.
-		template="HeraldTemplate", scale=2.3, baseY=0,
-		joints={UpperTorso={"Waist",-0.45},Head={"Neck",-0.45,"UpperTorso"},
-			LeftUpperArm={"LeftShoulder",0.4,"UpperTorso"},RightUpperArm={"RightShoulder",0.4,"UpperTorso"},
-			LeftLowerArm={"LeftElbow",0.45,"LeftUpperArm"},RightLowerArm={"RightElbow",0.45,"RightUpperArm"},
-			LeftHand={"LeftWrist",0.5,"LeftLowerArm"},RightHand={"RightWrist",0.5,"RightLowerArm"}},
-		bodyLight={on="UpperTorso",range=18,brightness=1.6,color=Color3.fromRGB(196,150,255)},
+		-- Arauto Partido: criatura alada gerada (cristais do Abismo, halo partido), em escala de colosso.
+		template="HeraldTemplate", scale=1.35, baseY=0,
+		joints={Body={"Waist",-0.35},Head={"Neck",-0.3,"Body"},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4},Wings={"WingRoot",0,"Body"},Tail={"TailRoot",0.3,"Body"}},
+		bodyLight={on="Body",range=22,brightness=1.6,color=Color3.fromRGB(196,150,255)},
 	},
 	Wisp={
 		-- Espectro flutuante: o corpo oscila no motor SpiritCore e leva cabeça e mãos junto.
@@ -244,6 +241,13 @@ local GENERATED: {[string]: any}={
 	EclipseDragon={template="EclipseDragonTemplate", scale=1.45, baseY=0,
 		joints={Body={"Waist",-0.35},Head={"Neck",-0.3,"Body"},FrontLeftLeg={"LeftShoulder",0.4,"Body"},FrontRightLeg={"RightShoulder",0.4,"Body"},RearLeftLeg={"LeftHip",0.4},RearRightLeg={"RightHip",0.4},Wings={"WingRoot",0,"Body"}},
 		bodyLight={on="Body",range=24,brightness=1.5,color=Color3.fromRGB(180,120,255)}},
+	-- Regente do Vazio (rig R15 gerado, o mesmo das visões), em escala de colosso e sem capuz.
+	VoidRegent={template="RegentTemplate", scale=3.0, baseY=0, humanoidRig=true,
+		joints={UpperTorso={"Waist",-0.45},Head={"Neck",-0.45,"UpperTorso"},
+			LeftUpperArm={"LeftShoulder",0.4,"UpperTorso"},RightUpperArm={"RightShoulder",0.4,"UpperTorso"},
+			LeftLowerArm={"LeftElbow",0.45,"LeftUpperArm"},RightLowerArm={"RightElbow",0.45,"RightUpperArm"},
+			LeftHand={"LeftWrist",0.5,"LeftLowerArm"},RightHand={"RightWrist",0.5,"RightLowerArm"}},
+		bodyLight={on="UpperTorso",range=26,brightness=1.8,color=Color3.fromRGB(186,110,255)}},
 	Thorn={
 		-- Quadrúpede de espinhos: nomes de quadril seguem ActorPresentation (Left/Right + Front/Rear).
 		template="ThornStalkerTemplate", scale=1.25, baseY=0,
@@ -264,6 +268,23 @@ local function buildGenerated(m: Model,root: BasePart,spec: any,template: Model,
 	local floorY=if hit then hit.Position.Y else position.Y-2.5
 	local center=CFrame.new(position.X,floorY+size.Y/2+spec.baseY,position.Z)
 	visual:PivotTo(center)
+	-- O pivô de um rig é o HumanoidRootPart, não o centro da caixa: alinha pela caixa.
+	local box=visual:GetBoundingBox()
+	visual:PivotTo(visual:GetPivot()+(center.Position-box.Position))
+	if spec.humanoidRig then
+		-- Rig R15: as articulações próprias e o Humanoid saem; a raiz lógica e os motores do
+		-- EnemyService assumem. Acessórios (manto, coroa) viram peças soldadas ao tronco.
+		for _,item in visual:GetDescendants() do
+			if item:IsA("Motor6D") or item:IsA("Weld") or item:IsA("WeldConstraint") or item:IsA("Attachment") and item.Parent and item.Parent:IsA("Accessory") then item:Destroy() end
+		end
+		for _,accessory in visual:GetChildren() do
+			if accessory:IsA("Accessory") then
+				local handle=accessory:FindFirstChild("Handle")
+				if handle and handle:IsA("BasePart") then handle.Name="Accessory_"..accessory.Name handle.Parent=visual end
+			end
+		end
+		local hrp=visual:FindFirstChild("HumanoidRootPart") if hrp then hrp:Destroy() end
+	end
 	local pieces: {[string]: BasePart}={Root=root}
 	for _,piece in visual:GetChildren() do
 		if piece:IsA("BasePart") then
@@ -279,6 +300,7 @@ local function buildGenerated(m: Model,root: BasePart,spec: any,template: Model,
 		if config then
 			local base=pieces[config[3] or "Root"] or root
 			articulated(base,piece,CFrame.new(piece.Position+Vector3.new(0,piece.Size.Y*config[2],0)),config[1])
+		elseif name:sub(1,10)=="Accessory_" then attach(pieces.UpperTorso or pieces.Body or root,piece)
 		else attach(root,piece) end
 	end
 	for _,g in spec.glow or {} do
@@ -300,7 +322,7 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 	local m = Instance.new("Model")
 	local boss = kind == "Boss"
 	local regionBoss = kind=="CrystalWyrm" or kind=="SandSphinx" or kind=="EclipseDragon"
-	local scale = if boss then 2.2 elseif kind=="Herald" or regionBoss then 2.6 else 1
+	local scale = if boss then 2.2 elseif kind=="Herald" or kind=="VoidRegent" or regionBoss then 2.6 else 1
 	local root = Art.part(m,"Root",Vector3.new(4,5,4)*scale,CFrame.new(position),color)
 	root.Transparency = 1
 	root.CanQuery = true

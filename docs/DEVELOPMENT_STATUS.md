@@ -238,3 +238,23 @@ Pedido do proprietário: cada mundo com monstros próprios; chefões que sejam m
 - **Salvar o lugar (Ctrl+S)** e exportar os 9 `*Template` de `ServerStorage` para `assets/characters/models/` (Save to File) e mapear no `default.project.json`. Até lá existem só no lugar do Studio; sem eles o jogo usa a contingência procedural.
 - Avaliação humana das poses (agachar, rasteira, chute voador, golpes do Lutador) — ângulos estimados, não calibrados como os do Guardião.
 - Dificuldade dos grupos regionais (o Guardião com 150 HP caiu para o grupo da ilha-pilar), monstros da fase 6, celular físico.
+
+## Luta final contra o Regente, novo Arauto e equilíbrio solo — 07/11/2026
+
+**Implementado:**
+- **Regente do Vazio (fase 6)** no Átrio da fortaleza: rig gerado `RegentTemplate` (o mesmo das visões) em escala 3×, **sem capuz** pela primeira vez. 3200 HP + 1600 por jogador; IA do Arauto + **Passo do Vazio** (fase 2+: marca o chão por 0,7 s, some e reaparece junto do alvo com um golpe). Três falas de fase. Reforços da fauna do Domínio (Cão Sombrio, Morcego, Gárgula).
+- Derrota do Regente: `CampaignPhase=6` (Rota A) / ramo resolvido (Rota B) e tela **CAMPANHA CONCLUÍDA — O PORTAL PRIMORDIAL** com epílogo original (o portal se abre para o ginásio; a coroa caída ainda pulsa).
+- `Art.buildGenerated` aceita rigs R15 (`humanoidRig`): remove motores/Humanoid/HRP do template e solda acessórios ao tronco; alinha pela caixa, não pelo pivô.
+- **Arauto Partido** deixou de ser o boneco de esferas: não existia `HeraldTemplate`, então caía no procedural. Agora é uma criatura alada gerada (cristais, olho violeta, halo dourado partido).
+- **Equilíbrio solo:** no máximo 2 criaturas comuns iniciam golpes contra o mesmo jogador ao mesmo tempo (as outras rodeiam e esperam); reforços 1 sozinho / 2 em grupo / 3 com 5–6.
+- Modelo antigo "Towering armored fantasy knight…" que estava solto no caminho da floresta (−6, 2, −272) movido para `ServerStorage.ReviewArchive.HeraldKnightRig_unused` (mudança só na cena do Studio).
+
+**Testado no Studio (Play):**
+- Regente nasce no `AtriumFloor` (y 332) após corrigir a altura de partida do raycast (`groundFromY`); Arauto com modelo gerado; zero erros/avisos Luau.
+- Lutador: **Martelo Solar** confirmado (Freefall, 57 de dano por golpe no Regente, duas vezes).
+- Regente: fase 1 → 2 (1786) → 3 (586) → 0; três falas, reforços, `CampaignPhase=6`, tela final visível com o título certo.
+- Passo do Vazio: em fase 2, com o jogador a 24 studs, `CastKind=VoidStep` aos 2 s, evento `blink`, distância 17 → 8.
+- Captura: Regente coroado e sem capuz no átrio, barra "O REGENTE DO VAZIO · FASE 2", Cães Sombrios de reforço, Portal Primordial ao fundo.
+- Dano aos chefes por atalho de QA; vida do jogador elevada só para o teste.
+
+**Pendente:** salvar o lugar e exportar `HeraldTemplate` e os 9 templates de fauna; luta manual completa contra o Regente (dificuldade/duração por pessoa); efeito visual do Passo do Vazio no cliente além do rastro `blink`; o que acontece depois do epílogo (Portal Primordial como saída).

@@ -50,6 +50,11 @@ return {
 			phaseTexts = {"A ESFINGE DAS HORAS desperta. A areia marca onde ela vai golpear!", "A ampulheta vira: as feras das dunas acorrem ao templo!", "A ÚLTIMA HORA: a Esfinge acelera o próprio tempo!"}},
 		EclipseDragon = {name = "Dragão do Eclipse", title = "DRAGÃO DO ECLIPSE", health = 2400, healthPerPlayer = 1300, damage = 23, speed = 7, radius = 10, windup = 1.1, cooldown = 2.7, color = Color3.fromRGB(170, 120, 240), big = true, ai = "Herald", region = "EclipseCitadel",
 			phaseTexts = {"O DRAGÃO DO ECLIPSE desperta. O sol negro aponta o próximo golpe!", "O eclipse se fecha: as feras da sombra surgem no pátio!", "NOITE ABSOLUTA: o Dragão não dá trégua!"}},
+		-- Fase 6: chefe FINAL. Sem capuz pela primeira vez (rosto e coroa à mostra). Além do
+		-- esquema do Arauto, a partir da fase 2 usa o Passo do Vazio (some e reaparece junto
+		-- do alvo, com aviso no chão). A derrota encerra a campanha.
+		VoidRegent = {name = "Regente do Vazio", title = "O REGENTE DO VAZIO", health = 3200, healthPerPlayer = 1600, damage = 26, speed = 7, radius = 10, windup = 1.05, cooldown = 2.5, color = Color3.fromRGB(186, 110, 255), big = true, ai = "Herald", region = "VoidDominion", voidStep = true,
+			phaseTexts = {"O REGENTE DO VAZIO baixa o capuz: \"Finalmente, cara a cara.\"", "\"Vocês acham que me venceram nos outros mundos? Eu ESTAVA neles.\" O vazio se abre no átrio!", "\"Se eu cair, Aetherion cai comigo!\" O Regente ataca sem pausa!"}},
 		-- Criaturas exclusivas de cada região (modelos gerados; ai = comportamento reaproveitado).
 		-- Abismo de Cristal
 		CrystalSpider = {name = "Aranha de Cristal", health = 140, damage = 13, speed = 10, radius = 6, windup = 0.7, cooldown = 2.4, color = Color3.fromRGB(130, 210, 255), ai = "Thorn"},
@@ -85,6 +90,8 @@ return {
 		{id = "CrystalWyrm", kind = "CrystalWyrm", position = Vector3.new(3000, 133, -435), leash = 38, vision = "CrystalAbyss", region = "CrystalAbyss"},
 		{id = "SandSphinx", kind = "SandSphinx", position = Vector3.new(-3000, 33, -452), leash = 36, vision = "HourDesert", region = "HourDesert"},
 		{id = "EclipseDragon", kind = "EclipseDragon", position = Vector3.new(0, 29, 2668), leash = 40, vision = "EclipseCitadel", region = "EclipseCitadel"},
+		-- Fase 6: Átrio do Regente (slot RegentAtrium do VoidDominion; origem + (0, 33, −372) + 2).
+		{id = "VoidRegent", kind = "VoidRegent", position = Vector3.new(-3000, 335, 2628), leash = 40, region = "VoidDominion", finale = true, groundFromY = 330},
 		{id = "Herald", kind = "Herald", position = Vector3.new(3000, 3, 3000), leash = 46, vision = "Convergence", visionStyle = "rift", region = "Convergence"},
 	},
 	Dialogues = {

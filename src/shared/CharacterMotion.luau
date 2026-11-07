@@ -77,7 +77,7 @@ end
 P.Br_Guard={rightshoulder={1.00,1.50,-0.50},rightelbow={1.50,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0},waist={0.05,-0.15,0},leftknee={-0.2,0,0},rightknee={-0.2,0,0}}
 P.Br_JabR={rightshoulder={1.56,0.94,-1.00},rightelbow={0.39,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0},waist={-0.12,0.4,0},root={0,0,0,0,-0.1,-0.35},leftknee={-0.3,0,0}}
 P.Br_JabL={leftshoulder={1.56,-0.54,1.00},leftelbow={0.29,0,0},rightshoulder={1.00,1.50,-0.50},rightelbow={1.50,0,0},waist={-0.12,-0.4,0},root={0,0,0,0,-0.1,-0.35},rightknee={-0.3,0,0}}
-P.Br_Chamber={righthip={-1.25,0,0},rightknee={-1.1,0,0},rightankle={0.15,0,0},waist={0.15,-0.12,0},lefthip={0.12,0,0},leftknee={-0.15,0,0},rightshoulder={1.00,1.50,-0.50},rightelbow={1.50,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0}}
+P.Br_Chamber={righthip={1.25,0,0},rightknee={-1.1,0,0},rightankle={0.15,0,0},waist={0.15,-0.12,0},lefthip={-0.12,0,0},leftknee={-0.15,0,0},rightshoulder={1.00,1.50,-0.50},rightelbow={1.50,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0}}
 P.Br_Kick=merged("Br_Chamber",{rightknee={0,0,0},waist={0.25,-0.12,0},root={0,0,0,0,0,-0.4}})
 -- Gancho (3º golpe): braço em arco lateral com giro forte do tronco.
 P.Br_HookWind={rightshoulder={0.9,1.9,-0.9},rightelbow={1.7,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0},waist={0.05,-0.5,0}}
@@ -86,14 +86,18 @@ P.Br_Hook={rightshoulder={1.45,0.6,-1.4},rightelbow={1.5,0,0},leftshoulder={1.00
 P.Br_SolarWind={rightshoulder={1.00,1.50,-0.50},rightelbow={1.9,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.2,0,0},waist={0.15,0,0},root={0,0,0,0,-0.3,0.3},leftknee={-0.5,0,0},rightknee={-0.5,0,0}}
 P.Br_Solar={rightshoulder={1.56,0.94,-1.00},rightelbow={0.2,0,0},leftshoulder={1.56,-0.54,1.00},leftelbow={0.2,0,0},waist={-0.25,0,0},root={0,0,0,0,-0.45,-1.1},leftknee={-0.7,0,0},rightknee={-0.2,0,0}}
 -- Gancho Ascendente (agachado + atacar): sai do agachamento com o punho subindo ao céu.
-P.Br_Low={root={0,0,0,0,-1.1,0},lefthip={-1.0,0,0},righthip={-1.0,0,0},leftknee={-1.6,0,0},rightknee={-1.6,0,0},leftankle={0.6,0,0},rightankle={0.6,0,0},waist={-0.3,0,0},rightshoulder={0.6,0.9,-0.3},rightelbow={2.0,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0}}
-P.Br_Upper={root={0,0,0,0,0.35,-0.2},waist={0.3,0.35,0},rightshoulder={2.9,0.2,-0.3},rightelbow={0.35,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0},leftknee={-0.2,0,0}}
+P.Br_Low={root={0,0,0,0,-1.1,0},lefthip={1.0,0,0},righthip={1.0,0,0},leftknee={-1.6,0,0},rightknee={-1.6,0,0},leftankle={0.6,0,0},rightankle={0.6,0,0},waist={-0.3,0,0},rightshoulder={0.6,0.9,-0.3},rightelbow={2.0,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0}}
+-- Topo do gancho: punho subindo à frente do rosto (cotovelo dobrado), tronco para trás. Revisado por captura.
+P.Br_Upper={root={0,0,0,0,0.3,-0.25},waist={0.22,0.35,0},rightshoulder={2.2,0.8,-0.7},rightelbow={1.1,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0},leftknee={-0.2,0,0}}
 -- Martelo Solar (no ar + atacar): ergue os dois punhos e desce num golpe duplo.
 P.Br_HammerUp={rightshoulder={2.7,0,-0.2},rightelbow={0.4,0,0},leftshoulder={2.7,0,0.2},leftelbow={0.4,0,0},waist={0.25,0,0},leftknee={-0.8,0,0},rightknee={-0.8,0,0}}
-P.Br_HammerDown={rightshoulder={0.7,0,-0.1},rightelbow={0.2,0,0},leftshoulder={0.7,0,0.1},leftelbow={0.2,0,0},waist={-0.5,0,0},root={0,0,0,0,-0.4,-0.3},leftknee={-0.9,0,0},rightknee={-0.6,0,0}}
+-- Fim do martelo: dois punhos juntos golpeando à frente e para baixo (a partir do direto/jab). Revisado por captura.
+P.Br_HammerDown={rightshoulder={1.15,0.7,-0.9},rightelbow={0.25,0,0},leftshoulder={1.15,-0.4,0.9},leftelbow={0.25,0,0},waist={-0.55,0,0},root={0,0,0,0,-0.45,-0.35},leftknee={-0.9,0,0},rightknee={-0.6,0,0}}
 
 -- Agachado (todas as classes): quadril desce, coxas à frente, joelhos dobrados, tronco inclinado.
-Motion.Crouch={root={0,0,0,0,-1.1,0},lefthip={-0.95,0,0},righthip={-0.95,0,0},leftknee={-1.55,0,0},rightknee={-1.55,0,0},leftankle={0.6,0,0},rightankle={0.6,0,0},waist={-0.28,0,0}}
+-- Nos rigs gerados (AnimationConstraint) X+ no quadril leva a coxa para a FRENTE (verificado por
+-- captura em 07/11/2026: com X− o chute frontal saía para trás e o agachar parecia ajoelhar).
+Motion.Crouch={root={0,0,0,0,-1.1,0},lefthip={0.95,0,0},righthip={0.95,0,0},leftknee={-1.55,0,0},rightknee={-1.55,0,0},leftankle={0.6,0,0},rightankle={0.6,0,0},waist={-0.28,0,0}}
 -- Véu: cortes de adaga com a direita e com a esquerda (espelho), e estocada dupla.
 P.Sh_WindR={rightshoulder={2.62,0.10,-0.55},rightelbow={1.41,0,0},waist={0.06,-0.4,0}}
 P.Sh_CutR={rightshoulder={0.81,0.99,0.42},rightelbow={-0.09,0,0},waist={-0.12,0.45,0},root={0,0,0,0,-0.18,-0.55},leftknee={-0.35,0,0}}
@@ -244,9 +248,9 @@ function Motion.overlay(name: string,ctx: Context): CFrame?
 		-- Chute voador: perna da frente estendida, a de trás recolhida, tronco para trás.
 		local t=ctx.kick
 		local k=ease(t/0.22)*(1-ease((t-0.7)/0.3))
-		if name=="righthip" then result={-1.5*k,0,0}
+		if name=="righthip" then result={1.5*k,0,0}
 		elseif name=="rightknee" then result={-0.1*k,0,0}
-		elseif name=="lefthip" then result={-1.0*k,0,0}
+		elseif name=="lefthip" then result={1.0*k,0,0}
 		elseif name=="leftknee" then result={-1.8*k,0,0}
 		elseif name=="waist" then result={0.4*k,-0.2*k,0}
 		elseif name=="leftshoulder" then result={0.9*k,0,0.5*k}
@@ -257,10 +261,10 @@ function Motion.overlay(name: string,ctx: Context): CFrame?
 		local k=ease(t/0.15)*(1-ease((t-0.8)/0.2))
 		local spin=ease((t-0.12)/0.6)*math.pi*2
 		if name=="root" then result={0,spin,0,0,-1.7*k,0}
-		elseif name=="lefthip" then result={-1.3*k,0,0}
+		elseif name=="lefthip" then result={1.3*k,0,0}
 		elseif name=="leftknee" then result={-2.0*k,0,0}
 		elseif name=="leftankle" then result={0.7*k,0,0}
-		elseif name=="righthip" then result={-1.45*k,0,0}
+		elseif name=="righthip" then result={0.85*k,0,0} -- perna esticada rente ao chão (revisado por captura)
 		elseif name=="rightknee" then result={0,0,0}
 		elseif name=="waist" then result={-0.35*k,0,0}
 		elseif name=="leftshoulder" then result={0.5*k,0,0.9*k}
@@ -269,10 +273,10 @@ function Motion.overlay(name: string,ctx: Context): CFrame?
 		local t=ctx.kick
 		local lift=ease(t/0.28)*(1-ease((t-0.6)/0.4))
 		local extension=ease((t-0.18)/0.18)*(1-ease((t-0.48)/0.28))
-		if name=="righthip" then result={-1.25*lift,0,0}
+		if name=="righthip" then result={1.25*lift,0,0}
 		elseif name=="rightknee" then result={-1.1*lift*(1-extension),0,0}
 		elseif name=="rightankle" then result={0.15*lift,0,0}
-		elseif name=="lefthip" then result={0.12*lift,0,0}
+		elseif name=="lefthip" then result={-0.12*lift,0,0}
 		elseif name=="leftknee" then result={-0.15*lift,0,0}
 		elseif name=="waist" then result={0.15*lift,-0.12*lift,0}
 		elseif name=="root" then result={0,0,0.08*lift,-0.12*lift,-0.06*lift,0} end

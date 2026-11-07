@@ -112,8 +112,8 @@ local function bindGate(fromId: string,rift: BasePart)
 		if not ok then message(player,reason or "A passagem está fechada.") return end
 		local nextId=Campaign.nextRegion(fromId,route())
 		if not nextId then
-			-- Domínio do Vazio: o Portal Primordial encerra a campanha (conteúdo da fase 6 pendente).
-			Travel.send(player,"Lumen",nil,"O Portal Primordial reconhece você. O caminho de casa ainda está selado.")
+			-- Domínio do Vazio: o Portal Primordial (aberto pela queda do Regente) leva de volta ao Vale.
+			Travel.send(player,"Lumen",nil,"Por um instante, vocês veem o ginásio da escola do outro lado do portal... e despertam de novo no Vale de Lúmen. Fale com Ilyra.")
 			return
 		end
 		Travel.send(player,nextId,fromId)

@@ -110,6 +110,11 @@ function Quest.init(notifyRemote: RemoteEvent, isGuardAlive: (string) -> boolean
 			if p.bossDefeated then
 				dialogue(player,{"O Guardião reconheceu sua vitória. O Fragmento da Aurora espera no altar do santuário.","Atravesse o limiar do templo e recolha o fragmento. Depois, retorne ao vale."})
 			else dialogue(player,Chapter.Dialogues.Temple) end
+		elseif (p.phase or 0)>=6 then
+			-- Campanha concluída (Regente vencido): fala de encerramento e gancho para o próximo capítulo.
+			dialogue(player,{"Vocês venceram o Regente do Vazio. Eu vi a luz do Portal Primordial daqui do vale.","Do outro lado havia um ginásio, cheio de vozes... a sua casa. Mas a coroa dele ainda pulsa.","Descansem. Quando o próximo capítulo começar, eu estarei aqui."})
+		elseif (p.phase or 0)>=1 then
+			dialogue(player,{"O Fragmento da Aurora abriu a passagem na arena do Guardião.","Além dela fica o Abismo de Cristal. Cada mundo que vocês libertam aproxima o caminho de casa."})
 		else dialogue(player,Chapter.Dialogues.Ending) end
 	end)
 	for _, id in {"Forest","Temple"} do

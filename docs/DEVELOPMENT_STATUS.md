@@ -292,3 +292,21 @@ Pedido do proprietário: preparar o jogo para celular e permitir configurar os c
 - Removidos `CrystalSpiderTemplate` e `HeraldTemplate` da cópia do Play → `ensure()` reconstruiu os 2 em 2,2 s com as mesmas dimensões; `Art.templateReady` verdadeiro; Aranha criada pelo caminho normal com textura completa (captura).
 - Explorador no Abismo: "FASE 2 / 6 · O CRISTAL QUE LEMBRA — Atravesse as pontes…"; após o Wyrm cair (atalho de QA): "O Wyrm caiu. Siga pela Passagem de Cristal…".
 - Zero erros/avisos Luau no cliente e no servidor.
+
+## Poses revisadas por captura, final da campanha e reserva do Regente — 07/11/2026
+
+**Poses (CharacterMotion) — revisadas por captura com a animação congelada no meio:**
+- **Defeito encontrado:** nos rigs gerados (AnimationConstraint) X+ no quadril leva a coxa para a FRENTE. Com o sinal estimado (X−), o **chute frontal saía para trás** (defeito antigo, anterior a esta sessão), o chute voador parecia ajoelhado no ar e o agachar parecia ajoelhar. Corrigidos os quadris de: chute frontal (`Br_Chamber`/overlay), chute voador, rasteira, agachar (`Motion.Crouch`) e `Br_Low`.
+- Gancho Ascendente: punho sobe à frente do rosto com o cotovelo dobrado (antes o braço ia esticado para trás, como comemoração).
+- Martelo Solar: dois punhos juntos golpeando à frente e para baixo (antes os braços pendiam).
+- Rasteira: perna mais baixa, rente ao chão.
+- Conferidos em captura: chute frontal, chute voador, agachar, Punho Solar, Gancho Ascendente e Martelo Solar com o Lutador; rasteira com o Guardião (convenção válida em outro rig).
+
+**Final da campanha:**
+- Portal Primordial (após o Regente): leva ao Vale com "Por um instante, vocês veem o ginásio da escola do outro lado do portal…" (antes: "O caminho de casa ainda está selado", contraditório com o epílogo).
+- Ilyra: falas de encerramento quando `phase ≥ 6` e indicação da passagem quando `phase ≥ 1` (o epílogo do Vale continua ao recolher o fragmento).
+- Testado: portal pelo prompt real → Vale com a mensagem; diálogo da Ilyra com a fala nova.
+
+**Rigs humanoides (pendência de versionamento):**
+- `RegentTemplate`, `BrawlerTemplate`, `ArcanistTemplate` e `ShadeTemplate` têm ossos (malha deformável), AnimationConstraints, SurfaceAppearance (PBR), WrapTarget e FaceControls. O mapa do SurfaceAppearance não pode ser definido por script em tempo de execução, então **não** dá para versioná-los como dados como as criaturas. Continuam dependendo do lugar salvo ou de `.rbxm` exportado manualmente (Save to File).
+- Mitigação: sem o `RegentTemplate`, o Regente da fase 6 usa a figura procedural das visões (`VillainArt.regent`, escala 3,1, ~27 studs) em vez do corpo de pedra genérico. Testado removendo o template no Play: 59 peças, sem erro. Os heróis já tinham reserva procedural.

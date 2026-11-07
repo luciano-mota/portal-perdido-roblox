@@ -369,6 +369,23 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 	if spec and template and template:IsA("Model") and Art.templateReady(template) then
 		return buildGenerated(m,root,spec,template,position,parent,color)
 	end
+	if kind=="VoidRegent" then
+		-- Sem o rig gerado (RegentTemplate ainda não exportado para o Git): figura procedural das
+		-- visões, em escala de colosso. Requerida aqui para não criar dependência circular.
+		local Villain=require(script.Parent.VillainArt)
+		local feet=CFrame.new(position-Vector3.new(0,root.Size.Y*0.5,0))
+		local figure=Villain.regent(m,feet,3.1)
+		for _,piece in figure:GetDescendants() do
+			if piece:IsA("BasePart") then
+				piece.CanCollide=false piece.CanQuery=false piece.CanTouch=false
+				piece.Parent=m
+				attach(root,piece)
+			end
+		end
+		figure:Destroy()
+		m.Parent=parent
+		return m
+	end
 	if kind == "Wisp" then
 		p("Core",Vector3.new(1.6,2.1,1.6),Vector3.zero,color,Enum.Material.Neon,Enum.PartType.Ball)
 		for i=1,5 do

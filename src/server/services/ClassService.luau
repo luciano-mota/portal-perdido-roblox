@@ -8,7 +8,35 @@ local Data=require(script.Parent.PlayerDataService)
 local Service={}
 -- Renascimento fora do Vale (TravelService): devolve o ponto seguro da região atual.
 Service.spawnResolver=nil :: ((Player) -> CFrame?)?
-local templates={Explorer="ExplorerTemplate",Guardian="GuardianTemplate",Artificer="ArtificerTemplate"}
+local templates={Explorer="ExplorerTemplate",Guardian="GuardianTemplate",Artificer="ArtificerTemplate",Brawler="BrawlerTemplate",Arcanist="ArcanistTemplate",Shade="ShadeTemplate"}
+
+-- Heróis disponíveis para o jogador: os três originais sempre; na Rota B (expedição 4–6) todos;
+-- na Rota A, os desbloqueados no perfil (Lutador também ao concluir o Vale).
+function Service.available(player: Player, classId: string): boolean
+	local definition=Classes[classId]
+	if not definition then return false end
+	if not definition.unlockPhase or workspace:GetAttribute("CampaignRoute")=="B" then return true end
+	local p=Data.get(player)
+	if not p then return false end
+	if p.heroes and p.heroes[classId] then return true end
+	return classId=="Brawler" and p.quest>5
+end
+
+function Service.publishAvailable(player: Player)
+	local list={}
+	for id in Classes do if Service.available(player,id) then table.insert(list,id) end end
+	table.sort(list)
+	player:SetAttribute("AvailableHeroes",table.concat(list,","))
+end
+
+-- Desbloqueio permanente (idempotente): devolve true só na primeira vez.
+function Service.unlock(player: Player, classId: string): boolean
+	local p=Data.get(player)
+	if not p or not Classes[classId] or not Classes[classId].unlockPhase or (p.heroes and p.heroes[classId]) then return false end
+	Data.mutate(player,function(profile) profile.heroes=profile.heroes or {} profile.heroes[classId]=true end)
+	Service.publishAvailable(player)
+	return true
+end
 
 -- Antes da escolha de classe o avatar padrão do Roblox não deve aparecer (prólogo/seleção):
 -- fica invisível e parado no spawn. A escolha troca o personagem pelo rig humanizado.
@@ -90,13 +118,14 @@ local function apply(player: Player, character: Model, moveToCheckpoint: boolean
 end
 
 function Service.register(player: Player)
+	Service.publishAvailable(player)
 	player.CharacterAdded:Connect(function(character) task.spawn(apply,player,character,true) end)
 	if player.Character then task.spawn(apply,player,player.Character,true) end
 end
 
 function Service.select(player: Player, classId: any): boolean
 	local p=Data.get(player)
-	if player.Parent~=Players or not p or p.classId~=nil or typeof(classId)~="string" or Classes[classId]==nil then return false end
+	if player.Parent~=Players or not p or p.classId~=nil or typeof(classId)~="string" or Classes[classId]==nil or not Service.available(player,classId) then return false end
 	Data.mutate(player,function(profile) profile.classId=classId end)
 	if player.Character then task.spawn(apply,player,player.Character,false) end
 	task.spawn(Data.save,player,false)
@@ -124,8 +153,28 @@ local function publishPreviews()
 	folder.Parent=ReplicatedStorage
 end
 
+-- Vilões para as visões do cliente (somente visual): ReplicatedStorage.VillainPreviews.
+local function publishVillains()
+	local folder=Instance.new("Folder") folder.Name="VillainPreviews"
+	for name,templateName in {Regent="RegentTemplate"} do
+		local template=game:GetService("ServerStorage"):FindFirstChild(templateName)
+		if template and template:IsA("Model") and Art.templateReady(template) then
+			local preview=template:Clone()
+			preview.Name=name
+			for _,item in preview:GetDescendants() do
+				if item:IsA("LuaSourceContainer") or item:IsA("Humanoid") then item:Destroy()
+				elseif item:IsA("BasePart") then item.Anchored=true item.CanCollide=false item.CanQuery=false item.CanTouch=false end
+			end
+			preview.Parent=folder
+		end
+	end
+	folder.Parent=ReplicatedStorage
+end
+
 function Service.init(remote: RemoteEvent)
+	publishVillains()
 	remote.OnServerEvent:Connect(Service.select)
+	workspace:GetAttributeChangedSignal("CampaignRoute"):Connect(function() for _,player in Players:GetPlayers() do Service.publishAvailable(player) end end)
 	publishPreviews()
 end
 

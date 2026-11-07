@@ -300,8 +300,22 @@ function FX.play(data: any)
 				local distance=(data.position-origin).Magnitude
 				if distance<0.5 then return end
 				arrow(origin,data.position,math.clamp(distance/120,0.08,0.5),math.min(distance*0.04,2.2),function() burst(data.position,Color3.fromRGB(255,230,170),0.4,0.15) end)
+			elseif data.classId=="Brawler" then
+				-- Impacto do soco/chute: anel curto e faíscas solares no ponto atingido.
+				burst(data.position,data.color,0.9,0.16)
+				ring(data.position-Vector3.new(0,2.5,0),2.4,data.color,0.18)
+			elseif data.classId=="Shade" then
+				-- Dois rastros cruzados de adaga no alvo.
+				for k=-1,1,2 do
+					local slash=Art.part(container,"VeilSlash",Vector3.new(0.12,0.12,3.2),CFrame.new(data.position)*CFrame.Angles(0,0,k*0.7)*CFrame.Angles(0.5,0,0),data.color,Enum.Material.Neon)
+					slash.CastShadow=false slash.Transparency=0.2
+					TweenService:Create(slash,TweenInfo.new(0.22),{Transparency=1,Size=Vector3.new(0.05,0.05,4)}):Play()
+					Debris:AddItem(slash,0.25)
+				end
+				burst(data.position,Color3.fromRGB(200,240,255),0.6,0.15)
 			else
-				local focus=equipmentPart(model,"ArcaneFocus")
+				-- Artífice (foco) e Arcanista (orbe do cajado): esfera de energia até o alvo.
+				local focus=equipmentPart(model,"ArcaneFocus") or equipmentPart(model,"SunOrb")
 				local origin=if focus then focus.Position else data.origin
 				flash(origin,data.color,1)
 				local distance=(data.position-origin).Magnitude
@@ -362,6 +376,48 @@ function FX.play(data: any)
 					end
 				end)
 			end)
+		elseif data.classId=="Brawler" then
+			-- Chute Sombra: rastro de imagens do lutador ao longo do avanço e impacto em cada alvo.
+			if typeof(data.from)=="Vector3" and typeof(data.to)=="Vector3" then
+				local streak=Art.segment(container,"ShadowKickStreak",data.from,data.to,1.4,data.color,Enum.Material.Neon)
+				streak.CastShadow=false streak.Transparency=0.45
+				TweenService:Create(streak,TweenInfo.new(0.45),{Transparency=1,Size=Vector3.new(streak.Size.X,0.1,0.1)}):Play()
+				Debris:AddItem(streak,0.5)
+				for k=1,4 do
+					local at=data.from:Lerp(data.to,k/5)
+					local ghost=Art.part(container,"ShadowKickGhost",Vector3.new(1.6,4.6,0.8),CFrame.lookAt(at,data.to),Color3.fromRGB(40,20,10),Enum.Material.Neon,Enum.PartType.Ball)
+					ghost.CastShadow=false ghost.Transparency=0.55+k*0.08
+					TweenService:Create(ghost,TweenInfo.new(0.4),{Transparency=1}):Play()
+					Debris:AddItem(ghost,0.45)
+				end
+			end
+			for _,target in data.targets or {} do
+				if typeof(target)=="Vector3" then burst(target,data.color,1.4,0.3) ring(target-Vector3.new(0,2.5,0),4,data.color,0.3) end
+			end
+		elseif data.classId=="Arcanist" then
+			-- Sol Nascente: um pequeno sol desce sobre o alvo e explode no raio real (14 studs).
+			local target=data.targets and data.targets[1]
+			if typeof(target)=="Vector3" then
+				task.delay(duration*0.35,function()
+					if not container.Parent then return end
+					local sun=Art.part(container,"RisingSun",Vector3.new(3,3,3),CFrame.new(target+Vector3.new(0,22,0)),Color3.fromRGB(255,214,120),Enum.Material.Neon,Enum.PartType.Ball)
+					sun.CastShadow=false
+					local light=Instance.new("PointLight") light.Color=Color3.fromRGB(255,190,90) light.Range=30 light.Brightness=3 light.Parent=sun
+					fly(sun,target+Vector3.new(0,22,0),target,0.35,0,function()
+						burst(target,data.color,2.4,0.45)
+						ring(target-Vector3.new(0,2.5,0),data.radius or 14,data.color,0.6,nil,0.7)
+						ring(target-Vector3.new(0,2.5,0),(data.radius or 14)*0.55,Color3.fromRGB(255,240,200),0.4,nil,0.6)
+					end)
+				end)
+			end
+		elseif data.classId=="Shade" then
+			-- Passo do Véu: o rastro da teleportação vem no evento "blink"; aqui, o corte crítico.
+			for _,target in data.targets or {} do
+				if typeof(target)=="Vector3" then
+					burst(target,data.color,1.6,0.3)
+					ring(target-Vector3.new(0,2.5,0),3,data.color,0.25)
+				end
+			end
 		else
 			task.delay(duration*0.5,function()
 				if not container.Parent then return end

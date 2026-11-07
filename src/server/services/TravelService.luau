@@ -11,6 +11,8 @@ local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Campaign=require(ReplicatedStorage.Shared.Config.Campaign)
 local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
 local Data=require(script.Parent.PlayerDataService)
+local Enemies=require(script.Parent.EnemyService)
+local TweenService=game:GetService("TweenService")
 
 local Travel={}
 
@@ -103,6 +105,37 @@ local function bindGate(fromId: string,rift: BasePart)
 	end)
 end
 
+-- Portal escondido (sem luz, sem colisão, sem prompt) até o encontro `encounter` ser vencido;
+-- depois da visão do Regente ele surge devagar. Na fase 5 isso faz a arena parecer o fim.
+function Travel.conceal(gate: Instance,encounter: string)
+	local parts: {BasePart}={}
+	for _,item in gate:GetDescendants() do
+		if item:IsA("BasePart") then
+			item:SetAttribute("RevealTransparency",item.Transparency)
+			item:SetAttribute("RevealCollide",item.CanCollide)
+			item.Transparency=1 item.CanCollide=false
+			table.insert(parts,item)
+		elseif item:IsA("ProximityPrompt") or item:IsA("BillboardGui") or item:IsA("Light") then
+			(item :: any).Enabled=false
+		end
+	end
+	gate:SetAttribute("Concealed",true)
+	task.spawn(function()
+		while Enemies.isAlive(encounter) do task.wait(1) end
+		-- Espera a fenda do Regente (2,4 s + 11 s) antes de revelar o caminho.
+		task.wait(14)
+		for _,part in parts do
+			TweenService:Create(part,TweenInfo.new(3),{Transparency=part:GetAttribute("RevealTransparency") or 0}):Play()
+			part.CanCollide=part:GetAttribute("RevealCollide")==true
+		end
+		for _,item in gate:GetDescendants() do
+			if item:IsA("ProximityPrompt") or item:IsA("BillboardGui") or item:IsA("Light") then (item :: any).Enabled=true end
+		end
+		gate:SetAttribute("Concealed",false)
+		if notify then notify:FireAllClients({kind="toast",text="Um portal se abre no alto da escadaria. O verdadeiro inimigo espera além dele."}) end
+	end)
+end
+
 function Travel.init(world: Model,remote: RemoteEvent)
 	notify=remote
 	for _,region in Campaign.Regions do
@@ -124,6 +157,7 @@ function Travel.init(world: Model,remote: RemoteEvent)
 		local rift=gate and gate:FindFirstChild("Rift")
 		if rift and rift:IsA("BasePart") then bindGate(region.id,rift)
 		else warn("[PortalPerdido][Travel] Região sem portal de saída: "..region.id) end
+		if gate and region.exitRevealedBy then Travel.conceal(gate,region.exitRevealedBy) end
 	end
 	workspace:SetAttribute("CampaignRoute",workspace:GetAttribute("CampaignRoute") or "A")
 	-- Região atual por posição, último ponto seguro alcançado e quedas no vazio de cada região.

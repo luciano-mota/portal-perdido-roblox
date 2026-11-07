@@ -72,6 +72,10 @@ local function eligible(player: Player, record: any): boolean
 	local root=playerRoot(player)
 	if not root then return false end
 	if not Expedition.hasStarted() then return false end
+	-- Arauto (fase 5): quem está na arena da Convergência participa.
+	if record.definition.kind=="Herald" or record.definition.group=="Herald" then
+		return (root.Position-record.origin).Magnitude<=record.definition.leash+14
+	end
 	if record.definition.kind=="Boss" or record.definition.group=="RootGuardian" then
 		local p=Data.get(player)
 		return p.quest==5 and (root.Position-record.origin).Magnitude<=48
@@ -83,7 +87,7 @@ local function makeRecord(definition: any)
 	local kind=Chapter.EnemyTypes[definition.kind]
 	-- Altura pelo piso real do local (platôs, ilha da arena), não por cota fixa.
 	local ground=groundAt(Vector3.new(definition.position.X,200,definition.position.Z))
-	local origin=Vector3.new(definition.position.X,ground+(if definition.kind=="Boss" then 7 else 3),definition.position.Z)
+	local origin=Vector3.new(definition.position.X,ground+(if definition.kind=="Boss" or kind.big then 7 else 3),definition.position.Z)
 	local model=Art.enemy(workspace.PortalEnemies,definition.kind,origin,kind.color)
 	model.Name=definition.id
 	model:SetAttribute("EnemyKind",definition.kind)
@@ -95,7 +99,7 @@ local function makeRecord(definition: any)
 	local root=model.PrimaryPart :: BasePart
 	-- Corpo lógico sólido: jogadores não atravessam a criatura (a malha visual continua sem colisão).
 	root.CanCollide=true
-	Art.label(root,kind.name,nil,Color3.fromRGB(234,224,202),if definition.kind=="Boss" then 11 else 5)
+	Art.label(root,kind.name,nil,Color3.fromRGB(234,224,202),if definition.kind=="Boss" or kind.big then 11 else 5)
 	records[definition.id]={definition=definition,stats=kind,model=model,root=root,origin=origin,groundY=ground,hp=kind.health,max=kind.health,phase=1,contributors={},casting=false,nextCast=0,slowUntil=0,engaged=false}
 end
 
@@ -178,6 +182,14 @@ local function damage(player: Player,record: any,amount: number)
 		record.max=1800+1100*math.max(0,math.min(count,6)-1) record.hp=record.max
 		record.model:SetAttribute("MaxHealth",record.max)
 	end
+	if record.definition.kind=="Herald" and not record.engaged then
+		-- Vida pelo número de participantes na arena: um jogador sozinho consegue vencer.
+		record.engaged=true local count=0
+		for _, participant in Players:GetPlayers() do if eligible(participant,record) then count+=1 end end
+		record.max=record.stats.health+record.stats.healthPerPlayer*math.max(0,math.min(count,6)-1) record.hp=record.max
+		record.model:SetAttribute("MaxHealth",record.max)
+		notify:FireAllClients({kind="bossPhase",text="O ARAUTO PARTIDO desperta. A luz dos quatro mundos se volta contra vocês!",position=record.root.Position})
+	end
 	record.hp=math.max(0,record.hp-amount)
 	record.contributors[player]=os.clock()
 	local shieldSource=player:GetAttribute("ShieldSourceUserId")
@@ -195,6 +207,17 @@ local function damage(player: Player,record: any,amount: number)
 			if piece:IsA("BasePart") and (piece.Name=="Core" or piece.Name=="Eye") then piece.Color=Color3.fromRGB(225,136,104) end
 		end
 		notify:FireAllClients({kind="bossPhase",text="O núcleo se rompeu. Fase 2: raízes do vazio!",position=record.root.Position})
+	end
+	if record.definition.kind=="Herald" and record.hp>0 then
+		if record.phase==1 and record.hp<=record.max*0.6 then
+			record.phase=2 record.model:SetAttribute("Phase",2)
+			notify:FireAllClients({kind="bossPhase",text="O Arauto se parte: ecos dos quatro mundos surgem na arena!",position=record.root.Position})
+			record.reinforcementsCalled=false
+			callReinforcements(record)
+		elseif record.phase==2 and record.hp<=record.max*0.25 then
+			record.phase=3 record.model:SetAttribute("Phase",3)
+			notify:FireAllClients({kind="bossPhase",text="FÚRIA DA CONVERGÊNCIA: o Arauto ataca sem pausa!",position=record.root.Position})
+		end
 	end
 	if record.hp==0 then
 		record.root.CanQuery=false
@@ -228,6 +251,19 @@ local function damage(player: Player,record: any,amount: number)
 			end
 		end
 		notify:FireAllClients({kind="defeat",position=record.root.Position,color=record.stats.color})
+		-- Chefe final de região: visão do Regente do Vazio (flashback; na fase 5, a fenda).
+		local vision=record.definition.vision
+		if vision then
+			local center=record.origin
+			task.delay(2.4,function()
+				for _,witness in Players:GetPlayers() do
+					local root=playerRoot(witness)
+					if root and (root.Position-center).Magnitude<160 then
+						notify:FireClient(witness,{kind="vision",style=record.definition.visionStyle or "flashback",region=vision,center=center})
+					end
+				end
+			end)
+		end
 		for _, piece in record.model:GetChildren() do
 			if piece:IsA("BasePart") and piece~=record.root then TweenService:Create(piece,TweenInfo.new(0.6),{Transparency=1}):Play() end
 		end
@@ -265,6 +301,15 @@ local function attack(player: Player)
 	if enemy then damage(player,enemy,class.damage) end
 end
 
+-- Move o personagem (habilidades de deslocamento), zerando a velocidade.
+local function character_pivot(player: Player,target: CFrame)
+	local character=player.Character
+	local root=character and character:FindFirstChild("HumanoidRootPart")
+	if not character or not root or not root:IsA("BasePart") then return end
+	root.AssemblyLinearVelocity=Vector3.zero
+	character:PivotTo(target)
+end
+
 local function skill(player: Player)
 	if (player:GetAttribute("KickBusyUntil") or 0)>workspace:GetServerTimeNow() then return end
 	local root,humanoid=playerRoot(player)
@@ -292,6 +337,56 @@ local function skill(player: Player)
 			table.insert(cast.targets,enemy.root.Position)
 		end
 		if #cast.targets==0 then table.insert(cast.targets,root.Position+root.CFrame.LookVector*20) end
+		notify:FireAllClients(cast)
+	elseif p.classId=="Brawler" then
+		-- Chute Sombra: avança até 22 studs (para antes de paredes) e atinge quem estiver no caminho.
+		local look=Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z)
+		if look.Magnitude<0.1 then look=Vector3.new(0,0,-1) end
+		look=look.Unit
+		local params=RaycastParams.new() params.FilterType=Enum.RaycastFilterType.Exclude params.FilterDescendantsInstances={player.Character :: Instance,workspace:FindFirstChild("PortalEnemies") or workspace.Terrain}
+		local hit=workspace:Raycast(root.Position,look*22,params)
+		local reach=if hit then math.max(0,(hit.Position-root.Position).Magnitude-2.5) else 22
+		local from=root.Position
+		local to=from+look*reach
+		for _, record in records do
+			if record.hp<=0 or not eligible(player,record) then continue end
+			local offset=record.root.Position-from
+			local along=math.clamp(offset:Dot(look),0,reach+3)
+			local closest=from+look*along
+			if (record.root.Position-closest).Magnitude<=record.stats.radius*0.5+4 then
+				damage(player,record,55)
+				table.insert(cast.targets,record.root.Position)
+			end
+		end
+		player:SetAttribute("DodgeUntil",workspace:GetServerTimeNow()+0.45)
+		character_pivot(player,CFrame.lookAt(to,to+look))
+		cast.from=from cast.to=to
+		notify:FireAllClients(cast)
+	elseif p.classId=="Arcanist" then
+		-- Sol Nascente: explosão de 14 studs no inimigo mais próximo ao alcance (ou à frente).
+		local enemy=targets(player,class.range)[1]
+		local center=if enemy then enemy.root.Position else root.Position+root.CFrame.LookVector*24
+		for _, record in records do
+			if record.hp>0 and eligible(player,record) and (record.root.Position-center).Magnitude<=14+record.stats.radius*0.3 then damage(player,record,60) end
+		end
+		cast.targets={center} cast.radius=14
+		notify:FireAllClients(cast)
+	elseif p.classId=="Shade" then
+		-- Passo do Véu: reaparece atrás do inimigo mais próximo (até 40 studs, com linha de visão)
+		-- e golpeia com crítico; fica velado por 2 s.
+		local enemy=targets(player,40)[1]
+		if enemy then
+			local back=enemy.root.CFrame.LookVector
+			back=Vector3.new(back.X,0,back.Z)
+			if back.Magnitude<0.1 then back=(enemy.root.Position-root.Position)*Vector3.new(1,0,1) end
+			local spot=enemy.root.Position-back.Unit*(enemy.stats.radius*0.5+3)
+			local from=root.Position
+			character_pivot(player,CFrame.lookAt(Vector3.new(spot.X,enemy.root.Position.Y,spot.Z),Vector3.new(enemy.root.Position.X,enemy.root.Position.Y,enemy.root.Position.Z)))
+			damage(player,enemy,70)
+			notify:FireAllClients({kind="blink",from=from,to=spot,color=class.color})
+			table.insert(cast.targets,enemy.root.Position)
+		end
+		player:SetAttribute("VeiledUntil",workspace:GetServerTimeNow()+2)
 		notify:FireAllClients(cast)
 	else
 		for _, enemy in targets(player,26) do enemy.slowUntil=now+4 damage(player,enemy,48) end
@@ -419,6 +514,77 @@ rootBurst=function(record: any,target: Player,windupOverride: number?)
 			end
 			for _, center in centers do notify:FireAllClients({kind="impact",position=center,radius=radius,style="roots"}) end
 		end
+		record.casting=false
+	end)
+end
+
+-- Arauto Partido (fase 5). Cada fase acelera: 1 → 2 (ecos na arena) → 3 (fúria, sem pausas).
+local function heraldTempo(record: any): number
+	return if record.phase==3 then 0.55 elseif record.phase==2 then 0.8 else 1
+end
+
+-- Resolve uma área telegrafada: dano a quem estiver dentro (esquiva evita).
+local function heraldImpact(record: any,centers: {Vector3},radius: number,amount: number,style: string)
+	if record.hp<=0 or not record.model.Parent then return end
+	record.model:SetAttribute("ImpactUntil",serverNow()+0.3)
+	local hit: {[Player]: boolean}={}
+	for _, player in Players:GetPlayers() do
+		local part=playerRoot(player)
+		if part and eligible(player,record) and not hit[player] then
+			for _, center in centers do
+				local flat=Vector3.new(part.Position.X,center.Y,part.Position.Z)
+				if (flat-center).Magnitude<=radius and math.abs(part.Position.Y-2.25-center.Y)<7 then
+					hit[player]=true
+					if not dodging(player) then hurtPlayer(player,amount,center) end
+					break
+				end
+			end
+		end
+	end
+	for _, center in centers do notify:FireAllClients({kind="impact",position=center,radius=radius,style=style}) end
+end
+
+-- Golpe Quádruplo: áreas sob o alvo e ao redor dele, em sequência (na fase 3, cinco áreas).
+local function heraldStrike(record: any,target: Player)
+	if record.casting or record.hp<=0 then return end
+	local root=playerRoot(target)
+	if not root then return end
+	local tempo=heraldTempo(record)
+	local windup=record.stats.windup*tempo
+	beginCast(record,"HeraldStrike",windup)
+	faceTowards(record,root.Position)
+	local base=Vector3.new(root.Position.X,root.Position.Y-2.25,root.Position.Z)
+	local count=if record.phase==3 then 5 else 4
+	local centers={base}
+	for i=1,count-1 do
+		local a=i*math.pi*2/(count-1)+os.clock()
+		table.insert(centers,base+Vector3.new(math.cos(a)*11,0,math.sin(a)*11))
+	end
+	for i,center in centers do
+		notify:FireAllClients({kind="telegraph",position=center,radius=7,duration=windup+(i-1)*0.18,boss=true,style="void"})
+	end
+	record.nextCast=os.clock()+record.stats.cooldown*tempo+windup
+	task.delay(windup,function()
+		for i,center in centers do
+			task.delay((i-1)*0.18,function() heraldImpact(record,{center},7,record.stats.damage,"void") end)
+		end
+		task.delay(#centers*0.18,function() record.casting=false end)
+	end)
+end
+
+-- Anel do Eclipse: onda ao redor do Arauto; é preciso sair do raio (ou esquivar na hora certa).
+local function heraldRing(record: any)
+	if record.casting or record.hp<=0 then return end
+	local tempo=heraldTempo(record)
+	local windup=1.4*math.max(0.7,tempo)
+	beginCast(record,"HeraldRing",windup)
+	local center=Vector3.new(record.root.Position.X,record.groundY+0.75,record.root.Position.Z)
+	local radius=if record.phase>=2 then 20 else 17
+	notify:FireAllClients({kind="telegraph",position=center,radius=radius,duration=windup,boss=true,style="void"})
+	record.nextRing=os.clock()+7*tempo
+	record.nextCast=os.clock()+windup+1.2*tempo
+	task.delay(windup,function()
+		heraldImpact(record,{center},radius,record.stats.damage+8,"void")
 		record.casting=false
 	end)
 end
@@ -665,9 +831,24 @@ local function kick(player: Player)
 	end)
 end
 
+-- QA (Studio): dano por um jogador pelo caminho normal (créditos, fases, reforços, visão).
+function Service.debugDamage(player: Player,id: string,amount: number): number?
+	local record=records[id]
+	if not record then return nil end
+	damage(player,record,amount)
+	return record.hp
+end
+
+function Service.spawnRegional()
+	for _, definition in Chapter.Encounters do
+		if definition.region and not records[definition.id] then makeRecord(definition) end
+	end
+end
+
 function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRemote: RemoteEvent,notifyRemote: RemoteEvent,questService: any,blockRemote: RemoteEvent?,kickRemote: RemoteEvent?)
 	notify=notifyRemote quests=questService
-	for _, definition in Chapter.Encounters do makeRecord(definition) end
+	-- Encontros de outras regiões nascem depois que o cenário delas existe (spawnRegional).
+	for _, definition in Chapter.Encounters do if not definition.region then makeRecord(definition) end end
 	if blockRemote then blockRemote.OnServerEvent:Connect(setBlocking) end
 	if kickRemote then kickRemote.OnServerEvent:Connect(kick) end
 	Players.PlayerAdded:Connect(function(player) player.CharacterAdded:Connect(function() player:SetAttribute("Blocking",false) end) end)
@@ -688,7 +869,9 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 			local target=nil local distance=math.huge local point=nil
 			for _, player in Players:GetPlayers() do
 				local root=playerRoot(player)
-				if root and eligible(player,r) and (root.Position-r.origin).Magnitude<=r.definition.leash then
+				-- Véu velado (Passo do Véu) não é perseguido por 2 s.
+				local veiled=(player:GetAttribute("VeiledUntil") or 0)>workspace:GetServerTimeNow()
+				if root and not veiled and eligible(player,r) and (root.Position-r.origin).Magnitude<=r.definition.leash then
 					local d=(root.Position-r.root.Position).Magnitude
 					if d<distance then target=player point=root.Position distance=d end
 				end
@@ -704,10 +887,10 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 			end
 			-- Patrulha visível mesmo sem jogadores por perto; raio curto, sem spawn infinito.
 			local patrolAngle=os.clock()*0.13+#r.definition.id
-			local patrol=if r.definition.kind=="Boss" then r.origin else r.origin+Vector3.new(math.sin(patrolAngle)*5,0,math.cos(patrolAngle)*5)
+			local patrol=if r.definition.kind=="Boss" or r.definition.kind=="Herald" then r.origin else r.origin+Vector3.new(math.sin(patrolAngle)*5,0,math.cos(patrolAngle)*5)
 			local wanted=point or patrol
 			local delta=Vector3.new(wanted.X-r.root.Position.X,0,wanted.Z-r.root.Position.Z)
-			local boss=r.definition.kind=="Boss"
+			local boss=r.definition.kind=="Boss" or r.definition.kind=="Herald"
 			local kind=r.definition.kind
 			local now=os.clock()
 			local ready=now>=r.nextCast
@@ -721,6 +904,9 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 				elseif kind=="Boss" then
 					if distance>14 and distance<=32 and now>=(r.nextGrab or 0) and ready then vineGrab(r,t,32) continue end
 					if distance<=42 and ready then rootBurst(r,t) continue end
+				elseif kind=="Herald" then
+					if distance<=15 and ready and now>=(r.nextRing or 0) then heraldRing(r) continue end
+					if distance<=46 and ready then heraldStrike(r,t) continue end
 				elseif kind=="Thorn" then
 					if distance<=6 and ready then
 						r.alternate=not r.alternate

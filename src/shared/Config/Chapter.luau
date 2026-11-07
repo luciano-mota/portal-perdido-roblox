@@ -39,6 +39,8 @@ return {
 		Thorn = {name = "Predador de Espinhos", health = 100, damage = 12, speed = 11, radius = 6, windup = 0.7, cooldown = 2.4, color = Color3.fromRGB(126, 106, 76)},
 		Wisp = {name = "Eco do Vazio", health = 85, damage = 13, speed = 6, radius = 9, windup = 1.1, cooldown = 3.2, color = Color3.fromRGB(129, 108, 190)},
 		Boss = {name = "Guardião de Raízes", health = 1800, damage = 22, speed = 4, radius = 12, windup = 1.4, cooldown = 3.8, color = Color3.fromRGB(103, 125, 83)},
+		-- Fase 5: chefe que parece ser o último. Vida escala com quem está na arena (solo viável).
+		Herald = {name = "Arauto Partido", health = 2600, healthPerPlayer = 1500, damage = 24, speed = 7, radius = 10, windup = 1.1, cooldown = 2.6, color = Color3.fromRGB(196, 150, 255), big = true},
 	},
 	Encounters = {
 		{id = "FirstSentinel", kind = "Moss", position = Vector3.new(0, 3, -68), leash = 28},
@@ -48,7 +50,9 @@ return {
 		{id = "RuneWisp", kind = "Wisp", position = Vector3.new(-38, 3, -318), leash = 14},
 		{id = "ForestThorn", kind = "Thorn", position = Vector3.new(40, 3, -142), leash = 22},
 		{id = "TempleWisp", kind = "Wisp", position = Vector3.new(32, 3, -358), leash = 22},
-		{id = "RootGuardian", kind = "Boss", position = Vector3.new(0, 7, -550), leash = 48},
+		{id = "RootGuardian", kind = "Boss", position = Vector3.new(0, 7, -550), leash = 48, vision = "Lumen"},
+		-- Arena da Convergência (origem da região 5). Ao cair, abre a fenda do Regente.
+		{id = "Herald", kind = "Herald", position = Vector3.new(3000, 3, 3000), leash = 46, vision = "Convergence", visionStyle = "rift", region = "Convergence"},
 	},
 	Dialogues = {
 		-- Prólogo: uma página por cena de ArrivalCinematic (escola, apagão, silêncio, despertar, confusão).

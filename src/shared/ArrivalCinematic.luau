@@ -674,10 +674,11 @@ function Cinematic.start(onPage: (number) -> (),onFinish: () -> ())
 		if index>Cinematic.pageCount then stop() onFinish() else onPage(index) end
 	end
 	onPage(1)
-	connection=RunService.RenderStepped:Connect(function(dt)
+	connection=RunService.RenderStepped:Connect(function(frameDt)
 		if stopped then return end
-		dt=math.min(dt,1/20)
-		elapsed+=dt
+		-- O relógio segue o tempo real; só o passo de movimento é limitado (sem saltos em FPS baixo).
+		elapsed+=frameDt
+		local dt=math.min(frameDt,1/20)
 		if elapsed>=PAGE_SECONDS[page] then setPage(page+1) return end
 		if not camera then return end
 		camera.CameraType=Enum.CameraType.Scriptable

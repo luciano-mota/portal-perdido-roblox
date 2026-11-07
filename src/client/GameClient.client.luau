@@ -55,14 +55,35 @@ local classButtons: {TextButton}={}
 local cardScale=Instance.new("UIScale") cardScale.Parent=card
 text(card,"Title","AS CRÔNICAS DO\nPORTAL PERDIDO",21,UDim2.fromOffset(18,15),UDim2.new(1,-36,0,57),amber).Font=Enum.Font.GothamBold
 text(card,"Subtitle","CAPÍTULO 1 · A TRAVESSIA\nEscolha como enfrentará este novo mundo.",13,UDim2.fromOffset(20,77),UDim2.new(1,-40,0,43))
-for i,id in {"Guardian","Explorer","Artificer"} do
+-- Seis heróis em grade 2×3. Bloqueados (Rota A) mostram como desbloquear; o servidor valida.
+local HERO_ORDER={"Guardian","Explorer","Artificer","Brawler","Arcanist","Shade"}
+local UNLOCK_HINT={"Conclua o Vale de Lúmen","Conclua o Abismo de Cristal","Conclua o Deserto das Horas"}
+local function heroAvailable(id: string): boolean
+	local list=player:GetAttribute("AvailableHeroes")
+	if typeof(list)~="string" then return Classes[id].unlockPhase==nil end
+	return table.find(string.split(list,","),id)~=nil
+end
+local refreshHeroButtons: () -> ()=function() end
+local heroLabels: {[string]: () -> ()}={}
+for i,id in HERO_ORDER do
 	local class=Classes[id]
-	local b=button(card,"Choose"..id,class.displayName.."  |  "..class.health.." VIDA\n"..class.description,UDim2.fromOffset(22,125+(i-1)*64),UDim2.new(1,-44,0,55),Color3.fromRGB(35,69,81))
+	local column=(i-1)%2
+	local row=(i-1)//2
+	local b=button(card,"Choose"..id,"",UDim2.new(column*0.5,if column==0 then 18 else 5,0,124+row*62),UDim2.new(0.5,-23,0,56),Color3.fromRGB(35,69,81))
+	b.TextSize=12
 	classButtons[i]=b
 	stroke(b,class.color)
 	b.TextXAlignment=Enum.TextXAlignment.Left
-	local padding=Instance.new("UIPadding") padding.PaddingLeft=UDim.new(0,76) padding.PaddingRight=UDim.new(0,8) padding.Parent=b
-	local preview=Instance.new("ViewportFrame") preview.Name="ClassPortrait" preview.Size=UDim2.fromOffset(58,53) preview.Position=UDim2.fromOffset(-68,1) preview.BackgroundTransparency=1 preview.Ambient=Color3.fromRGB(180,185,194) preview.LightColor=Color3.fromRGB(255,238,211) preview.Parent=b
+	heroLabels[id]=function()
+		local open=heroAvailable(id)
+		b.Text=if open then class.displayName.."\n"..class.health.." VIDA · "..class.skillName else class.displayName.."\nBLOQUEADO · "..(UNLOCK_HINT[class.unlockPhase or 1] or "")
+		b.BackgroundColor3=if open then Color3.fromRGB(35,69,81) else Color3.fromRGB(32,38,44)
+		b.TextColor3=if open then parchment else Color3.fromRGB(150,156,160)
+		b.AutoButtonColor=open
+	end
+	heroLabels[id]()
+	local padding=Instance.new("UIPadding") padding.PaddingLeft=UDim.new(0,58) padding.PaddingRight=UDim.new(0,6) padding.Parent=b
+	local preview=Instance.new("ViewportFrame") preview.Name="ClassPortrait" preview.Size=UDim2.fromOffset(50,52) preview.Position=UDim2.fromOffset(-54,2) preview.BackgroundTransparency=1 preview.Ambient=Color3.fromRGB(180,185,194) preview.LightColor=Color3.fromRGB(255,238,211) preview.Parent=b
 	local scene=Instance.new("WorldModel") scene.Parent=preview
 	local camera=Instance.new("Camera") camera.Parent=preview preview.CurrentCamera=camera
 	-- Retrato humanizado publicado pelo servidor (ReplicatedStorage.ClassPreviews). O boneco procedural
@@ -89,8 +110,10 @@ for i,id in {"Guardian","Explorer","Artificer"} do
 			camera.CFrame=CFrame.lookAt(Vector3.new(5,4.2,-8),Vector3.new(0,3.1,0)) camera.FieldOfView=40
 		end)
 	end
-	b.Activated:Connect(function() choose:FireServer(id) end)
+	b.Activated:Connect(function() if heroAvailable(id) then choose:FireServer(id) end end)
 end
+refreshHeroButtons=function() for _,update in heroLabels do update() end end
+player:GetAttributeChangedSignal("AvailableHeroes"):Connect(refreshHeroButtons)
 text(card,"Footer","Q atacar  ·  R habilidade  ·  Shift esquiva\nNo celular, use os botões na tela.",11,UDim2.fromOffset(20,318),UDim2.new(1,-40,0,26),Color3.fromRGB(177,195,200))
 
 local hud=frame(screen,"QuestPanel",UDim2.new(0.92,0,0,96),UDim2.new(0.5,0,0,8)) hud.AnchorPoint=Vector2.new(0.5,0) limit(hud,510,96) hud.Visible=false
@@ -211,9 +234,11 @@ local function layout()
 	subtitle.TextSize=if compact then 12 else 13
 	footer.Visible=not compact
 	for i,b in classButtons do
-		b.Position=UDim2.fromOffset(22,(if compact then 84 else 125)+(i-1)*(if compact then 55 else 64))
-		b.Size=UDim2.new(1,-44,0,if compact then 49 else 55)
-		b.TextSize=15
+		local column=(i-1)%2
+		local row=(i-1)//2
+		b.Position=UDim2.new(column*0.5,if column==0 then 18 else 5,0,(if compact then 84 else 124)+row*(if compact then 55 else 62))
+		b.Size=UDim2.new(0.5,-23,0,if compact then 50 else 56)
+		b.TextSize=if compact then 11 else 12
 	end
 	hud.Size=UDim2.new(if compact then 0.72 else 0.92,0,0,if compact then 76 else 96)
 	hud:FindFirstChildOfClass("UISizeConstraint").MaxSize=Vector2.new(if compact then 390 else 510,96)
@@ -387,6 +412,11 @@ notify.OnClientEvent:Connect(function(data)
 	elseif data.kind=="toast" or data.kind=="bossPhase" then showToast(data.text)
 	elseif data.kind=="quest" then Audio.quest() showToast(data.text..(if data.coins>0 then "  +"..data.coins.." moedas" else ""))
 	elseif data.kind=="hurt" then if data.shielded then showToast("ÉGIDE: dano reduzido") end
+	elseif data.kind=="vision" then
+		-- Visão do Regente do Vazio depois do chefe final de uma região.
+		local Vision=require(ReplicatedStorage.Shared.RegentVision)
+		if data.style=="rift" and typeof(data.center)=="Vector3" then Vision.rift(data.center)
+		elseif typeof(data.region)=="string" then Vision.flashback(data.region) end
 	else
 		FX.play(data)
 		if data.kind=="impact" then local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart") if root and root:IsA("BasePart") and (root.Position-data.position).Magnitude<55 then Audio.impact() end end
@@ -410,10 +440,14 @@ RunService.RenderStepped:Connect(function(dt)
 	local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local enemyFolder=workspace:FindFirstChild("PortalEnemies")
 	local guardian=enemyFolder and enemyFolder:FindFirstChild("RootGuardian")
-	boss.Visible=hud.Visible and player:GetAttribute("QuestIndex")==5 and root~=nil and root:IsA("BasePart") and root.Position.Z< -485 and guardian~=nil and (guardian:GetAttribute("Health") or 0)>0
-	if boss.Visible and guardian then
-		local hp=guardian:GetAttribute("Health") or 0 local max=guardian:GetAttribute("MaxHealth") or 1
-		bossText.Text="GUARDIÃO DE RAÍZES · FASE "..tostring(guardian:GetAttribute("Phase")).."  "..hp.." / "..max
+	local herald=enemyFolder and enemyFolder:FindFirstChild("Herald")
+	local nearHerald=herald~=nil and root~=nil and root:IsA("BasePart") and herald.PrimaryPart~=nil and (root.Position-herald.PrimaryPart.Position).Magnitude<70 and (herald:GetAttribute("Health") or 0)>0
+	local nearGuardian=player:GetAttribute("QuestIndex")==5 and root~=nil and root:IsA("BasePart") and root.Position.Z< -485 and root.Position.X>-500 and root.Position.X<500 and guardian~=nil and (guardian:GetAttribute("Health") or 0)>0
+	boss.Visible=hud.Visible and (nearGuardian or nearHerald)
+	local current=if nearHerald then herald else guardian
+	if boss.Visible and current then
+		local hp=current:GetAttribute("Health") or 0 local max=current:GetAttribute("MaxHealth") or 1
+		bossText.Text=(if nearHerald then "ARAUTO PARTIDO" else "GUARDIÃO DE RAÍZES").." · FASE "..tostring(current:GetAttribute("Phase")).."  "..hp.." / "..max
 		bossFill.Size=UDim2.new(0.94*hp/math.max(max,1),0,0,6)
 	end
 	updateHealth()

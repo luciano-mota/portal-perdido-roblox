@@ -15,6 +15,8 @@ export type Atmosphere={
 export type Region={
 	id: string, order: number, name: string, subtitle: string,
 	origin: Vector3, voidY: number, gateRequiresCompletion: boolean,
+	-- Portal escondido até o encontro indicado ser vencido (fase 5: parece a última).
+	exitRevealedBy: string?,
 	atmosphere: Atmosphere,
 }
 
@@ -52,7 +54,7 @@ Campaign.Regions={
 	},
 	{
 		id="Convergence", order=5, name="LIMIAR DA CONVERGÊNCIA", subtitle="Fase 5 · Onde os caminhos se encontram",
-		origin=Vector3.new(3000,150,3000), voidY=-50, gateRequiresCompletion=false,
+		origin=Vector3.new(3000,150,3000), voidY=-50, gateRequiresCompletion=false, exitRevealedBy="Herald",
 		atmosphere={clock=17.95, latitude=25, brightness=2.1, exposure=0.15, ambient=C(104,108,140), outdoor=C(130,134,170),
 			density=0.3, offset=0.3, color=C(188,196,232), decay=C(122,108,170), haze=1.5, glare=0.2,
 			cloudCover=0.5, cloudDensity=0.42, cloudColor=C(232,214,250), tint=C(240,240,255), saturation=0.08, contrast=0.1},

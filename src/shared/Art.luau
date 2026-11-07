@@ -202,6 +202,15 @@ local GENERATED: {[string]: any}={
 			{name="Eye",size=Vector3.new(0.3,0.15,0.08),offset=Vector3.new(0.3,2.72,-0.74),on="Head"},
 		},
 	},
+	Herald={
+		-- Arauto Partido: rig R15 gerado em escala de colosso; tronco, cabeça e braços articulados.
+		template="HeraldTemplate", scale=2.3, baseY=0,
+		joints={UpperTorso={"Waist",-0.45},Head={"Neck",-0.45,"UpperTorso"},
+			LeftUpperArm={"LeftShoulder",0.4,"UpperTorso"},RightUpperArm={"RightShoulder",0.4,"UpperTorso"},
+			LeftLowerArm={"LeftElbow",0.45,"LeftUpperArm"},RightLowerArm={"RightElbow",0.45,"RightUpperArm"},
+			LeftHand={"LeftWrist",0.5,"LeftLowerArm"},RightHand={"RightWrist",0.5,"RightLowerArm"}},
+		bodyLight={on="UpperTorso",range=18,brightness=1.6,color=Color3.fromRGB(196,150,255)},
+	},
 	Wisp={
 		-- Espectro flutuante: o corpo oscila no motor SpiritCore e leva cabeça e mãos junto.
 		template="VoidEchoTemplate", scale=1.15, baseY=0.7,
@@ -263,7 +272,7 @@ end
 function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Color3): Model
 	local m = Instance.new("Model")
 	local boss = kind == "Boss"
-	local scale = if boss then 2.2 else 1
+	local scale = if boss then 2.2 elseif kind=="Herald" then 2.6 else 1
 	local root = Art.part(m,"Root",Vector3.new(4,5,4)*scale,CFrame.new(position),color)
 	root.Transparency = 1
 	root.CanQuery = true
@@ -327,6 +336,32 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 			p("Eye",Vector3.new(0.25,0.2,0.1),Vector3.new(side*0.55,0.35,-2.9),Color3.fromRGB(228,180,88),Enum.Material.Neon)
 		end
 		for i=1,5 do p("Thorn",Vector3.new(0.35,1.6,0.4),Vector3.new(0,1,-1.7+i*0.65),Color3.fromRGB(162,146,113),Enum.Material.Wood) end
+	elseif kind == "Herald" then
+		-- Arauto Partido (procedural): cavaleiro feito de pedaços dos quatro mundos. Ombro de cristal
+		-- (Abismo), peitoral do eclipse (Cidadela), ampulheta no peito (Deserto), raízes nas pernas (Vale)
+		-- e um halo partido atrás do elmo.
+		local plate=Color3.fromRGB(38,32,52)
+		local trim=Color3.fromRGB(206,170,100)
+		p("Chest",Vector3.new(3.2,3,2),Vector3.new(0,0.4,0),plate,Enum.Material.Metal,Enum.PartType.Ball)
+		p("ChestTrim",Vector3.new(3.25,0.2,2.05),Vector3.new(0,1.2,0),trim,Enum.Material.Metal)
+		p("Core",Vector3.new(0.5,1.1,0.3),Vector3.new(0,0.4,-1.0),Color3.fromRGB(255,200,110),Enum.Material.Neon,Enum.PartType.Ball)
+		p("Head",Vector3.new(1.5,1.8,1.6),Vector3.new(0,2.4,0),plate,Enum.Material.Metal,Enum.PartType.Ball)
+		p("Eye",Vector3.new(1.0,0.16,0.12),Vector3.new(0,2.5,-0.8),Color3.fromRGB(240,230,255),Enum.Material.Neon)
+		for k=0,7 do
+			if k==5 then continue end
+			local a=k*math.pi/4
+			p("Halo",Vector3.new(0.25,0.9,0.25),Vector3.new(math.cos(a)*1.7,2.6+math.sin(a)*1.7,1),trim,Enum.Material.Neon)
+		end
+		for _, side in {-1,1} do
+			p("Arm",Vector3.new(1.1,2.8,1.2),Vector3.new(side*2.1,0.1,0),plate,Enum.Material.Metal,Enum.PartType.Ball)
+			p("Hand",Vector3.new(1.2,1.1,1.2),Vector3.new(side*2.2,-1.4,0),trim,Enum.Material.Metal,Enum.PartType.Ball)
+			p("Leg",Vector3.new(1.2,2.2,1.4),Vector3.new(side*0.8,-2.1,0),Color3.fromRGB(70,90,60),Enum.Material.Wood,Enum.PartType.Ball)
+			p("Foot",Vector3.new(1.4,0.7,2.1),Vector3.new(side*0.8,-3,-0.3),plate,Enum.Material.Metal,Enum.PartType.Ball)
+		end
+		p("CrystalPauldron",Vector3.new(1.0,2.4,1.0),Vector3.new(-2.2,1.9,0),Color3.fromRGB(150,220,255),Enum.Material.Glass,Enum.PartType.Ball)
+		p("EclipsePauldron",Vector3.new(1.8,0.9,1.6),Vector3.new(2.2,1.6,0),trim,Enum.Material.Metal,Enum.PartType.Ball)
+		Art.segment(m,"Glaive",position+Vector3.new(2.6,-3,-0.6)*scale,position+Vector3.new(2.6,4.2,-0.6)*scale,0.22*scale,Color3.fromRGB(60,50,70),Enum.Material.Metal)
+		p("GlaiveBlade",Vector3.new(0.2,2.2,1.2),Vector3.new(2.6,4.6,-0.9),Color3.fromRGB(200,180,255),Enum.Material.Neon)
 	else
 		p("Chest",Vector3.new(3.3,3.3,2.2),Vector3.new(0,0.1,0),stone,Enum.Material.Slate,Enum.PartType.Ball)
 		p("MossMantle",Vector3.new(3.9,1,2.6),Vector3.new(0,1.4,0),color,Enum.Material.Grass,Enum.PartType.Ball)
@@ -480,7 +515,7 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 		equip("TravelScarf",Vector3.new(1.2,0.28,1),CFrame.new(0,0.82,0),Color3.fromRGB(77,97,60),Enum.Material.Fabric,Enum.PartType.Ball)
 		equip("LeatherBaldric",Vector3.new(0.22,2.2,0.12),CFrame.new(0,0,-0.61)*CFrame.Angles(0,0,-0.5),leather,Enum.Material.Leather)
 		equip("ShortCloak",Vector3.new(1.75,1.65,0.17),CFrame.new(0,-0.12,0.68)*CFrame.Angles(-0.12,0,0),Color3.fromRGB(65,81,52),Enum.Material.Fabric)
-	else
+	elseif classId=="Artificer" then
 		equip("WovenStole",Vector3.new(0.42,1.95,0.16),CFrame.new(-0.53,-0.05,-0.63),Color3.fromRGB(91,68,113),Enum.Material.Fabric)
 		for i=1,3 do
 			equip("RunicClasp",Vector3.new(0.18,0.13,0.06),CFrame.new(-0.53,0.65-i*0.38,-0.74),gold,Enum.Material.Metal)
@@ -599,6 +634,50 @@ function Art.equipment(character: Model, classId: string, color: Color3)
 			local beam=Instance.new("Beam") beam.Name="DrawnString" beam.Attachment0=tip beam.Attachment1=nock beam.Width0=0.028 beam.Width1=0.028 beam.FaceCamera=true beam.Color=ColorSequence.new(stringColor) beam.Enabled=false beam.Parent=folder
 		end
 
+	elseif classId=="Brawler" then
+		-- Lutador: sem arma. Faixas nos punhos com runas solares acesas; o rastro liga nos golpes.
+		for _,hand in {right,left} do
+			if not hand:IsA("BasePart") then continue end
+			local side=if hand==right then "Right" else "Left"
+			equip(side.."FistWrap",Vector3.new(0.18,0.62,0.62),CFrame.new(0,0.12,0)*CFrame.Angles(0,0,math.pi/2),Color3.fromRGB(228,214,190),Enum.Material.Fabric,Enum.PartType.Cylinder,hand)
+			local rune=equip(side.."FistRune",Vector3.new(0.12,0.66,0.66),CFrame.new(0,0.02,0)*CFrame.Angles(0,0,math.pi/2),color,Enum.Material.Neon,Enum.PartType.Cylinder,hand)
+			rune.Transparency=0.35
+			local a0=Instance.new("Attachment") a0.Name="TrailBase" a0.Position=Vector3.new(0,0.3,0) a0.Parent=rune
+			local a1=Instance.new("Attachment") a1.Name="TrailTip" a1.Position=Vector3.new(0,-0.3,0) a1.Parent=rune
+			local trail=Instance.new("Trail") trail.Name="FistTrail" trail.Attachment0=a0 trail.Attachment1=a1 trail.Lifetime=0.18 trail.LightEmission=1
+			trail.Color=ColorSequence.new(Color3.fromRGB(255,236,180),color) trail.Transparency=NumberSequence.new(0.2,1) trail.Enabled=false trail.Parent=rune
+		end
+	elseif classId=="Arcanist" then
+		-- Cajado solar: haste escura com anéis dourados e orbe de sol numa gaiola de aros.
+		local staff=CFrame.new(0,1.1,-0.05)
+		equip("StaffShaft",Vector3.new(6.2,0.16,0.16),staff*CFrame.Angles(0,0,math.pi/2),Color3.fromRGB(78,40,38),Enum.Material.Wood,Enum.PartType.Cylinder,right)
+		for _,y in {-2.6,-0.2,1.9,2.9} do
+			equip("StaffRing",Vector3.new(0.14,0.24,0.24),staff*CFrame.new(0,y,0)*CFrame.Angles(0,0,math.pi/2),gold,Enum.Material.Metal,Enum.PartType.Cylinder,right)
+		end
+		local top=staff*CFrame.new(0,3.6,0)
+		local orb=equip("SunOrb",Vector3.new(0.62,0.62,0.62),top,Color3.fromRGB(255,214,120),Enum.Material.Neon,Enum.PartType.Ball,right)
+		for k=0,2 do
+			equip("OrbCage",Vector3.new(0.06,1.05,1.05),top*CFrame.Angles(0,k*math.pi/3,0)*CFrame.Angles(0,math.pi/2,0),gold,Enum.Material.Metal,Enum.PartType.Cylinder,right).Transparency=0.15
+		end
+		equip("StaffFinial",Vector3.new(0.14,0.5,0.14),top*CFrame.new(0,0.75,0),gold,Enum.Material.Metal,Enum.PartType.Ball,right)
+		local glow=Instance.new("PointLight") glow.Color=Color3.fromRGB(255,200,110) glow.Range=8 glow.Brightness=1.2 glow.Shadows=false glow.Parent=orb
+	elseif classId=="Shade" then
+		-- Duas adagas com lâmina curta e cristal turquesa no pomo, uma em cada mão.
+		local hold=CFrame.new(0,-0.18,0)*CFrame.Angles(-1.22,0,0)
+		for _,hand in {right,left} do
+			local side=if hand==right then "Right" else "Left"
+			local function dagger(name: string,size: Vector3,y: number,tint: Color3,material: Enum.Material,shape: Enum.PartType?)
+				return equip(side..name,size,hold*CFrame.new(0,y,0),tint,material,shape,hand)
+			end
+			dagger("DaggerGrip",Vector3.new(0.12,0.42,0.12),0,Color3.fromRGB(40,32,44),Enum.Material.Leather)
+			dagger("DaggerGuard",Vector3.new(0.5,0.08,0.12),0.24,Color3.fromRGB(170,170,180),Enum.Material.Metal)
+			local blade=dagger("DaggerBlade",Vector3.new(0.14,1.05,0.04),0.8,Color3.fromRGB(205,212,222),Enum.Material.Metal)
+			dagger("DaggerGem",Vector3.new(0.16,0.2,0.16),-0.26,Color3.fromRGB(110,236,236),Enum.Material.Neon,Enum.PartType.Ball)
+			local a0=Instance.new("Attachment") a0.Name="TrailBase" a0.Position=Vector3.new(0,-0.4,0) a0.Parent=blade
+			local a1=Instance.new("Attachment") a1.Name="TrailTip" a1.Position=Vector3.new(0,0.5,0) a1.Parent=blade
+			local trail=Instance.new("Trail") trail.Name="DaggerTrail" trail.Attachment0=a0 trail.Attachment1=a1 trail.Lifetime=0.14 trail.LightEmission=0.9
+			trail.Color=ColorSequence.new(Color3.fromRGB(200,240,255),color) trail.Transparency=NumberSequence.new(0.25,1) trail.Enabled=false trail.Parent=blade
+		end
 	else
 		-- Cristal de foco flutuando junto aos dedos, para fora do casaco e um pouco à frente.
 		-- Offset medido no Play: em repouso a mão do rig gerado fica girada (+X aponta para fora/baixo),

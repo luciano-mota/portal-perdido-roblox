@@ -5,6 +5,7 @@ local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
 local Campaign=require(ReplicatedStorage.Shared.Config.Campaign)
 local Data=require(script.Parent.PlayerDataService)
 local Expedition=require(script.Parent.ExpeditionService)
+local ClassService=require(script.Parent.ClassService)
 local Quest={}
 local notify: RemoteEvent
 local guardAlive: (string) -> boolean = function() return true end
@@ -205,6 +206,7 @@ function Quest.init(notifyRemote: RemoteEvent, isGuardAlive: (string) -> boolean
 		if p.quest~=5 or player:GetAttribute("BossDefeated")~=true then message(player,"O Guardião ainda protege o fragmento.") return end
 		Data.mutate(player,function(profile) profile.fragment=true end)
 		advance(player,5,"Village")
+		if ClassService.unlock(player,"Brawler") then notify:FireClient(player,{kind="quest",text="NOVO HERÓI: LUTADOR SOLAR — disponível nos próximos pontos seguros",coins=0}) end
 		message(player,"O Fragmento da Aurora está seguro. Volte ao vale quando desejar.")
 		dialogue(player,Chapter.Dialogues.Ending,"FRAGMENTO DA AURORA")
 		notify:FireClient(player,{kind="ending"})

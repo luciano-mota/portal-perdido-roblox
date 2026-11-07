@@ -11,6 +11,9 @@ Motion.Timing={
 	Guardian={duration=0.62,release=0.5},
 	Explorer={duration=0.7,release=0.74},
 	Artificer={duration=0.56,release=0.5},
+	Brawler={duration=0.42,release=0.45},
+	Arcanist={duration=0.75,release=0.55},
+	Shade={duration=0.4,release=0.45},
 	Skill={duration=0.95},
 	Dash={duration=0.35},
 	Kick={duration=0.6},
@@ -69,6 +72,20 @@ for _,name in {"A_Wind","A_Strike","B_Wind","B_Strike","C_Wind","C_Strike"} do
 	P[name]=merged("Guard",P.ShieldReady)
 	for k,v in own do P[name][k]=v end
 end
+-- Lutador: guarda alta, socos retos alternados e chute frontal (a partir das poses calibradas
+-- da Artífice: mãos junto ao peito / braço estendido à frente).
+P.Br_Guard={rightshoulder={1.00,1.50,-0.50},rightelbow={1.50,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0},waist={0.05,-0.15,0},leftknee={-0.2,0,0},rightknee={-0.2,0,0}}
+P.Br_JabR={rightshoulder={1.56,0.94,-1.00},rightelbow={0.39,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0},waist={-0.12,0.4,0},root={0,0,0,0,-0.1,-0.35},leftknee={-0.3,0,0}}
+P.Br_JabL={leftshoulder={1.56,-0.54,1.00},leftelbow={0.29,0,0},rightshoulder={1.00,1.50,-0.50},rightelbow={1.50,0,0},waist={-0.12,-0.4,0},root={0,0,0,0,-0.1,-0.35},rightknee={-0.3,0,0}}
+P.Br_Chamber={righthip={-1.25,0,0},rightknee={-1.1,0,0},rightankle={0.15,0,0},waist={0.15,-0.12,0},lefthip={0.12,0,0},leftknee={-0.15,0,0},rightshoulder={1.00,1.50,-0.50},rightelbow={1.50,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0}}
+P.Br_Kick=merged("Br_Chamber",{rightknee={0,0,0},waist={0.25,-0.12,0},root={0,0,0,0,0,-0.4}})
+-- Véu: cortes de adaga com a direita e com a esquerda (espelho), e estocada dupla.
+P.Sh_WindR={rightshoulder={2.62,0.10,-0.55},rightelbow={1.41,0,0},waist={0.06,-0.4,0}}
+P.Sh_CutR={rightshoulder={0.81,0.99,0.42},rightelbow={-0.09,0,0},waist={-0.12,0.45,0},root={0,0,0,0,-0.18,-0.55},leftknee={-0.35,0,0}}
+P.Sh_WindL={leftshoulder={2.62,-0.10,0.55},leftelbow={1.41,0,0},waist={0.06,0.4,0}}
+P.Sh_CutL={leftshoulder={0.81,-0.99,-0.42},leftelbow={-0.09,0,0},waist={-0.12,-0.45,0},root={0,0,0,0,-0.18,-0.55},rightknee={-0.35,0,0}}
+P.Sh_Thrust={rightshoulder={1.56,0.94,-1.00},rightelbow={0.2,0,0},leftshoulder={1.56,-0.54,1.00},leftelbow={0.2,0,0},waist={-0.2,0,0},root={0,0,0,0,-0.3,-0.9},leftknee={-0.5,0,0},rightknee={-0.2,0,0}}
+
 -- Acompanhamento: segura a pose do golpe um instante antes de recuperar.
 P.A_Follow=merged("A_Strike",{waist={-0.1,0.55,0}})
 P.B_Follow=merged("B_Strike",{waist={0,0.6,0}})
@@ -86,6 +103,19 @@ Motion.Clips={
 	GuardianSkill={{0,"Rest"},{0.25,"Aegis"},{0.78,"Aegis"},{1,"Rest"}},
 	ExplorerSkill={{0,"Rest"},{0.15,"E_Reach"},{0.3,"E_Nock"},{0.45,"E_Draw"},{0.5,"E_Release"},{0.8,"E_Release"},{1,"Rest"}},
 	ArtificerSkill={{0,"Rest"},{0.35,"F_Raise"},{0.52,"F_Slam"},{0.8,"F_Slam"},{1,"Rest"}},
+	Brawler={
+		{{0,"Rest"},{0.25,"Br_Guard"},{0.45,"Br_JabR"},{0.7,"Br_JabR"},{1,"Rest"}},
+		{{0,"Rest"},{0.25,"Br_Guard"},{0.45,"Br_JabL"},{0.7,"Br_JabL"},{1,"Rest"}},
+		{{0,"Rest"},{0.3,"Br_Chamber"},{0.5,"Br_Kick"},{0.75,"Br_Kick"},{1,"Rest"}},
+	},
+	Arcanist={{{0,"Rest"},{0.4,"F_Charge"},{0.55,"F_Push"},{0.8,"F_Push"},{1,"Rest"}}},
+	Shade={
+		{{0,"Rest"},{0.25,"Sh_WindR"},{0.45,"Sh_CutR"},{0.7,"Sh_CutR"},{1,"Rest"}},
+		{{0,"Rest"},{0.25,"Sh_WindL"},{0.45,"Sh_CutL"},{0.7,"Sh_CutL"},{1,"Rest"}},
+	},
+	BrawlerSkill={{0,"Rest"},{0.15,"Br_Chamber"},{0.3,"Br_Kick"},{0.75,"Br_Kick"},{1,"Rest"}},
+	ArcanistSkill={{0,"Rest"},{0.35,"F_Raise"},{0.52,"F_Slam"},{0.8,"F_Slam"},{1,"Rest"}},
+	ShadeSkill={{0,"Rest"},{0.2,"Sh_WindR"},{0.4,"Sh_Thrust"},{0.75,"Sh_Thrust"},{1,"Rest"}},
 }
 
 local function ease(x: number): number

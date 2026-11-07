@@ -224,6 +224,11 @@ function Fallback.init()
 					elseif piece:IsA("BasePart") and piece.Name=="SwordBlade" then
 						local trail=piece:FindFirstChildOfClass("Trail")
 						if trail then trail.Enabled=striking and attackClass=="Guardian" and progress>0.32 and progress<0.7 end
+					elseif piece:IsA("BasePart") and (piece.Name=="RightFistRune" or piece.Name=="LeftFistRune" or piece.Name=="RightDaggerBlade" or piece.Name=="LeftDaggerBlade") then
+						-- Rastro dos punhos (Lutador) e das adagas (Véu) só na fase do golpe ou da habilidade.
+						local trail=piece:FindFirstChildOfClass("Trail")
+						local owner=if piece.Name:find("Fist") then "Brawler" else "Shade"
+						if trail then trail.Enabled=(striking and attackClass==owner and progress>0.25 and progress<0.8) or (skilling and character:GetAttribute("PortalSkillClass")==owner and skillProgress>0.15 and skillProgress<0.8) end
 					elseif piece:IsA("BasePart") and piece.Name=="FocusShell" then
 						local base=piece:GetAttribute("BaseSize")
 						if typeof(base)~="Vector3" then base=piece.Size piece:SetAttribute("BaseSize",base) end
@@ -232,6 +237,14 @@ function Fallback.init()
 						local light=piece:FindFirstChildOfClass("PointLight")
 						if light then light.Brightness=1.1+3*charge light.Range=6+6*charge end
 					end
+				end
+			end
+			-- Véu velado (Passo do Véu): o corpo fica translúcido enquanto os inimigos o perdem de vista.
+			local veiled=(actor.player:GetAttribute("VeiledUntil") or 0)>workspace:GetServerTimeNow()
+			if veiled~=(actor.veiled==true) then
+				actor.veiled=veiled
+				for _,piece in character:GetDescendants() do
+					if piece:IsA("BasePart") and piece.Name~="HumanoidRootPart" then piece.LocalTransparencyModifier=if veiled then 0.65 else 0 end
 				end
 			end
 			-- Guardião mantém o laço ativo: a mão do escudo é corrigida também fora do combate.

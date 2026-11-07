@@ -36,6 +36,7 @@ Data.init(function(player)
 end)
 -- Regiões 2–6 depois do Vale e dos serviços: quem entra já joga enquanto elas são montadas.
 Regions.build(world)
+Enemies.spawnRegional()
 Travel.init(world,notify)
 -- Ganchos de QA apenas no Studio: BindableFunction em ServerStorage não é acessível
 -- pelo cliente e não existe em servidores publicados. Usado por testes via MCP, que
@@ -45,6 +46,7 @@ if game:GetService("RunService"):IsStudio() then
 	qa.OnInvoke=function(op: string,player: Player?,value: any)
 		if op=="beginSolo" then Expedition.MinimumPlayers=1 return Expedition.tryBegin() end
 		if op=="travel" and player and typeof(value)=="string" then return Travel.send(player,value) end
+		if op=="hurtEnemy" and player and typeof(value)=="table" and typeof(value.id)=="string" and typeof(value.amount)=="number" then return Enemies.debugDamage(player,value.id,value.amount) end
 		if op=="openGates" then workspace:SetAttribute("CampaignOpenGates",value==true) return value==true end
 		if op=="setQuest" and player and typeof(value)=="number" then
 			Data.mutate(player,function(profile) profile.quest=value end) return Data.get(player).quest

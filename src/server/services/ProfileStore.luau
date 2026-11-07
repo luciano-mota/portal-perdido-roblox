@@ -2,10 +2,12 @@
 -- Protocolo de lease testável com adapter; nenhuma chamada de rede no transform.
 local ProfileStore = {}
 ProfileStore.__index = ProfileStore
-local allowedClasses = {Guardian=true, Explorer=true, Artificer=true}
+local allowedClasses = {Guardian=true, Explorer=true, Artificer=true, Brawler=true, Arcanist=true, Shade=true}
+-- Heróis desbloqueáveis na Rota A (persistem na conta, sem duplicar recompensa).
+local unlockable = {"Brawler","Arcanist","Shade"}
 
 function ProfileStore.fresh()
-	return {version=2, quest=1, coins=0, runes={}, seals=0, rewards={}, fragment=false, bossDefeated=false, checkpoint="Village"}
+	return {version=2, quest=1, coins=0, runes={}, seals=0, rewards={}, fragment=false, bossDefeated=false, checkpoint="Village", heroes={}}
 end
 
 function ProfileStore.sanitize(value: any)
@@ -20,6 +22,7 @@ function ProfileStore.sanitize(value: any)
 	p.fragment=value.fragment==true
 	p.bossDefeated=value.bossDefeated==true
 	p.seals=value.seals or 0
+	if typeof(value.heroes)=="table" then for _, id in unlockable do p.heroes[id]=value.heroes[id]==true end end
 	for _, id in {"Dawn","Root","Star"} do p.runes[id]=value.runes[id]==true end
 	for i=1,5 do p.rewards[tostring(i)]=value.rewards[tostring(i)]==true end
 	local checkpoints={Village=true,Forest=true,Temple=true,Arena=true}

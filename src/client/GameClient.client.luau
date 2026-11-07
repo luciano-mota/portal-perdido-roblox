@@ -384,7 +384,9 @@ refresh=function()
 			objective.Text="Recolha o Fragmento da Aurora no altar do santuário."
 		end
 		if not workspace:GetAttribute("ExpeditionStarted") then
-			objective.Text="Reúna o grupo: "..tostring(workspace:GetAttribute("ExpeditionReadyPlayers") or 0).."/3 prontos · ideal: 6. Falem com Ilyra."
+			local ends=workspace:GetAttribute("ExpeditionGatherEndsAt")
+			local left=if typeof(ends)=="number" then math.max(0,math.ceil(ends-workspace:GetServerTimeNow())) else nil
+			objective.Text="Reunindo viajantes: "..tostring(workspace:GetAttribute("ExpeditionReadyPlayers") or 0).." pronto(s)"..(if left then " · a travessia começa em "..left.." s" else "").." (1–3: jornada · 4–6: expedição)"
 		end
 	else heading.Text="A TRAVESSIA · CONCLUÍDA" objective.Text="O Fragmento da Aurora está seguro. Explore o vale ou retorne a Ilyra." end
 	coins.Text="Moedas: "..tostring(player:GetAttribute("Coins") or 0).."\n"..(if player:GetAttribute("DataStatus")=="Saved" then "Salvo" elseif player:GetAttribute("DataStatus")=="StudioMemory" then "Progresso temporário" else "Não salvo")
@@ -397,6 +399,8 @@ end
 for _, attribute in {"ClassId","QuestIndex","Coins","RuneCount","SealProgress","HasFragment","DataStatus","ShieldUntil","BossDefeated"} do player:GetAttributeChangedSignal(attribute):Connect(refresh) end
 workspace:GetAttributeChangedSignal("ExpeditionStarted"):Connect(refresh)
 workspace:GetAttributeChangedSignal("ExpeditionReadyPlayers"):Connect(refresh)
+-- Contagem da janela de reunião antes da travessia.
+task.spawn(function() while true do task.wait(1) if not workspace:GetAttribute("ExpeditionStarted") then refresh() end end end)
 
 FX.init()
 require(ReplicatedStorage.Shared.ObjectiveGuide).init()

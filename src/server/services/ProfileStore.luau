@@ -7,7 +7,7 @@ local allowedClasses = {Guardian=true, Explorer=true, Artificer=true, Brawler=tr
 local unlockable = {"Brawler","Arcanist","Shade"}
 
 function ProfileStore.fresh()
-	return {version=2, quest=1, coins=0, runes={}, seals=0, rewards={}, fragment=false, bossDefeated=false, checkpoint="Village", heroes={}}
+	return {version=2, quest=1, coins=0, runes={}, seals=0, rewards={}, fragment=false, bossDefeated=false, checkpoint="Village", heroes={}, phase=0}
 end
 
 function ProfileStore.sanitize(value: any)
@@ -22,6 +22,9 @@ function ProfileStore.sanitize(value: any)
 	p.fragment=value.fragment==true
 	p.bossDefeated=value.bossDefeated==true
 	p.seals=value.seals or 0
+	-- Maior fase concluída na Rota A (0–6): abre os portais e desbloqueia heróis.
+	if typeof(value.phase)=="number" and value.phase%1==0 and value.phase>=0 and value.phase<=6 then p.phase=value.phase end
+	if p.fragment and p.phase<1 then p.phase=1 end
 	if typeof(value.heroes)=="table" then for _, id in unlockable do p.heroes[id]=value.heroes[id]==true end end
 	for _, id in {"Dawn","Root","Star"} do p.runes[id]=value.runes[id]==true end
 	for i=1,5 do p.rewards[tostring(i)]=value.rewards[tostring(i)]==true end

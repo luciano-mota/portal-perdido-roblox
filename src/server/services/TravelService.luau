@@ -12,6 +12,7 @@ local Campaign=require(ReplicatedStorage.Shared.Config.Campaign)
 local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
 local Data=require(script.Parent.PlayerDataService)
 local Enemies=require(script.Parent.EnemyService)
+local Expedition=require(script.Parent.ExpeditionService)
 local TweenService=game:GetService("TweenService")
 
 local Travel={}
@@ -39,6 +40,12 @@ end
 
 -- Ponto de renascimento fora do Vale (o Vale usa os checkpoints do capítulo).
 function Travel.spawnFor(player: Player): CFrame?
+	-- Eliminado na Rota B: acompanha a expedição do terraço do seu ramo na Convergência.
+	if Expedition.isEliminated(player) then
+		local convergence=regions.Convergence
+		local branch=Expedition.regionOf(player)
+		if convergence then return (branch and convergence.arrivals[branch]) or convergence.arrivals.default end
+	end
 	local id=current[player]
 	if not id or id=="Lumen" then return nil end
 	return lastSafe[player] or (regions[id] and regions[id].arrivals.default)
@@ -65,6 +72,9 @@ function Travel.send(player: Player,id: string,from: string?,note: string?): boo
 	if root and root:IsA("BasePart") then root.AssemblyLinearVelocity=Vector3.zero end
 	character:PivotTo(target)
 	setRegion(player,id,if id=="Lumen" then nil else target)
+	if id=="Convergence" and route()=="B" and not Expedition.branchesResolved() and not note then
+		note="Vocês chegaram primeiro. Aguardem: outros viajantes ainda lutam em suas regiões."
+	end
 	-- O nome da região aparece na faixa do cliente (RegionAtmosphere); aqui só notas extras.
 	if note then message(player,note) end
 	return true
@@ -73,13 +83,18 @@ end
 local function unlocked(player: Player,fromId: string): (boolean,string?)
 	if workspace:GetAttribute("CampaignOpenGates")==true then return true,nil end
 	local region=Campaign.get(fromId)
-	if not region or not region.gateRequiresCompletion then return true,nil end
-	if fromId=="Lumen" then
+	if not region then return false,nil end
+	if Expedition.isEliminated(player) then return false,"Você caiu nesta expedição. Acompanhe o grupo até o fim." end
+	-- Só se passa de fase vencendo o chefão da região (Rota A: progresso do perfil;
+	-- Rota B: ramo resolvido nesta expedição).
+	if route()=="B" then
+		if Expedition.isResolved(fromId) then return true,nil end
+	else
 		local profile=Data.get(player)
-		if profile and profile.quest>5 then return true,nil end
-		return false,"A passagem só desperta depois que o Fragmento da Aurora for recolhido."
+		if profile and ((profile.phase or 0)>=region.order or (fromId=="Lumen" and profile.quest>5)) then return true,nil end
 	end
-	return false,"A passagem ainda não responde."
+	if fromId=="Lumen" then return false,"A passagem só desperta depois que o Guardião de Raízes cair e o Fragmento da Aurora for recolhido." end
+	return false,"A passagem só desperta quando o guardião desta região for vencido."
 end
 
 local function bindGate(fromId: string,rift: BasePart)

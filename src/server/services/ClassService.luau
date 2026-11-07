@@ -19,7 +19,8 @@ function Service.available(player: Player, classId: string): boolean
 	local p=Data.get(player)
 	if not p then return false end
 	if p.heroes and p.heroes[classId] then return true end
-	return classId=="Brawler" and p.quest>5
+	if classId=="Brawler" and p.quest>5 then return true end
+	return (p.phase or 0)>=(definition.unlockPhase :: number)
 end
 
 function Service.publishAvailable(player: Player)

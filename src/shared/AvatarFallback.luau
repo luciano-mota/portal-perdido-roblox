@@ -240,7 +240,7 @@ function Fallback.init()
 				end
 			end
 			-- Véu velado (Passo do Véu): o corpo fica translúcido enquanto os inimigos o perdem de vista.
-			local veiled=(actor.player:GetAttribute("VeiledUntil") or 0)>workspace:GetServerTimeNow()
+			local veiled=(actor.player:GetAttribute("VeiledUntil") or 0)>workspace:GetServerTimeNow() or actor.player:GetAttribute("Eliminated")==true
 			if veiled~=(actor.veiled==true) then
 				actor.veiled=veiled
 				for _,piece in character:GetDescendants() do

@@ -38,6 +38,62 @@ end)
 Regions.build(world)
 Enemies.spawnRegional()
 Travel.init(world,notify)
+
+local Players=game:GetService("Players")
+local Campaign=require(ReplicatedStorage.Shared.Config.Campaign)
+local REGION_NAMES={Lumen="Vale de Lúmen",CrystalAbyss="Abismo de Cristal",HourDesert="Deserto das Horas",EclipseCitadel="Cidadela do Eclipse"}
+-- Início da expedição: na Rota B cada um desperta na região sorteada (o Vale fica onde está).
+Expedition.onBegin(function(route,assignment)
+	if route~="B" then
+		for player in assignment do notify:FireClient(player,{kind="toast",text="Jornada iniciada: fase a fase, a partir do Vale de Lúmen."}) end
+		return
+	end
+	for player,region in assignment do
+		local companions=0
+		for other,otherRegion in assignment do if other~=player and otherRegion==region then companions+=1 end end
+		local note="O apagão espalhou o grupo. Você despertou "..(if companions==0 then "sozinho(a)" else "com "..companions.." companheiro(s)").." em "..(REGION_NAMES[region] or region)..". Vença o guardião daqui para reencontrar os outros."
+		if region=="Lumen" then notify:FireClient(player,{kind="toast",text=note})
+		else Travel.send(player,region,nil,note) end
+	end
+end)
+-- Chefão final de uma região vencido: abre a passagem (Rota A: progresso do perfil e heróis;
+-- Rota B: ramo resolvido). A visão do Regente é disparada pelo EnemyService.
+local HERO_BY_PHASE={[1]="Brawler",[2]="Arcanist",[3]="Shade"}
+local HERO_NAMES={Brawler="LUTADOR SOLAR",Arcanist="ARCANISTA",Shade="VÉU"}
+Enemies.onBossDefeated=function(regionId: string,center: Vector3)
+	local region=Campaign.get(regionId)
+	if not region then return end
+	if Expedition.route()=="B" then
+		Expedition.resolve(regionId)
+		return
+	end
+	for _,player in Players:GetPlayers() do
+		local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not root or not root:IsA("BasePart") or (root.Position-center).Magnitude>220 then continue end
+		Data.mutate(player,function(profile) profile.phase=math.max(profile.phase or 0,region.order) end)
+		local hero=HERO_BY_PHASE[region.order]
+		if hero and Classes.unlock(player,hero) then
+			task.delay(16,function() notify:FireClient(player,{kind="quest",text="NOVO HERÓI: "..HERO_NAMES[hero].." — disponível nos pontos seguros",coins=0}) end)
+		end
+		task.spawn(Data.save,player,false)
+	end
+end
+-- Rota B: morrer elimina da expedição atual (a conta não perde nada).
+local function watchDeaths(player: Player)
+	player.CharacterAdded:Connect(function(character)
+		local humanoid=character:WaitForChild("Humanoid",10)
+		if humanoid and humanoid:IsA("Humanoid") then
+			humanoid.Died:Connect(function()
+				if Expedition.route()=="B" and Expedition.isMember(player) and not Expedition.isEliminated(player) then
+					Expedition.eliminate(player)
+					notify:FireClient(player,{kind="toast",text="Você caiu nesta expedição. Acompanhe o grupo da Convergência."})
+				end
+			end)
+		end
+	end)
+end
+Players.PlayerAdded:Connect(watchDeaths)
+for _,player in Players:GetPlayers() do watchDeaths(player) end
 -- Ganchos de QA apenas no Studio: BindableFunction em ServerStorage não é acessível
 -- pelo cliente e não existe em servidores publicados. Usado por testes via MCP, que
 -- executam em outra VM e não compartilham o estado dos módulos.
@@ -47,6 +103,12 @@ if game:GetService("RunService"):IsStudio() then
 		if op=="beginSolo" then Expedition.MinimumPlayers=1 return Expedition.tryBegin() end
 		if op=="travel" and player and typeof(value)=="string" then return Travel.send(player,value) end
 		if op=="hurtEnemy" and player and typeof(value)=="table" and typeof(value.id)=="string" and typeof(value.amount)=="number" then return Enemies.debugDamage(player,value.id,value.amount) end
+		if op=="setPhase" and player and typeof(value)=="number" then Data.mutate(player,function(profile) profile.phase=value end) Classes.publishAvailable(player) return value end
+		if op=="distribute" and typeof(value)=="number" then
+			local fake={} for i=1,value do table.insert(fake,{UserId=i,Name="P"..i}) end
+			local result=Expedition.distribute(fake :: any,os.clock()*1000) local counts={}
+			for _,region in result do counts[region]=(counts[region] or 0)+1 end return counts
+		end
 		if op=="openGates" then workspace:SetAttribute("CampaignOpenGates",value==true) return value==true end
 		if op=="setQuest" and player and typeof(value)=="number" then
 			Data.mutate(player,function(profile) profile.quest=value end) return Data.get(player).quest

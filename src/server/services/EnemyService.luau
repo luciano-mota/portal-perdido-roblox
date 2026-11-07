@@ -10,6 +10,8 @@ local Art=require(ReplicatedStorage.Shared.Art)
 local Data=require(script.Parent.PlayerDataService)
 local Expedition=require(script.Parent.ExpeditionService)
 local Service={}
+-- Chamado quando cai um chefão final de região (definition.vision = id da região).
+Service.onBossDefeated=nil :: ((string,Vector3) -> ())?
 local records: {[string]: any}={}
 local lastAttack: {[Player]: number}={}
 local lastSkill: {[Player]: number}={}
@@ -72,8 +74,10 @@ local function eligible(player: Player, record: any): boolean
 	local root=playerRoot(player)
 	if not root then return false end
 	if not Expedition.hasStarted() then return false end
+	if Expedition.isEliminated(player) then return false end
 	-- Arauto (fase 5): quem está na arena da Convergência participa.
 	if record.definition.kind=="Herald" or record.definition.group=="Herald" then
+		if not Expedition.branchesResolved() then return false end
 		return (root.Position-record.origin).Magnitude<=record.definition.leash+14
 	end
 	if record.definition.kind=="Boss" or record.definition.group=="RootGuardian" then
@@ -254,6 +258,7 @@ local function damage(player: Player,record: any,amount: number)
 		-- Chefe final de região: visão do Regente do Vazio (flashback; na fase 5, a fenda).
 		local vision=record.definition.vision
 		if vision then
+			if Service.onBossDefeated then task.spawn(Service.onBossDefeated,vision,record.origin) end
 			local center=record.origin
 			task.delay(2.4,function()
 				for _,witness in Players:GetPlayers() do

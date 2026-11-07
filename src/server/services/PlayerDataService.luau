@@ -28,6 +28,7 @@ function Data.publish(player: Player)
 	player:SetAttribute("BossDefeated",p.bossDefeated==true)
 	player:SetAttribute("QuestState",if p.quest>5 then "COMPLETED" else "ACTIVE")
 	player:SetAttribute("Checkpoint",p.checkpoint)
+	player:SetAttribute("CampaignPhase",p.phase or 0)
 end
 
 function Data.mutate(player: Player, change: (any) -> ())

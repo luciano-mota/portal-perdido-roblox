@@ -48,6 +48,24 @@ local function regentFigure(parent: Instance,cf: CFrame,scale: number): (Model,B
 		-- Posado em torno da origem (pés em y 0, frente −Z): leva tudo para `cf`.
 		m:PivotTo(cf*m:GetPivot())
 		local head=m:FindFirstChild("Head")
+		-- Antes da fase final ele nunca mostra o rosto: capuz fundo sobre cabeça e coroa,
+		-- rosto em sombra e só os olhos violeta acesos.
+		if head and head:IsA("BasePart") then
+			local size=head.Size
+			local look=cf.LookVector
+			local hoodColor=Color3.fromRGB(30,18,46)
+			local hood=Art.part(m,"VisionHood",Vector3.new(size.X*1.7,size.Y*2.3,size.Z*1.75),CFrame.lookAt(head.Position+Vector3.new(0,size.Y*0.42,0)-look*size.Z*0.18,head.Position+Vector3.new(0,size.Y*0.42,0)+look),hoodColor,Enum.Material.Fabric,Enum.PartType.Ball)
+			hood.CastShadow=false
+			local drape=Art.part(m,"VisionHoodDrape",Vector3.new(size.X*2.4,size.Y*1.2,size.Z*1.9),CFrame.lookAt(head.Position-Vector3.new(0,size.Y*0.55,0)-look*size.Z*0.2,head.Position-Vector3.new(0,size.Y*0.55,0)+look),hoodColor,Enum.Material.Fabric,Enum.PartType.Ball)
+			drape.CastShadow=false
+			local face=Art.part(m,"VisionFaceShadow",Vector3.new(size.X*0.95,size.Y*1.05,size.Z*0.5),CFrame.lookAt(head.Position+look*size.Z*0.42,head.Position+look*2),Color3.fromRGB(6,3,10),Enum.Material.SmoothPlastic,Enum.PartType.Ball)
+			face.CastShadow=false
+			local side=CFrame.lookAt(head.Position,head.Position+look).RightVector
+			for _,s in {-1,1} do
+				local eye=Art.part(m,"VisionEye",Vector3.new(size.X*0.16,size.Y*0.07,0.05),CFrame.lookAt(head.Position+look*size.Z*0.68+side*s*size.X*0.17+Vector3.new(0,size.Y*0.08,0),head.Position+look*3),Color3.fromRGB(214,160,255),Enum.Material.Neon)
+				eye.CastShadow=false
+			end
+		end
 		-- Luz de recorte violeta à frente do rosto: o vazio é escuro, o Regente precisa ser lido.
 		if head and head:IsA("BasePart") then
 			local key=Art.part(m,"RegentKeyLight",Vector3.new(0.2,0.2,0.2),CFrame.new(head.Position+(cf.LookVector*5)+Vector3.new(0,1.5,0)),violet,Enum.Material.SmoothPlastic)
@@ -57,6 +75,13 @@ local function regentFigure(parent: Instance,cf: CFrame,scale: number): (Model,B
 		return m,if head and head:IsA("BasePart") then head else nil
 	end
 	local m,_=Villain.regent(parent,cf,scale)
+	-- Reserva procedural também sem coroa e com o rosto em sombra.
+	for _,piece in m:GetDescendants() do
+		if piece:IsA("BasePart") then
+			if piece.Name=="CrownBand" or piece.Name=="CrownSpike" or piece.Name=="CrownGem" or piece.Name=="Beard" then piece:Destroy()
+			elseif piece.Name=="Face" then piece.Color=Color3.fromRGB(6,3,10) end
+		end
+	end
 	local head=m:FindFirstChild("Hood")
 	return m,if head and head:IsA("BasePart") then head else nil
 end
@@ -71,7 +96,7 @@ local function whisper(lines: {string}, total: number): ScreenGui?
 	local constraint=Instance.new("UITextSizeConstraint") constraint.MaxTextSize=28 constraint.Parent=label
 	local name=Instance.new("TextLabel") name.AnchorPoint=Vector2.new(0.5,1) name.Position=UDim2.new(0.5,0,1,-134)
 	name.Size=UDim2.new(0.6,0,0,22) name.BackgroundTransparency=1 name.Font=Enum.Font.GothamBold name.TextScaled=true
-	name.TextColor3=C(190,140,255) name.Text="O REGENTE DO VAZIO" name.TextTransparency=1 name.Parent=screen
+	name.TextColor3=C(190,140,255) name.Text="UMA VOZ ENCAPUZADA" name.TextTransparency=1 name.Parent=screen
 	local nameLimit=Instance.new("UITextSizeConstraint") nameLimit.MaxTextSize=16 nameLimit.Parent=name
 	screen.Parent=gui
 	task.spawn(function()

@@ -93,8 +93,8 @@ function Quest.init(notifyRemote: RemoteEvent, isGuardAlive: (string) -> boolean
 		if p.quest==1 then
 			local ready,count=Expedition.tryBegin()
 			if not ready then
-				dialogue(player,{"A travessia exige companheiros. Reúnam pelo menos três viajantes com suas classes escolhidas.","Temos "..count.." de 3 prontos. Com seis, cada um poderá proteger o outro. Eu esperarei aqui."})
-				message(player,"Reúna o grupo: "..count.."/3 viajantes prontos; recomendado: 6.")
+				dialogue(player,{"Escolha seu herói. A travessia começa quando todos estiverem prontos."})
+				message(player,"Viajantes prontos: "..count..". A travessia começa em instantes.")
 				return
 			end
 			dialogue(player,Chapter.Dialogues.IlyraFirst)

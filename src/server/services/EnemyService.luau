@@ -147,6 +147,8 @@ local function callReinforcements(record: any)
 	record.waves=(record.waves or 0)+1
 	local wave=record.waves
 	task.delay(2,function()
+		-- Líder já caiu (ex.: golpe único): não convoca mais ninguém.
+		if record.hp<=0 then record.pendingReinforcements=false return end
 		for i=1,count do
 			local a=i*math.pi*2/count+0.8
 			-- Dentro do piso do encontro: platôs pequenos usam corrente curta.
@@ -295,6 +297,24 @@ local function damage(player: Player,record: any,amount: number)
 		record.root.CanCollide=false
 		record.root.CanTouch=false
 		if record.motion then record.motion:Cancel() end
+		-- Chefão caiu: as criaturas que ele convocou se desfazem (o portal da região e o objetivo
+		-- não ficam presos a reforços restantes).
+		if record.definition.kind=="Boss" or colossus(record) then
+			record.pendingReinforcements=false
+			for _,member in records do
+				if member.definition.group==record.definition.id and member.hp>0 then
+					member.hp=0 member.casting=false
+					if member.motion then member.motion:Cancel() end
+					member.root.CanQuery=false member.root.CanCollide=false member.root.CanTouch=false
+					member.model:SetAttribute("Health",0)
+					member.model:SetAttribute("EncounterCompleted",true)
+					notify:FireAllClients({kind="defeat",position=member.root.Position,color=member.stats.color})
+					for _,piece in member.model:GetChildren() do
+						if piece:IsA("BasePart") and piece~=member.root then TweenService:Create(piece,TweenInfo.new(0.6),{Transparency=1}):Play() end
+					end
+				end
+			end
+		end
 		local encounter=record.definition.group or record.definition.id
 		if not Service.isAlive(encounter) then
 			local leader=records[encounter]

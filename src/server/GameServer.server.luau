@@ -63,9 +63,30 @@ end)
 -- Rota B: ramo resolvido). A visão do Regente é disparada pelo EnemyService.
 local HERO_BY_PHASE={[1]="Brawler",[2]="Arcanist",[3]="Shade"}
 local HERO_NAMES={Brawler="LUTADOR SOLAR",Arcanist="ARCANISTA",Shade="VÉU"}
+-- Recompensa única por chefão das fases 2–6 (o Vale já paga pelas cinco missões). Quem estava
+-- na arena recebe uma vez por conta; repetir a fase não duplica (chave "phase<n>").
+local PHASE_REWARD={[2]=150,[3]=200,[4]=250,[5]=300,[6]=500}
+local function rewardBoss(region: any,center: Vector3)
+	local amount=PHASE_REWARD[region.order]
+	if not amount then return end
+	local key="phase"..region.order
+	for _,player in Players:GetPlayers() do
+		local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not root or not root:IsA("BasePart") or (root.Position-center).Magnitude>220 then continue end
+		local paid=false
+		Data.mutate(player,function(profile)
+			if not profile.rewards[key] then profile.rewards[key]=true profile.coins+=amount paid=true end
+		end)
+		if paid then
+			task.delay(4,function() notify:FireClient(player,{kind="quest",text="FASE "..region.order.." CONCLUÍDA · "..region.name,coins=amount}) end)
+			task.spawn(Data.save,player,false)
+		end
+	end
+end
 Enemies.onBossDefeated=function(regionId: string,center: Vector3)
 	local region=Campaign.get(regionId)
 	if not region then return end
+	rewardBoss(region,center)
 	if Expedition.route()=="B" then
 		Expedition.resolve(regionId)
 		return

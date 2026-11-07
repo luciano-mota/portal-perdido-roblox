@@ -30,6 +30,8 @@ function ProfileStore.sanitize(value: any)
 	if typeof(value.heroes)=="table" then for _, id in unlockable do p.heroes[id]=value.heroes[id]==true end end
 	for _, id in {"Dawn","Root","Star"} do p.runes[id]=value.runes[id]==true end
 	for i=1,5 do p.rewards[tostring(i)]=value.rewards[tostring(i)]==true end
+	-- Recompensas únicas dos chefões das fases 2–6 (não duplicam ao repetir).
+	for i=2,6 do p.rewards["phase"..i]=value.rewards["phase"..i]==true end
 	local checkpoints={Village=true,Forest=true,Temple=true,Arena=true}
 	p.checkpoint=if typeof(value.checkpoint)=="string" and checkpoints[value.checkpoint] then value.checkpoint else "Village"
 	if value.controls~=nil then p.controls=ControlLayout.sanitize(value.controls) end

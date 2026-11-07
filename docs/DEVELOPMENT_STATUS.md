@@ -310,3 +310,37 @@ Pedido do proprietário: preparar o jogo para celular e permitir configurar os c
 **Rigs humanoides (pendência de versionamento):**
 - `RegentTemplate`, `BrawlerTemplate`, `ArcanistTemplate` e `ShadeTemplate` têm ossos (malha deformável), AnimationConstraints, SurfaceAppearance (PBR), WrapTarget e FaceControls. O mapa do SurfaceAppearance não pode ser definido por script em tempo de execução, então **não** dá para versioná-los como dados como as criaturas. Continuam dependendo do lugar salvo ou de `.rbxm` exportado manualmente (Save to File).
 - Mitigação: sem o `RegentTemplate`, o Regente da fase 6 usa a figura procedural das visões (`VillainArt.regent`, escala 3,1, ~27 studs) em vez do corpo de pedra genérico. Testado removendo o template no Play: 59 peças, sem erro. Os heróis já tinham reserva procedural.
+
+## Regressão completa da campanha, cura nas regiões e recompensas por fase — 07/11/2026
+
+**Implementado:**
+- Cura nos pontos seguros das regiões 2–6 (vida cheia ao entrar no raio, recarga de 20 s; o Vale segue com as Fontes de Lúmen). O chefão reinicia a vida após 12 s sem alvo, então não há abuso.
+- Recompensa única por chefão das fases 2–6 (150/200/250/300/500 moedas) para quem estava na arena, nas duas rotas; chave `phase<n>` em `profile.rewards` (persistida pelo `ProfileStore`, sem duplicar).
+- **Defeito corrigido:** reforços convocados no primeiro golpe nasciam 2 s depois mesmo com o chefão já morto, e o portal da Convergência (que espera o encontro terminar) ficava escondido enquanto restassem reforços. Agora o líder morto não convoca, e quando um chefão cai (Guardião de Raízes, chefões regionais, Arauto, Regente) as criaturas que ele convocou se desfazem. Fecha também a pendência "reforços continuam vivos após a queda do chefe".
+
+**Regressão completa (Play solo, Explorador, Rota A; dano aos chefes por atalho de QA, travessias pelos prompts reais):**
+| Etapa | Resultado |
+| --- | --- |
+| Vale → Passagem da Aurora | Abismo; HUD "FASE 2 / 6 · O CRISTAL QUE LEMBRA" |
+| Portal do Abismo com chefão vivo | Recusado ("…quando o guardião desta região for vencido.") |
+| Wyrm de Cristal | fase 2, 0 → 150 moedas, texto de conclusão → Deserto |
+| Esfinge das Horas | fase 3, 150 → 350 → Cidadela |
+| Dragão do Eclipse | fase 4, 350 → 600 → Convergência |
+| Arauto Partido | fase 5, +300; reforço desfeito (1 → 0); portal revelado → Domínio |
+| Regente do Vazio | fase 6, +500; reforços 0; tela "CAMPANHA CONCLUÍDA"; Portal Primordial → Vale com a mensagem do ginásio |
+| Ponto seguro | "Ponto seguro: vida restaurada." |
+| Erros | zero no cliente e no servidor |
+
+O primeiro acionamento de prompt logo após um teletransporte de QA às vezes não registra (o sistema de prompts do cliente ainda não avaliou a proximidade); a 2ª tentativa funciona. É efeito do teste automatizado, não do jogo.
+
+## Estado ao fim de 07/11/2026
+
+**Pronto e testado no Studio:** campanha de 6 fases jogável solo de ponta a ponta; fauna e chefões exclusivos por região (modelos versionados como dados); luta final e encerramento; chutes/combos para todas as classes e Lutador diferenciado; poses revisadas; controles de toque configuráveis e persistidos; objetivos por região; recompensas e cura.
+
+**Depende do proprietário / de condições fora do Studio:**
+1. Salvar o lugar (Ctrl+S) — os rigs humanoides (Regente, Lutador, Arcanista, Véu) só existem nele (ver seção anterior).
+2. Partida manual completa (dificuldade, duração, poses em movimento) — a automação usou atalho de dano nos chefes.
+3. Celular físico / Emulador de Dispositivos: toque, layout salvo, desempenho (FPS) e botão de pulo próprio.
+4. Rota B com 4–6 jogadores reais (sorteio, reencontro na fase 5, eliminação).
+5. Salas/fila online e múltiplos lugares: exigem experiência publicada (privada) e autorização (AGENTS.md).
+6. Acabamento do relevo do Vale (Praça da Aurora, escadarias, ruínas) e medição de FPS com a janela em foco.

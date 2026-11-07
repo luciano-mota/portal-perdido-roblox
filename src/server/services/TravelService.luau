@@ -22,6 +22,9 @@ local regions: {[string]: RegionInfo}={}
 local current: {[Player]: string}={}
 local lastSafe: {[Player]: CFrame}={}
 local lastUse: {[Player]: number}={}
+-- Cura nos pontos seguros das regiões 2–6 (o Vale tem as Fontes de Lúmen), com recarga.
+local lastHeal: {[Player]: number}={}
+local HEAL_COOLDOWN=20
 local notify: RemoteEvent?=nil
 
 local function message(player: Player,text: string)
@@ -198,14 +201,22 @@ function Travel.init(world: Model,remote: RemoteEvent)
 				elseif info then
 					for _,point in info.safe do
 						local radius=(point:GetAttribute("Radius") :: number?) or 8
-						if (point.Position-root.Position).Magnitude<radius then lastSafe[player]=point.CFrame break end
+						if (point.Position-root.Position).Magnitude<radius then
+							lastSafe[player]=point.CFrame
+							if humanoid.Health<humanoid.MaxHealth and os.clock()-(lastHeal[player] or -math.huge)>=HEAL_COOLDOWN then
+								lastHeal[player]=os.clock()
+								humanoid.Health=humanoid.MaxHealth
+								message(player,"Ponto seguro: vida restaurada.")
+							end
+							break
+						end
 					end
 				end
 			end
 			task.wait(0.4)
 		end
 	end)
-	Players.PlayerRemoving:Connect(function(player) current[player]=nil lastSafe[player]=nil lastUse[player]=nil end)
+	Players.PlayerRemoving:Connect(function(player) current[player]=nil lastSafe[player]=nil lastUse[player]=nil lastHeal[player]=nil end)
 end
 
 return Travel

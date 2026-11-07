@@ -20,6 +20,8 @@ local dashRemote=remotes:WaitForChild("Dash") :: RemoteEvent
 local blockRemote=remotes:WaitForChild("Block") :: RemoteEvent
 local kickRemote=remotes:WaitForChild("Kick") :: RemoteEvent
 local crouchRemote=remotes:WaitForChild("Crouch") :: RemoteEvent
+local saveControlsRemote=remotes:WaitForChild("SaveControls") :: RemoteEvent
+local Controls=require(ReplicatedStorage.Shared.TouchControls)
 local notify=remotes:WaitForChild("Notify") :: RemoteEvent
 local gui=player:WaitForChild("PlayerGui")
 local old=gui:FindFirstChild("PortalPerdidoHUD") if old then old:Destroy() end
@@ -133,6 +135,8 @@ local blockButton=button(screen,"BlockButton","DEFENDER [F]",UDim2.new(1,-290,1,
 local kickButton=button(screen,"KickButton","CHUTAR [C]",UDim2.new(1,-174,1,-194),UDim2.fromOffset(150,44),ink) kickButton.Visible=false
 -- Agachar: segurar Ctrl (teclado) ou tocar para alternar (toque). Agachado + chutar = rasteira.
 local crouchButton=button(screen,"CrouchButton","AGACHAR [CTRL]",UDim2.new(1,-290,1,-194),UDim2.fromOffset(106,44),ink) crouchButton.Visible=false
+-- Pular (toque): substitui o botão de pulo padrão do Roblox para entrar no layout configurável.
+local jumpButton=button(screen,"JumpButton","PULAR",UDim2.new(1,-140,1,-64),UDim2.fromOffset(120,50),Color3.fromRGB(58,84,110)) jumpButton.Visible=false
 local boss=frame(screen,"BossHealth",UDim2.new(0.86,0,0,40),UDim2.new(0.5,0,0,116),Color3.fromRGB(51,32,41)) boss.AnchorPoint=Vector2.new(0.5,0) limit(boss,500,40) boss.Visible=false
 local bossText=text(boss,"Name","",12,UDim2.new(0.03,0,0,3),UDim2.new(0.94,0,0,20),parchment)
 local bossFill=frame(boss,"Fill",UDim2.new(0.94,0,0,6),UDim2.new(0.03,0,0,28),Color3.fromRGB(196,114,87))
@@ -190,6 +194,8 @@ for i,q in Chapter.Quests do entries[i]=text(journal,"Quest"..i,"",14,UDim2.new(
 local journalDetails=text(journal,"Details","",12,UDim2.fromScale(0.07,0.73),UDim2.fromScale(0.86,0.16),Color3.fromRGB(178,201,205))
 local audioToggle=button(journal,"AudioToggle","ÁUDIO: LIGADO",UDim2.fromScale(0.07,0.91),UDim2.fromScale(0.45,0.07),ink) audioToggle.TextSize=12
 audioToggle.Activated:Connect(function() Audio.muted=not Audio.muted audioToggle.Text=if Audio.muted then "ÁUDIO: DESLIGADO" else "ÁUDIO: LIGADO" end)
+-- Editor dos controles de toque (posição, tamanho e opacidade; salvo no perfil).
+local controlsButton=button(journal,"ControlsButton","CONTROLES",UDim2.fromScale(0.55,0.91),UDim2.fromScale(0.38,0.07),Color3.fromRGB(43,72,96)) controlsButton.TextSize=12
 journalButton.Activated:Connect(function() journal.Visible=not journal.Visible refresh() end)
 
 local intro=frame(screen,"Prologue",UDim2.fromScale(1,1),UDim2.fromScale(0,0),Color3.fromRGB(8,18,28)) intro.BackgroundTransparency=0.88 intro.Visible=false
@@ -259,7 +265,9 @@ local function layout()
 	journal.Close.Size=UDim2.fromOffset(if touch then 44 else 32,if touch then 44 else 30)
 	journal.Close.Position=UDim2.new(1,if touch then -52 else -46,0,8)
 	audioToggle.Position=UDim2.new(0.07,0,1,-52)
-	audioToggle.Size=UDim2.new(0.55,0,0,44)
+	audioToggle.Size=UDim2.new(0.45,0,0,44)
+	controlsButton.Position=UDim2.new(0.55,0,1,-52)
+	controlsButton.Size=UDim2.new(0.38,0,0,44)
 	journalDetails.Position=UDim2.fromScale(0.07,0.65)
 	journalDetails.Size=UDim2.fromScale(0.86,0.12)
 	for i,entry in entries do entry.Position=UDim2.new(0.07,0,0.17+(i-1)*0.09,0) entry.Size=UDim2.new(0.86,0,0.085,0) end
@@ -288,6 +296,10 @@ local function layout()
 	crouchButton.Position=if touch then UDim2.new(1,-230,1,-236) else UDim2.new(1,-290,1,-194)
 	crouchButton.Size=if touch then UDim2.fromOffset(100,48) else UDim2.fromOffset(106,44)
 	crouchButton.Text=if touch then "AGACHAR" else "AGACHAR [CTRL]"
+	jumpButton.Position=UDim2.new(1,-140,1,-64)
+	jumpButton.Size=UDim2.fromOffset(120,50)
+	-- Layout salvo pelo jogador (só no toque) sobrepõe o padrão acima.
+	Controls.apply(touch)
 	attackButton.Text=if touch then "ATACAR" else "ATACAR [Q]"
 	journalButton.Text=if touch then "DIÁRIO" else "DIÁRIO [J]"
 	journalButton.Size=UDim2.fromOffset(100,if touch then 44 else 32)
@@ -298,6 +310,12 @@ local function layout()
 end
 screen:GetPropertyChangedSignal("AbsoluteSize"):Connect(layout)
 UIS:GetPropertyChangedSignal("PreferredInput"):Connect(layout)
+-- Celular: respeita entalhes/barras do aparelho e registra os botões configuráveis.
+screen.ScreenInsets=Enum.ScreenInsets.DeviceSafeInsets
+Controls.init(screen,saveControlsRemote)
+for id,b in {Attack=attackButton,Skill=skillButton,Kick=kickButton,Jump=jumpButton,Dash=dashButton,Crouch=crouchButton,Block=blockButton} do Controls.register(id,b) end
+Controls.onChanged=layout
+layout()
 
 local humanoid: Humanoid?=nil
 local healthConnection: RBXScriptConnection?=nil
@@ -331,6 +349,7 @@ local function airborneNow(): boolean
 	return state==Enum.HumanoidStateType.Freefall or state==Enum.HumanoidStateType.Jumping
 end
 local function setCrouch(active: boolean)
+	if Controls.editing then active=false end
 	if active and (not humanoid or humanoid.Health<=0 or dialogue.Visible or journal.Visible or intro.Visible or ending.Visible) then active=false end
 	if crouching==active then return end
 	crouching=active
@@ -347,6 +366,7 @@ UIS.JumpRequest:Connect(function()
 	if crouching then setCrouch(false) end
 end)
 local function attack()
+	if Controls.editing then return end
 	local id=player:GetAttribute("ClassId")
 	local class=if typeof(id)=="string" then Classes[id] else nil
 	if not class or not humanoid or humanoid.Health<=0 or dialogue.Visible or journal.Visible or intro.Visible or ending.Visible then return end
@@ -375,6 +395,7 @@ local function lunge()
 	end
 end
 local function kick()
+	if Controls.editing then return end
 	if kickPending or not humanoid or humanoid.Health<=0 or dialogue.Visible or journal.Visible or intro.Visible or ending.Visible then return end
 	if crouching then kickRemote:FireServer("sweep") return end
 	if airborneNow() then kickRemote:FireServer("jump") lunge() return end
@@ -395,10 +416,33 @@ local function kick()
 end
 kickButton.Activated:Connect(kick)
 crouchButton.Activated:Connect(function() setCrouch(not crouching) end)
-skillButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then skillRemote:FireServer() end end)
-dashButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then dashRemote:FireServer(dodgeDirection()) end end)
+-- Pular pelo botão próprio: mesmo efeito do pulo nativo (inclui o combo pulo + chute).
+jumpButton.InputBegan:Connect(function(input)
+	if input.UserInputType~=Enum.UserInputType.Touch and input.UserInputType~=Enum.UserInputType.MouseButton1 then return end
+	if Controls.editing or not humanoid or humanoid.Health<=0 then return end
+	jumpPressedAt=os.clock()
+	if crouching then setCrouch(false) return end
+	humanoid.Jump=true
+end)
+-- Esconde o botão de pulo padrão do Roblox no toque (o nosso entra no layout configurável).
+local function hideDefaultJump(touchGui: Instance)
+	local jump=touchGui:FindFirstChild("JumpButton",true)
+	if jump and jump:IsA("GuiObject") then
+		jump.Visible=false
+		jump:GetPropertyChangedSignal("Visible"):Connect(function() if jump.Visible then jump.Visible=false end end)
+	end
+end
+task.spawn(function()
+	local touchGui=gui:WaitForChild("TouchGui",30)
+	if not touchGui then return end
+	hideDefaultJump(touchGui)
+	touchGui.DescendantAdded:Connect(function(item) if item.Name=="JumpButton" then task.defer(hideDefaultJump,touchGui) end end)
+end)
+skillButton.Activated:Connect(function() if not Controls.editing and not dialogue.Visible and not journal.Visible then skillRemote:FireServer() end end)
+dashButton.Activated:Connect(function() if not Controls.editing and not dialogue.Visible and not journal.Visible then dashRemote:FireServer(dodgeDirection()) end end)
 local blocking=false
 local function setBlock(active: boolean)
+	if Controls.editing then active=false end
 	if active and (dialogue.Visible or journal.Visible or intro.Visible or player:GetAttribute("ClassId")~="Guardian") then active=false end
 	if blocking==active then return end
 	blocking=active
@@ -410,6 +454,13 @@ blockButton.InputBegan:Connect(function(input)
 end)
 blockButton.InputEnded:Connect(function(input)
 	if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then setBlock(false) end
+end)
+-- Abre o editor dos controles de toque (depois de setBlock/setCrouch existirem).
+controlsButton.Activated:Connect(function()
+	journal.Visible=false
+	setCrouch(false) setBlock(false)
+	Controls.openEditor()
+	refresh()
 end)
 UIS.InputEnded:Connect(function(input)
 	if input.KeyCode==Enum.KeyCode.F then setBlock(false) end
@@ -444,6 +495,11 @@ refresh=function()
 	crouchButton.Visible=controls
 	if not controls then setCrouch(false) end
 	blockButton.Visible=controls and classId=="Guardian"
+	-- Pulo próprio só no toque (o padrão do Roblox fica escondido para não sobrepor o layout).
+	local touchNow=UIS.TouchEnabled and UIS.PreferredInput~=Enum.PreferredInput.Gamepad
+	jumpButton.Visible=controls and touchNow
+	-- No editor todos os botões configuráveis aparecem (inclusive Defender e Pular).
+	if Controls.editing then for _,b in {attackButton,skillButton,dashButton,kickButton,crouchButton,blockButton,jumpButton} do b.Visible=true end end
 	if not blockButton.Visible then setBlock(false) end
 	if index<=5 then
 		heading.Text="MISSÃO "..index.." / 5 · "..Chapter.Quests[index].title

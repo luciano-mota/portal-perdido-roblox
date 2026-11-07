@@ -29,6 +29,8 @@ function Data.publish(player: Player)
 	player:SetAttribute("QuestState",if p.quest>5 then "COMPLETED" else "ACTIVE")
 	player:SetAttribute("Checkpoint",p.checkpoint)
 	player:SetAttribute("CampaignPhase",p.phase or 0)
+	-- Layout dos controles de toque para o cliente aplicar ao entrar (JSON pequeno).
+	player:SetAttribute("ControlLayout",if p.controls then HttpService:JSONEncode(p.controls) else nil)
 end
 
 function Data.mutate(player: Player, change: (any) -> ())

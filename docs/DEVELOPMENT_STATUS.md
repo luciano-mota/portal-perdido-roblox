@@ -258,3 +258,25 @@ Pedido do proprietário: cada mundo com monstros próprios; chefões que sejam m
 - Dano aos chefes por atalho de QA; vida do jogador elevada só para o teste.
 
 **Pendente:** salvar o lugar e exportar `HeraldTemplate` e os 9 templates de fauna; luta manual completa contra o Regente (dificuldade/duração por pessoa); efeito visual do Passo do Vazio no cliente além do rastro `blink`; o que acontece depois do epílogo (Portal Primordial como saída).
+
+## Celular: controles de toque configuráveis — 07/11/2026
+
+Pedido do proprietário: preparar o jogo para celular e permitir configurar os comandos de toque.
+
+**Implementado:**
+- **Editor de controles** (Diário → CONTROLES): arrastar cada botão de ação (Atacar, Habilidade, Chutar, Pular, Esquiva, Agachar, Defender), TAMANHO −/+ (0,6×–1,8×; no botão selecionado ou em todos), OPACIDADE −/+ (35–100%), PADRÃO, CANCELAR e SALVAR. Durante a edição nenhuma ação dispara. Módulo `src/shared/TouchControls.luau`.
+- **Persistência e validação no servidor:** remote `SaveControls` (limite de 1 envio a cada 2 s) → `ControlLayout.sanitize` (ids conhecidos, números finitos, faixas limitadas) → `profile.controls` → atributo `ControlLayout` (JSON). `ProfileStore.sanitize` mantém o layout válido e descarta um inválido **sem** rejeitar o perfil. O layout só é aplicado no toque; teclado/controle mantêm o padrão.
+- **Botão PULAR próprio** no toque, dentro do layout configurável; o pulo padrão do Roblox fica escondido para não sobrepor os botões. Pulo + Chutar continua gerando o chute voador.
+- `ScreenInsets = DeviceSafeInsets` no HUD (entalhes e barras do aparelho).
+
+**Testado no Studio:**
+- Editor aberto pelo botão real do Diário (cliques reais de mouse); PULAR arrastado para a esquerda, selecionado (contorno azul) e ampliado; barra de ferramentas visível.
+- `SaveControls`: layout válido gravado e publicado no atributo; id desconhecido ignorado; valores fora da faixa limitados (posição 0,97/0,05; tamanho 1,8; opacidade 0,35).
+- `tests/ProfileStore.spec.luau` executado no Studio: **10/10 casos**, incluindo o novo caso do layout de controles.
+- Zero erros Luau no cliente e no servidor.
+- Corrigido durante o teste: o handler do botão CONTROLES chamava `setBlock` antes de ele existir ("attempt to call a nil value").
+
+**Não testado / limitações:**
+- O clique simulado em SALVAR na 2ª fileira da barra não registrou (a ferramenta de mouse não desconta a margem superior do Roblox); o salvamento foi validado pelo mesmo remote. Confirmar tocando em SALVAR no aparelho.
+- Aplicação do layout salvo com toque real e o pulo padrão escondido: o Studio via MCP não emula toque. Testar no Emulador de Dispositivos do Studio e num celular físico.
+- No Studio o progresso é temporário (sem DataStore), então a persistência entre sessões só aparece em servidor publicado.

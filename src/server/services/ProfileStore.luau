@@ -1,6 +1,8 @@
 --!strict
 -- Protocolo de lease testável com adapter; nenhuma chamada de rede no transform.
 local ProfileStore = {}
+-- Layout dos controles de toque (opcional; validado pelo mesmo módulo usado no cliente).
+local ControlLayout = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("ControlLayout"))
 ProfileStore.__index = ProfileStore
 local allowedClasses = {Guardian=true, Explorer=true, Artificer=true, Brawler=true, Arcanist=true, Shade=true}
 -- Heróis desbloqueáveis na Rota A (persistem na conta, sem duplicar recompensa).
@@ -30,6 +32,7 @@ function ProfileStore.sanitize(value: any)
 	for i=1,5 do p.rewards[tostring(i)]=value.rewards[tostring(i)]==true end
 	local checkpoints={Village=true,Forest=true,Temple=true,Arena=true}
 	p.checkpoint=if typeof(value.checkpoint)=="string" and checkpoints[value.checkpoint] then value.checkpoint else "Village"
+	if value.controls~=nil then p.controls=ControlLayout.sanitize(value.controls) end
 	return p
 end
 

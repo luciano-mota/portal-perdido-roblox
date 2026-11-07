@@ -95,6 +95,22 @@ local function watchDeaths(player: Player)
 end
 Players.PlayerAdded:Connect(watchDeaths)
 for _,player in Players:GetPlayers() do watchDeaths(player) end
+
+-- Controles de toque configuráveis: o cliente envia o layout; o servidor valida, guarda no
+-- perfil (persistido com o restante) e devolve como atributo. Sem efeito em jogabilidade.
+local ControlLayout=require(ReplicatedStorage.Shared.ControlLayout)
+local lastControlsSave: {[Player]: number}={}
+remote("SaveControls").OnServerEvent:Connect(function(player: Player,value: any)
+	local now=os.clock()
+	if now-(lastControlsSave[player] or -math.huge)<2 then return end
+	lastControlsSave[player]=now
+	-- nil = voltar ao padrão.
+	local clean=if value==nil then nil else ControlLayout.sanitize(value)
+	if value~=nil and not clean then return end
+	Data.mutate(player,function(profile) profile.controls=clean end)
+	task.spawn(Data.save,player,false)
+end)
+Players.PlayerRemoving:Connect(function(player) lastControlsSave[player]=nil end)
 -- Ganchos de QA apenas no Studio: BindableFunction em ServerStorage não é acessível
 -- pelo cliente e não existe em servidores publicados. Usado por testes via MCP, que
 -- executam em outra VM e não compartilham o estado dos módulos.

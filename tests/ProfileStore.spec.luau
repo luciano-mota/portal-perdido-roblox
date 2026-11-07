@@ -59,6 +59,13 @@ return function(Store: any)
 	local legacy=Store.fresh() legacy.seals=nil
 	assert(Store.sanitize(legacy).seals==0,"missing optional seals must default to zero")
 	table.insert(passed,"progresso inválido do templo rejeitado; etapas válidas preservadas")
+	local withControls=Store.fresh() withControls.controls={opacity=0.6,buttons={Jump={x=0.2,y=0.8,s=1.1}}}
+	local keptControls=Store.sanitize(withControls)
+	assert(keptControls and keptControls.controls.opacity==0.6 and keptControls.controls.buttons.Jump.s==1.1,"valid control layout must persist")
+	local badControls=Store.fresh() badControls.controls={buttons={Hack={x=0,y=0,s=1}}}
+	local keptProfile=Store.sanitize(badControls)
+	assert(keptProfile and keptProfile.controls==nil,"invalid control layout must be dropped without rejecting the profile")
+	table.insert(passed,"layout de controles válido preservado; inválido descartado sem perder o perfil")
 	local broken=Store.new({UpdateAsync=function() error("simulated outage") end},"offline",function() return now end)
 	local networkOK=pcall(function() broken:load("player") end)
 	assert(not networkOK and records.player.profile.coins==25,"network failure cannot overwrite good data")

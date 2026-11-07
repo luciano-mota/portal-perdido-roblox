@@ -82,6 +82,16 @@ function Region.build(world: Instance,O: Vector3): Model
 	local arrivalFolder=Kit.folder(model,"Arrival")
 	local arrival=Kit.arrival(arrivalFolder,"Arrival",L(0,0.25,30),Vector3.new(0,0,-1),cyan,stone)
 	Kit.disc(arrivalFolder,"ArrivalPlaza",L(0,0,30),13,1,O.Y+0.25,stone,Enum.Material.Cobblestone)
+	-- Círculo mágico com estrela de oito pontas no piso da praça (referência 3).
+	local center=L(0,0.32,30)
+	for _,p in Kit.ring(arrivalFolder,"PlazaCircle",center,10.5,0.3,0.08,O.Y+0.32,40,cyan,Enum.Material.Neon,nil,nil,false) do p.CanQuery=false p.CastShadow=false end
+	for k=0,7 do
+		local a=k*math.pi/4
+		local b=(k+3)*math.pi/4
+		local pa=center+Vector3.new(math.cos(a)*10,0,math.sin(a)*10)
+		local pb=center+Vector3.new(math.cos(b)*10,0,math.sin(b)*10)
+		Kit.glow(arrivalFolder,"PlazaStar",Vector3.new(0.22,0.06,(pb-pa).Magnitude),CFrame.lookAt((pa+pb)/2,pb),cyan,0.15)
+	end
 	for i=0,3 do
 		local z=12-i*11
 		Kit.block(arrivalFolder,"CliffPath",Vector3.new(8,0.5,11.2),CFrame.new(L(0,0.0,z))*CFrame.Angles(0,rng:NextNumber(-0.04,0.04),0),stone:Lerp(dark,0.15),Enum.Material.Cobblestone)
@@ -186,6 +196,18 @@ function Region.build(world: Instance,O: Vector3): Model
 	for i,p in {Vector3.new(-148,40,-60),Vector3.new(146,45,-140),Vector3.new(-150,30,-230),Vector3.new(148,50,-300),Vector3.new(-120,28,-337),Vector3.new(80,28,-337)} do
 		local facing=if math.abs(p.Z+337)<1 then Vector3.new(0,0,1) elseif p.X<0 then Vector3.new(1,0,0) else Vector3.new(-1,0,0)
 		Kit.fall(water,"AbyssFall",L(p.X,p.Y,p.Z),120,if i%2==0 then 9 else 6,facing,C(200,236,248))
+	end
+	-- Referência 3: cristais gigantes no alto dos penhascos e fios de cascata descendo das bordas.
+	local downParams=RaycastParams.new() downParams.FilterType=Enum.RaycastFilterType.Include downParams.FilterDescendantsInstances={terrain}
+	for i=1,16 do
+		local s=if i%2==0 then -1 else 1
+		local p=L(s*rng:NextNumber(150,175),220,rng:NextNumber(-470,60))
+		local hit=workspace:Raycast(p,Vector3.new(0,-320,0),downParams)
+		if hit and hit.Position.Y>O.Y+20 then
+			Kit.crystalCluster(crystalsFolder,hit.Position-Vector3.new(0,2,0),rng:NextNumber(26,52),rng,crystals,false)
+			if i%3==0 then Kit.fall(water,"CliffThread",hit.Position+Vector3.new(-s*10,-2,0),hit.Position.Y-(O.Y-60),2.4,Vector3.new(-s,0,0),C(214,240,250)) end
+		end
+		if i%6==0 then task.wait() end
 	end
 	for i=1,10 do
 		local mist=Kit.deco(water,"AbyssMist",Vector3.new(90,14,70),CFrame.new(L(rng:NextNumber(-110,110),-75+rng:NextNumber(-10,10),-40-i*30)),C(232,226,246),Enum.Material.SmoothPlastic,Enum.PartType.Ball)

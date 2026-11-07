@@ -35,7 +35,7 @@ Campaign.Regions={
 		id="CrystalAbyss", order=2, name="ABISMO DE CRISTAL", subtitle="Fase 2 · Pontes sobre o eco",
 		origin=Vector3.new(3000,100,0), voidY=-70, gateRequiresCompletion=false,
 		atmosphere={clock=17.2, latitude=18, brightness=2.6, exposure=0.1, ambient=C(92,88,108), outdoor=C(124,116,136),
-			density=0.2, offset=0.08, color=C(240,206,206), decay=C(138,112,170), haze=0.9, glare=0.45,
+			density=0.22, offset=0.1, color=C(248,196,212), decay=C(156,108,180), haze=1.0, glare=0.6,
 			cloudCover=0.42, cloudDensity=0.38, cloudColor=C(255,206,214), tint=C(255,244,242), saturation=0.14, contrast=0.12},
 	},
 	{

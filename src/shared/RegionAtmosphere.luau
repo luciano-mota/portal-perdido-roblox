@@ -66,15 +66,15 @@ end
 
 local function aurora(parent: Model)
 	for band=1,3 do
-		local y=180+band*40
+		local y=250+band*45
 		for k=0,17 do
-			local a0=(k/18)*math.pi*1.3-math.pi*0.65+band*0.3
-			local a1=((k+1)/18)*math.pi*1.3-math.pi*0.65+band*0.3
+			local a0=(k/18)*math.pi*0.7-math.pi*0.35+band*0.12
+			local a1=((k+1)/18)*math.pi*0.7-math.pi*0.35+band*0.12
 			local r=560-band*40
 			local p0=Vector3.new(math.sin(a0)*r,y+math.sin(k*0.9+band)*18,-math.cos(a0)*r)
 			local p1=Vector3.new(math.sin(a1)*r,y+math.sin((k+1)*0.9+band)*18,-math.cos(a1)*r)
 			local color=if band==1 then C(110,240,200) elseif band==2 then C(150,170,255) else C(230,150,240)
-			neon(parent,"AuroraRibbon",Vector3.new(0.5,30,(p1-p0).Magnitude+1),CFrame.lookAt((p0+p1)/2,p1),color,0.86)
+			neon(parent,"AuroraRibbon",Vector3.new(0.3,22,(p1-p0).Magnitude+1),CFrame.lookAt((p0+p1)/2,p1),color,0.9)
 		end
 	end
 end

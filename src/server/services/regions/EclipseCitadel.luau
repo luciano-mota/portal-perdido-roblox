@@ -206,6 +206,21 @@ function Region.build(world: Instance,O: Vector3): Model
 	Kit.spire(keep,L(0,U+40,facadeZ-48),18,46,42,wall,roof,Enum.Material.Slate,window)
 	for _,s in {-1,1} do
 		Kit.spire(keep,L(s*30,U+40,facadeZ-62),10,22,24,wall,roof,Enum.Material.Slate,window)
+		-- Coroa de agulhas ao redor da torre central (silhueta da referência 7).
+		for k=0,2 do
+			Kit.spire(keep,L(s*(14+k*8),U+40,facadeZ-36-k*7),5+k,10+k*9,12+k*4,wall,roof,Enum.Material.Slate,window,false)
+		end
+	end
+	-- Fileiras de janelas acesas nas faces do castelo.
+	for row=0,3 do
+		for _,s in {-1,1} do
+			for col=0,5 do
+				if rng:NextNumber()<0.7 then
+					local p=L(s*40.1,U+7+row*9,facadeZ-26-col*9)
+					Kit.glow(keep,"KeepWindow",Vector3.new(0.15,3.2,1.6),CFrame.new(p),window)
+				end
+			end
+		end
 	end
 	local exitGate=Kit.travelGate(keep,"ExitGate",L(0,U+0.6,facadeZ-12),Vector3.new(0,0,1),6.5,wall,C(186,120,255),"PASSAGEM OCULTA","Além do selo")
 	exitGate:SetAttribute("RegionId","EclipseCitadel")

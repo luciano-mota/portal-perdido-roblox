@@ -1,0 +1,43 @@
+name: Validate project
+on:
+  push:
+    branches: [main, "feature/**", develop]
+  pull_request:
+
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Rojo project JSON
+        run: python3 -m json.tool default.project.json > /dev/null
+
+      - name: Validate required files
+        run: |
+          test -f src/server/GameServer.server.luau
+          test -f src/client/GameClient.client.luau
+          test -f src/server/services/ClassService.luau
+          test -f src/server/services/QuestService.luau
+          test -f src/server/services/EnemyService.luau
+          test -f src/server/services/WorldBuilder.luau
+          test -f src/shared/Config/Classes.luau
+          test -f docs/ARCHITECTURE.md
+          test -f docs/PLAYTEST.md
+          echo "Project structure OK"
+
+      - name: Install Rojo 7.7.1
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/rojo-rbx/rojo/releases/download/v7.7.1/rojo-7.7.1-linux-x86_64.zip \
+            --output /tmp/rojo.zip
+          mkdir -p /tmp/rojo-bin
+          unzip -q /tmp/rojo.zip -d /tmp/rojo-bin
+          chmod +x /tmp/rojo-bin/rojo
+          /tmp/rojo-bin/rojo --version
+
+      - name: Smoke-test Rojo project build
+        run: |
+          /tmp/rojo-bin/rojo build default.project.json --output /tmp/PortalPerdido.rbxlx
+          test -s /tmp/PortalPerdido.rbxlx
+          echo "Rojo build OK"

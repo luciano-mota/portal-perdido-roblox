@@ -8,6 +8,7 @@ local Lighting=game:GetService("Lighting")
 local GuiService=game:GetService("GuiService")
 local player=Players.LocalPlayer
 local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
+local Campaign=require(ReplicatedStorage.Shared.Config.Campaign)
 local Classes=require(ReplicatedStorage.Shared.Config.Classes)
 local FX=require(ReplicatedStorage.Shared.VisualEffects)
 local Art=require(ReplicatedStorage.Shared.Art)
@@ -117,7 +118,7 @@ for i,id in HERO_ORDER do
 end
 refreshHeroButtons=function() for _,update in heroLabels do update() end end
 player:GetAttributeChangedSignal("AvailableHeroes"):Connect(refreshHeroButtons)
-text(card,"Footer","Q atacar  ·  R habilidade  ·  Shift esquiva\nNo celular, use os botões na tela.",11,UDim2.fromOffset(20,318),UDim2.new(1,-40,0,26),Color3.fromRGB(177,195,200))
+text(card,"Footer","Q atacar · R habilidade · C chutar · Ctrl agachar · Shift esquiva\nPular + chutar: chute voador · Agachar + chutar: rasteira",11,UDim2.fromOffset(16,316),UDim2.new(1,-32,0,30),Color3.fromRGB(177,195,200))
 
 local hud=frame(screen,"QuestPanel",UDim2.new(0.92,0,0,96),UDim2.new(0.5,0,0,8)) hud.AnchorPoint=Vector2.new(0.5,0) limit(hud,510,96) hud.Visible=false
 local heading=text(hud,"Heading","",12,UDim2.fromOffset(12,7),UDim2.new(1,-24,0,18),amber) heading.Font=Enum.Font.GothamSemibold
@@ -282,6 +283,7 @@ local function layout()
 	introSkip.Position=UDim2.new(0.3,0,1,-52)
 	introSkip.Size=UDim2.new(0.4,0,0,44)
 	bloom.Enabled=not touch
+	card.Footer.Text=if touch then "Pular + Chutar: chute voador · Agachar + Chutar: rasteira\nAjuste a posição e o tamanho dos botões em Diário › Controles" else "Q atacar · R habilidade · C chutar · Ctrl agachar · Shift esquiva\nPular + chutar: chute voador · Agachar + chutar: rasteira"
 	attackButton.Position=if touch then UDim2.new(1,-140,1,-124) else UDim2.new(1,-174,1,-90)
 	attackButton.Size=if touch then UDim2.fromOffset(120,54) else UDim2.fromOffset(150,60)
 	skillButton.Position=if touch then UDim2.new(1,-250,1,-124) else UDim2.new(1,-290,1,-90)
@@ -501,7 +503,15 @@ refresh=function()
 	-- No editor todos os botões configuráveis aparecem (inclusive Defender e Pular).
 	if Controls.editing then for _,b in {attackButton,skillButton,dashButton,kickButton,crouchButton,blockButton,jumpButton} do b.Visible=true end end
 	if not blockButton.Visible then setBlock(false) end
-	if index<=5 then
+	-- Regiões 2–6: objetivo da própria região (as cinco missões valem só para o Vale).
+	local regionId=player:GetAttribute("Region")
+	local regionGoal=if typeof(regionId)=="string" then Campaign.Objectives[regionId] else nil
+	local region=if typeof(regionId)=="string" then Campaign.get(regionId) else nil
+	if regionGoal and region and workspace:GetAttribute("ExpeditionStarted") then
+		local cleared=(player:GetAttribute("CampaignPhase") or 0)>=region.order or workspace:GetAttribute("Resolved_"..regionId)==true
+		heading.Text="FASE "..region.order.." / 6 · "..regionGoal.title
+		objective.Text=if cleared then regionGoal.done else regionGoal.goal
+	elseif index<=5 then
 		heading.Text="MISSÃO "..index.." / 5 · "..Chapter.Quests[index].title
 		objective.Text=Chapter.Quests[index].objective..(if index==3 then "  ("..tostring(player:GetAttribute("RuneCount") or 0).."/3)" elseif index==4 then "  ("..tostring(player:GetAttribute("SealProgress") or 0).."/3)" else "")
 		if index==5 and player:GetAttribute("BossDefeated")==true then
@@ -512,7 +522,7 @@ refresh=function()
 			local left=if typeof(ends)=="number" then math.max(0,math.ceil(ends-workspace:GetServerTimeNow())) else nil
 			objective.Text="Reunindo viajantes: "..tostring(workspace:GetAttribute("ExpeditionReadyPlayers") or 0).." pronto(s)"..(if left then " · a travessia começa em "..left.." s" else "").." (1–3: jornada · 4–6: expedição)"
 		end
-	else heading.Text="A TRAVESSIA · CONCLUÍDA" objective.Text="O Fragmento da Aurora está seguro. Explore o vale ou retorne a Ilyra." end
+	else heading.Text="A TRAVESSIA · CONCLUÍDA" objective.Text="O Fragmento da Aurora está seguro. A Passagem da Aurora, na arena do Guardião, leva ao Abismo de Cristal." end
 	coins.Text="Moedas: "..tostring(player:GetAttribute("Coins") or 0).."\n"..(if player:GetAttribute("DataStatus")=="Saved" then "Salvo" elseif player:GetAttribute("DataStatus")=="StudioMemory" then "Progresso temporário" else "Não salvo")
 	for i,q in Chapter.Quests do entries[i].Text=(if index>i then "CONCLUÍDA   " elseif index==i then "EM CURSO   " else "A SEGUIR   ")..q.title entries[i].TextColor3=if index>i then teal elseif index==i then amber else Color3.fromRGB(130,151,160) end
 	local status=player:GetAttribute("DataStatus")
@@ -520,7 +530,9 @@ refresh=function()
 	journalDetails.Text="Inscrições: "..tostring(player:GetAttribute("RuneCount") or 0).."/3  ·  Fragmento: "..(if player:GetAttribute("HasFragment") then "adquirido" else "não adquirido").."\n"..saving
 	updateHealth()
 end
-for _, attribute in {"ClassId","QuestIndex","Coins","RuneCount","SealProgress","HasFragment","DataStatus","ShieldUntil","BossDefeated"} do player:GetAttributeChangedSignal(attribute):Connect(refresh) end
+for _, attribute in {"ClassId","QuestIndex","Coins","RuneCount","SealProgress","HasFragment","DataStatus","ShieldUntil","BossDefeated","Region","CampaignPhase"} do player:GetAttributeChangedSignal(attribute):Connect(refresh) end
+-- Rota B: chefões vencidos por qualquer grupo atualizam o objetivo de todos.
+workspace.AttributeChanged:Connect(function(name) if name:sub(1,9)=="Resolved_" then refresh() end end)
 workspace:GetAttributeChangedSignal("ExpeditionStarted"):Connect(refresh)
 workspace:GetAttributeChangedSignal("ExpeditionReadyPlayers"):Connect(refresh)
 -- Contagem da janela de reunião antes da travessia.

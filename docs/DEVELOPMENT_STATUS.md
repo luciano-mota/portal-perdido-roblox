@@ -280,3 +280,15 @@ Pedido do proprietário: preparar o jogo para celular e permitir configurar os c
 - O clique simulado em SALVAR na 2ª fileira da barra não registrou (a ferramenta de mouse não desconta a margem superior do Roblox); o salvamento foi validado pelo mesmo remote. Confirmar tocando em SALVAR no aparelho.
 - Aplicação do layout salvo com toque real e o pulo padrão escondido: o Studio via MCP não emula toque. Testar no Emulador de Dispositivos do Studio e num celular físico.
 - No Studio o progresso é temporário (sem DataStore), então a persistência entre sessões só aparece em servidor publicado.
+
+## Modelos versionados como dados, objetivos por região e dicas de controle — 07/11/2026
+
+**Implementado:**
+- `src/server/services/CreatureMeshes.luau`: os 10 templates gerados (9 criaturas + Arauto) versionados como dados — asset da malha, textura, tamanho e CFrame relativo de cada parte. No início do servidor, `ensure()` reconstrói com `AssetService:CreateMeshPartAsync` os que faltarem no `ServerStorage` (lugar sem salvar, build do Rojo, servidor novo). Templates já presentes têm prioridade. **Isto resolve a pendência de exportar os .rbxm das criaturas.** Continuam fora do Git os rigs R15 (`RegentTemplate`, `BrawlerTemplate`, `ArcanistTemplate`, `ShadeTemplate`).
+- HUD das regiões 2–6: "FASE n / 6 · título" com objetivo da região e texto de conclusão depois do chefão (`Campaign.Objectives`; Rota A por `CampaignPhase`, Rota B por `Resolved_<região>`). Antes aparecia "A TRAVESSIA · CONCLUÍDA — explore o vale" em qualquer região. No Vale concluído, o objetivo aponta a Passagem da Aurora.
+- Tela de seleção: dica de controles atualizada (chutar, agachar, chute voador, rasteira); no toque, explica os botões e o Diário › Controles.
+
+**Testado no Studio (Play):**
+- Removidos `CrystalSpiderTemplate` e `HeraldTemplate` da cópia do Play → `ensure()` reconstruiu os 2 em 2,2 s com as mesmas dimensões; `Art.templateReady` verdadeiro; Aranha criada pelo caminho normal com textura completa (captura).
+- Explorador no Abismo: "FASE 2 / 6 · O CRISTAL QUE LEMBRA — Atravesse as pontes…"; após o Wyrm cair (atalho de QA): "O Wyrm caiu. Siga pela Passagem de Cristal…".
+- Zero erros/avisos Luau no cliente e no servidor.

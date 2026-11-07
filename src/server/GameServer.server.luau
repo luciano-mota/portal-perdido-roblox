@@ -37,6 +37,8 @@ Data.init(function(player)
 end)
 -- Regiões 2–6 depois do Vale e dos serviços: quem entra já joga enquanto elas são montadas.
 Regions.build(world)
+-- Templates das criaturas geradas: reconstruídos dos dados versionados se faltarem no lugar.
+require(services.CreatureMeshes).ensure()
 Enemies.spawnRegional()
 Travel.init(world,notify)
 

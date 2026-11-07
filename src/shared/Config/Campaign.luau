@@ -103,6 +103,16 @@ function Campaign.nextRegion(id: string, route: string): string?
 	return nil
 end
 
+-- Objetivo exibido no HUD em cada região 2–6 (o Vale usa as cinco missões do capítulo).
+-- `done` aparece depois que o chefão cai (CampaignPhase na Rota A; Resolved_<id> na Rota B).
+Campaign.Objectives={
+	CrystalAbyss={title="O CRISTAL QUE LEMBRA",goal="Atravesse as pontes do abismo e vença o Wyrm de Cristal na catedral.",done="O Wyrm caiu. Siga pela Passagem de Cristal atrás da catedral."},
+	HourDesert={title="A AREIA QUE NÃO PASSA",goal="Cruze as dunas até o templo das horas e vença a Esfinge das Horas.",done="A Esfinge caiu. A Passagem das Horas está aberta ao lado do templo."},
+	EclipseCitadel={title="SOB O SOL NEGRO",goal="Suba à cidadela e vença o Dragão do Eclipse no pátio do castelo.",done="O Dragão caiu. Atravesse a Passagem Oculta além do selo."},
+	Convergence={title="ONDE OS CAMINHOS SE ENCONTRAM",goal="Reúna-se na arena central e vença o Arauto Partido.",done="O Arauto caiu. Um caminho novo surgiu para o Domínio do Vazio."},
+	VoidDominion={title="O DOMÍNIO DO VAZIO",goal="Atravesse as ilhas suspensas até o Átrio e enfrente o Regente do Vazio.",done="O Regente caiu. O Portal Primordial está aberto."},
+}
+
 -- Rota fixada pela quantidade de participantes confirmada no início (1–3 = A, 4–6 = B).
 function Campaign.routeFor(players: number): string
 	return if players>=4 then "B" else "A"

@@ -2,6 +2,7 @@
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
+local Campaign=require(ReplicatedStorage.Shared.Config.Campaign)
 local Data=require(script.Parent.PlayerDataService)
 local Expedition=require(script.Parent.ExpeditionService)
 local Quest={}
@@ -183,7 +184,7 @@ function Quest.init(notifyRemote: RemoteEvent, isGuardAlive: (string) -> boolean
 				local humanoid=character and character:FindFirstChildOfClass("Humanoid")
 				local p=Data.get(player)
 				if character and root and root:IsA("BasePart") and humanoid and humanoid.Health>0 and p then
-					if root.Position.Y<Chapter.Relief.VoidY then
+					if root.Position.Y<Chapter.Relief.VoidY and Campaign.regionAt(root.Position).id=="Lumen" then
 						local point=Chapter.Checkpoints[p.checkpoint] or Chapter.Checkpoints.Village
 						root.AssemblyLinearVelocity=Vector3.zero
 						character:PivotTo(CFrame.new(point))

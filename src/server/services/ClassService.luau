@@ -6,6 +6,8 @@ local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
 local Art=require(ReplicatedStorage.Shared.Art)
 local Data=require(script.Parent.PlayerDataService)
 local Service={}
+-- Renascimento fora do Vale (TravelService): devolve o ponto seguro da região atual.
+Service.spawnResolver=nil :: ((Player) -> CFrame?)?
 local templates={Explorer="ExplorerTemplate",Guardian="GuardianTemplate",Artificer="ArtificerTemplate"}
 
 -- Antes da escolha de classe o avatar padrão do Roblox não deve aparecer (prólogo/seleção):
@@ -75,8 +77,9 @@ local function apply(player: Player, character: Model, moveToCheckpoint: boolean
 		Art.equipment(character,profile.classId,definition.color)
 	end
 	if moveToCheckpoint then
+		local regional=Service.spawnResolver and Service.spawnResolver(player)
 		local point=Chapter.Checkpoints[profile.checkpoint] or Chapter.Checkpoints.Village
-		character:PivotTo(CFrame.new(point))
+		character:PivotTo(regional or CFrame.new(point))
 		-- Proteção curta ao renascer: o checkpoint da Arena fica dentro do alcance do chefe.
 		-- Humanoid:TakeDamage ignora dano enquanto houver ForceField no personagem.
 		-- Bolha visível só fora da vila (respawn em combate); na entrada do jogo ela só protege.

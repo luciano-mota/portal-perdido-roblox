@@ -192,6 +192,8 @@ local function beginIntro()
 end
 
 local bloom=Instance.new("BloomEffect") bloom.Name="PortalPerdidoBloom" bloom.Intensity=0.14 bloom.Size=18 bloom.Threshold=1.7 bloom.Parent=Lighting
+-- Luz, atmosfera e céu da região onde a câmera está (depois do prólogo).
+require(ReplicatedStorage.Shared.RegionAtmosphere).start(function() return introDone end)
 local function layout()
 	local available=screen.AbsoluteSize
 	local touch=UIS.TouchEnabled and UIS.PreferredInput~=Enum.PreferredInput.Gamepad

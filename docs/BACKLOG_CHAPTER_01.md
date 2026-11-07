@@ -59,7 +59,7 @@ O vale em camadas (commit `f496994`, detalhes em `docs/LUMEN_SCENERY_QA.md`) foi
 - [ ] Salas solo, amigos, código e fila online, com rota congelada por quantidade 1–3/4–6.
 - [ ] Heróis 4–6: definição futura, seleção temporária no grupo 4–6 e desbloqueio permanente no solo/trio.
 - [x] Cenários das regiões 2–6 e conexões entre as seis fases (ver [REGIONS_SCENERY_QA.md](REGIONS_SCENERY_QA.md)); jogabilidade das regiões 2–6 ainda pendente.
-- [ ] Campanha das seis fases: missões, inimigos e chefes das regiões 2–6; progresso persistente.
+- [ ] Campanha das seis fases: missões, inimigos e chefes das regiões 2–6; progresso persistente. (Chefões finais das regiões 2–4 feitos em 07/11; faltam inimigos de percurso, missões e a luta da fase 6.)
 - [ ] Sorteio autoritativo das quatro regiões e reencontro da fase 5, com eliminação apenas na sessão cooperativa 4–6.
 - [ ] Corrigir narrativas do prólogo para despertar por região e testar solo e grupos de 2–6.
 - [ ] Integrar múltiplos lugares/teleportes apenas quando houver experiência privada publicada e autorização.

@@ -272,7 +272,8 @@ end
 function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Color3): Model
 	local m = Instance.new("Model")
 	local boss = kind == "Boss"
-	local scale = if boss then 2.2 elseif kind=="Herald" then 2.6 else 1
+	local regionBoss = kind=="AbyssColossus" or kind=="HourWarden" or kind=="EclipseKnight"
+	local scale = if boss then 2.2 elseif kind=="Herald" or regionBoss then 2.6 else 1
 	local root = Art.part(m,"Root",Vector3.new(4,5,4)*scale,CFrame.new(position),color)
 	root.Transparency = 1
 	root.CanQuery = true
@@ -362,6 +363,54 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 		p("EclipsePauldron",Vector3.new(1.8,0.9,1.6),Vector3.new(2.2,1.6,0),trim,Enum.Material.Metal,Enum.PartType.Ball)
 		Art.segment(m,"Glaive",position+Vector3.new(2.6,-3,-0.6)*scale,position+Vector3.new(2.6,4.2,-0.6)*scale,0.22*scale,Color3.fromRGB(60,50,70),Enum.Material.Metal)
 		p("GlaiveBlade",Vector3.new(0.2,2.2,1.2),Vector3.new(2.6,4.6,-0.9),Color3.fromRGB(200,180,255),Enum.Material.Neon)
+	elseif regionBoss then
+		-- Chefões das regiões 2–4 (procedural, original): mesma silhueta humanoide de colosso,
+		-- com materiais e adornos do tema da região. Nomes Arm/Leg/Head/Hand/Foot/Eye/Core
+		-- seguem a articulação padrão abaixo.
+		local palette={
+			AbyssColossus={body=Color3.fromRGB(70,78,104),mat=Enum.Material.Slate,trim=Color3.fromRGB(150,220,255),trimMat=Enum.Material.Glass,glow=Color3.fromRGB(120,230,255)},
+			HourWarden={body=Color3.fromRGB(196,160,108),mat=Enum.Material.Sandstone,trim=Color3.fromRGB(214,170,82),trimMat=Enum.Material.Metal,glow=Color3.fromRGB(255,196,96)},
+			EclipseKnight={body=Color3.fromRGB(34,30,48),mat=Enum.Material.Metal,trim=Color3.fromRGB(150,120,200),trimMat=Enum.Material.Metal,glow=Color3.fromRGB(186,120,255)},
+		}
+		local c=palette[kind]
+		p("Chest",Vector3.new(3.4,3.1,2.1),Vector3.new(0,0.4,0),c.body,c.mat,Enum.PartType.Ball)
+		p("ChestTrim",Vector3.new(3.45,0.22,2.15),Vector3.new(0,1.25,0),c.trim,c.trimMat)
+		p("Core",Vector3.new(0.6,1.0,0.3),Vector3.new(0,0.4,-1.05),c.glow,Enum.Material.Neon,Enum.PartType.Ball)
+		p("Head",Vector3.new(1.6,1.8,1.6),Vector3.new(0,2.45,0),c.body,c.mat,Enum.PartType.Ball)
+		for _, side in {-1,1} do
+			p("Eye",Vector3.new(0.35,0.18,0.12),Vector3.new(side*0.4,2.55,-0.8),c.glow,Enum.Material.Neon)
+			p("Arm",Vector3.new(1.2,2.9,1.3),Vector3.new(side*2.2,0.1,0),c.body,c.mat,Enum.PartType.Ball)
+			p("Hand",Vector3.new(1.3,1.2,1.3),Vector3.new(side*2.3,-1.45,0),c.trim,c.trimMat,Enum.PartType.Ball)
+			p("Leg",Vector3.new(1.3,2.2,1.5),Vector3.new(side*0.85,-2.1,0),c.body,c.mat,Enum.PartType.Ball)
+			p("Foot",Vector3.new(1.5,0.7,2.2),Vector3.new(side*0.85,-3,-0.3),c.trim,c.trimMat,Enum.PartType.Ball)
+		end
+		if kind=="AbyssColossus" then
+			-- Cristais brotando dos ombros e das costas.
+			for i,spike in {{-2.3,2.0,0.2,0.3},{2.3,2.0,0.2,-0.3},{-1.0,2.2,1.0,0.25},{1.0,2.3,1.0,-0.2},{0,2.6,1.1,0}} do
+				local part=p("Crystal",Vector3.new(0.7,2.4+i*0.15,0.7),Vector3.new(spike[1],spike[2],spike[3]),c.trim,Enum.Material.Glass)
+				part.CFrame=part.CFrame*CFrame.Angles(-0.35,0,spike[4])
+				part.Transparency=0.15
+			end
+		elseif kind=="HourWarden" then
+			-- Ampulheta no peito e disco solar atrás da cabeça.
+			p("Hourglass",Vector3.new(0.8,0.5,0.4),Vector3.new(0,0.85,-1.05),c.trim,Enum.Material.Metal)
+			p("Hourglass",Vector3.new(0.8,0.5,0.4),Vector3.new(0,-0.05,-1.05),c.trim,Enum.Material.Metal)
+			for k=0,9 do
+				local a=k*math.pi/5
+				p("Halo",Vector3.new(0.22,0.8,0.22),Vector3.new(math.cos(a)*1.6,2.5+math.sin(a)*1.6,1),c.glow,Enum.Material.Neon)
+			end
+			Art.segment(m,"Glaive",position+Vector3.new(2.7,-3,-0.6)*scale,position+Vector3.new(2.7,4,-0.6)*scale,0.2*scale,c.trim,Enum.Material.Metal)
+		else
+			-- Sol negro: disco escuro com aro aceso, elmo com crista e lâmina longa.
+			p("EclipseDisc",Vector3.new(0.3,3.4,3.4),Vector3.new(0,2.6,1.2),Color3.fromRGB(12,10,18),Enum.Material.SmoothPlastic,Enum.PartType.Cylinder).CFrame*=CFrame.Angles(0,math.pi/2,0)
+			for k=0,11 do
+				local a=k*math.pi/6
+				p("Halo",Vector3.new(0.18,0.6,0.18),Vector3.new(math.cos(a)*1.8,2.6+math.sin(a)*1.8,1.25),c.glow,Enum.Material.Neon)
+			end
+			p("Crest",Vector3.new(0.25,0.9,1.6),Vector3.new(0,3.45,0.1),c.trim,c.trimMat)
+			Art.segment(m,"Glaive",position+Vector3.new(2.7,-2.6,-0.6)*scale,position+Vector3.new(2.7,3.2,-0.6)*scale,0.18*scale,c.trim,Enum.Material.Metal)
+			p("GlaiveBlade",Vector3.new(0.2,2.6,1.0),Vector3.new(2.7,4.4,-0.6),c.glow,Enum.Material.Neon)
+		end
 	else
 		p("Chest",Vector3.new(3.3,3.3,2.2),Vector3.new(0,0.1,0),stone,Enum.Material.Slate,Enum.PartType.Ball)
 		p("MossMantle",Vector3.new(3.9,1,2.6),Vector3.new(0,1.4,0),color,Enum.Material.Grass,Enum.PartType.Ball)

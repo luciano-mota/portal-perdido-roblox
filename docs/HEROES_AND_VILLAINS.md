@@ -55,6 +55,6 @@ Pedido do proprietário:
 
 - **Versionar os modelos gerados.** O Studio passou a bloquear o envio do Assistente para o receptor local. Em `ServerStorage`, clique com o botão direito em `BrawlerTemplate`, `ArcanistTemplate`, `ShadeTemplate` e `RegentTemplate` (e `HeraldTemplate`, quando existir) → **Save to File...** → `assets/characters/models/<nome>-generated-v1.rbxm`. Depois é só mapear no `default.project.json`. Até lá eles existem apenas no lugar salvo do Studio.
 - Ajuste fino dos gestos de combate dos heróis novos (ângulos reaproveitados das poses calibradas, sem nova calibração).
-- Chefes finais do Abismo, Deserto e Cidadela, que vão disparar os flashbacks dessas regiões. As frases já existem.
+- Chefes finais do Abismo, Deserto e Cidadela: **implementados em versão procedural** (Colosso de Cristal, Guardião das Horas, Cavaleiro do Eclipse; ver DEVELOPMENT_STATUS 07/11). Falta arte gerada/final e inimigos comuns no percurso dessas regiões.
 - A luta contra o Regente na fase 6.
 - Teste com vários jogadores e em celular.

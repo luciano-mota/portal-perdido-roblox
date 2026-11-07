@@ -191,3 +191,22 @@ Correções:
 - Avisos (toasts) não aparecem sobre o texto do prólogo.
 
 Evidência (Play): durante o prólogo 0 partes visíveis do avatar, raiz ancorada; cards com Guardian/Explorer/Artificer como MeshPart desde a abertura; após escolher Explorador, rig gerado visível (28/32 partes; 4 âncoras do arco são invisíveis por design), solto, 110 HP, proteção sem bolha; aviso do objetivo oculto durante o prólogo; zero erros. As capturas do MCP nesta etapa saíram brancas (janela do Studio sem foco); a confirmação visual fica para o usuário.
+
+## Chefões finais das regiões 2–4 — 07/11/2026
+
+Motivo: o commit `38f908a` passou a exigir o chefão de cada região para abrir a passagem, mas Abismo, Deserto e Cidadela não tinham chefe — a campanha travava depois do Vale (Rota A) e o Arauto nunca liberava (Rota B).
+
+**Implementado:**
+- `Chapter.EnemyTypes`: Colosso de Cristal (2000 HP + 1100/jogador), Guardião das Horas (2200 + 1200), Cavaleiro do Eclipse (2400 + 1300). Reutilizam a IA do Arauto (`ai="Herald"`: golpes em área telegrafados, onda ao redor, fases em 60% e 25%, reforços na fase 2), com textos de fase próprios.
+- Encontros nos slots `BossArena` de cada construtor, com `vision` da região: ao cair, disparam a visão do Regente e `onBossDefeated` (Rota A: `profile.phase` e desbloqueio de herói; Rota B: ramo resolvido).
+- `Art.enemy`: visual procedural original por região (cristais no Abismo; ampulheta e disco solar no Deserto; sol negro, crista e lâmina na Cidadela).
+- HUD: barra de chefe genérica para qualquer criatura com `BossBar` (título em `BossTitle`).
+
+**Testado no Studio (Play solo, Rota A, Guardião):**
+- Os três chefes nascem sobre o piso das arenas (CathedralFloor 130,4; ArenaFloor 30,4; CourtyardFloor 26,4).
+- Abismo: IA atacou ao aproximar; dano via `QAFixtures.hurtEnemy` (atalho de QA, não combate manual) → fase 2 em 1100/2000, fase 3 em 350, derrota; 4 reforços; visão `CrystalAbyss`; `CampaignPhase=2`; Arcanista desbloqueado.
+- Passagem do Abismo pelo ProximityPrompt real → Deserto. Passagem do Deserto com chefe vivo: recusada ("A passagem só desperta quando o guardião desta região for vencido.").
+- Barra de vida perto do Guardião das Horas: "GUARDIÃO DAS HORAS · FASE 1 2100 / 2200".
+- Zero erros Luau no servidor e no cliente.
+
+**Pendente:** combate manual completo contra cada chefe (dificuldade/duração por avaliação humana), Rota B com 4–6 jogadores, Deserto e Cidadela até a derrota, reforços que continuam vivos após a queda do chefe (mesmo comportamento do Arauto), arte gerada/final dos chefes, aparelho móvel físico.

@@ -444,14 +444,21 @@ RunService.RenderStepped:Connect(function(dt)
 	local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local enemyFolder=workspace:FindFirstChild("PortalEnemies")
 	local guardian=enemyFolder and enemyFolder:FindFirstChild("RootGuardian")
-	local herald=enemyFolder and enemyFolder:FindFirstChild("Herald")
-	local nearHerald=herald~=nil and root~=nil and root:IsA("BasePart") and herald.PrimaryPart~=nil and (root.Position-herald.PrimaryPart.Position).Magnitude<70 and (herald:GetAttribute("Health") or 0)>0
+	-- Colossos (Arauto e chefões das regiões 2–4) marcados com BossBar pelo servidor.
+	local colossus: Model?=nil
+	if enemyFolder and root and root:IsA("BasePart") then
+		for _,model in enemyFolder:GetChildren() do
+			if model:IsA("Model") and model:GetAttribute("BossBar")==true and model.PrimaryPart and (model:GetAttribute("Health") or 0)>0
+				and (root.Position-model.PrimaryPart.Position).Magnitude<70 then colossus=model break end
+		end
+	end
 	local nearGuardian=player:GetAttribute("QuestIndex")==5 and root~=nil and root:IsA("BasePart") and root.Position.Z< -485 and root.Position.X>-500 and root.Position.X<500 and guardian~=nil and (guardian:GetAttribute("Health") or 0)>0
-	boss.Visible=hud.Visible and (nearGuardian or nearHerald)
-	local current=if nearHerald then herald else guardian
+	boss.Visible=hud.Visible and (nearGuardian or colossus~=nil)
+	local current=colossus or guardian
 	if boss.Visible and current then
 		local hp=current:GetAttribute("Health") or 0 local max=current:GetAttribute("MaxHealth") or 1
-		bossText.Text=(if nearHerald then "ARAUTO PARTIDO" else "GUARDIÃO DE RAÍZES").." · FASE "..tostring(current:GetAttribute("Phase")).."  "..hp.." / "..max
+		local title=if colossus then tostring(colossus:GetAttribute("BossTitle") or "") else "GUARDIÃO DE RAÍZES"
+		bossText.Text=title.." · FASE "..tostring(current:GetAttribute("Phase")).."  "..hp.." / "..max
 		bossFill.Size=UDim2.new(0.94*hp/math.max(max,1),0,0,6)
 	end
 	updateHealth()

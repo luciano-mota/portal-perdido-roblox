@@ -70,6 +70,11 @@ local function lineOfSight(player: Player, record: any): boolean
 	return workspace:Raycast(root.Position,record.root.Position-root.Position,params)==nil
 end
 
+-- Colossos: Arauto (fase 5) e chefões finais das regiões 2–4 (stats.ai == "Herald").
+local function colossus(record: any): boolean
+	return record.definition.kind=="Herald" or record.stats.ai=="Herald"
+end
+
 local function eligible(player: Player, record: any): boolean
 	local root=playerRoot(player)
 	if not root then return false end
@@ -79,6 +84,11 @@ local function eligible(player: Player, record: any): boolean
 	if record.definition.kind=="Herald" or record.definition.group=="Herald" then
 		if not Expedition.branchesResolved() then return false end
 		return (root.Position-record.origin).Magnitude<=record.definition.leash+14
+	end
+	-- Chefão de região (e seus reforços): quem está na arena participa.
+	local leader=if record.definition.group then records[record.definition.group] else record
+	if leader and leader.stats.ai=="Herald" then
+		return (root.Position-leader.origin).Magnitude<=leader.definition.leash+14
 	end
 	if record.definition.kind=="Boss" or record.definition.group=="RootGuardian" then
 		local p=Data.get(player)
@@ -104,6 +114,8 @@ local function makeRecord(definition: any)
 	-- Corpo lógico sólido: jogadores não atravessam a criatura (a malha visual continua sem colisão).
 	root.CanCollide=true
 	Art.label(root,kind.name,nil,Color3.fromRGB(234,224,202),if definition.kind=="Boss" or kind.big then 11 else 5)
+	-- Barra de vida de colosso no HUD (o Guardião de Raízes mantém a regra própria da missão 5).
+	if kind.big then model:SetAttribute("BossBar",true) model:SetAttribute("BossTitle",kind.title or kind.name) end
 	records[definition.id]={definition=definition,stats=kind,model=model,root=root,origin=origin,groundY=ground,hp=kind.health,max=kind.health,phase=1,contributors={},casting=false,nextCast=0,slowUntil=0,engaged=false}
 end
 
@@ -186,13 +198,14 @@ local function damage(player: Player,record: any,amount: number)
 		record.max=1800+1100*math.max(0,math.min(count,6)-1) record.hp=record.max
 		record.model:SetAttribute("MaxHealth",record.max)
 	end
-	if record.definition.kind=="Herald" and not record.engaged then
+	local texts=record.stats.phaseTexts
+	if colossus(record) and not record.engaged then
 		-- Vida pelo número de participantes na arena: um jogador sozinho consegue vencer.
 		record.engaged=true local count=0
 		for _, participant in Players:GetPlayers() do if eligible(participant,record) then count+=1 end end
 		record.max=record.stats.health+record.stats.healthPerPlayer*math.max(0,math.min(count,6)-1) record.hp=record.max
 		record.model:SetAttribute("MaxHealth",record.max)
-		notify:FireAllClients({kind="bossPhase",text="O ARAUTO PARTIDO desperta. A luz dos quatro mundos se volta contra vocês!",position=record.root.Position})
+		notify:FireAllClients({kind="bossPhase",text=if texts then texts[1] else "O ARAUTO PARTIDO desperta. A luz dos quatro mundos se volta contra vocês!",position=record.root.Position})
 	end
 	record.hp=math.max(0,record.hp-amount)
 	record.contributors[player]=os.clock()
@@ -204,7 +217,7 @@ local function damage(player: Player,record: any,amount: number)
 		if support and supportRoot and (supportRoot.Position-record.root.Position).Magnitude<100 then record.contributors[support]=os.clock() end
 	end
 	record.model:SetAttribute("Health",record.hp)
-	notify:FireAllClients({kind="damage",position=record.root.Position+Vector3.new(0,4,0),amount=amount,boss=record.definition.kind=="Boss"})
+	notify:FireAllClients({kind="damage",position=record.root.Position+Vector3.new(0,4,0),amount=amount,boss=record.definition.kind=="Boss" or colossus(record)})
 	if record.definition.kind=="Boss" and record.hp>0 and record.phase==1 and record.hp<=record.max*0.5 then
 		record.phase=2 record.model:SetAttribute("Phase",2)
 		for _, piece in record.model:GetChildren() do
@@ -212,15 +225,15 @@ local function damage(player: Player,record: any,amount: number)
 		end
 		notify:FireAllClients({kind="bossPhase",text="O núcleo se rompeu. Fase 2: raízes do vazio!",position=record.root.Position})
 	end
-	if record.definition.kind=="Herald" and record.hp>0 then
+	if colossus(record) and record.hp>0 then
 		if record.phase==1 and record.hp<=record.max*0.6 then
 			record.phase=2 record.model:SetAttribute("Phase",2)
-			notify:FireAllClients({kind="bossPhase",text="O Arauto se parte: ecos dos quatro mundos surgem na arena!",position=record.root.Position})
+			notify:FireAllClients({kind="bossPhase",text=if texts then texts[2] else "O Arauto se parte: ecos dos quatro mundos surgem na arena!",position=record.root.Position})
 			record.reinforcementsCalled=false
 			callReinforcements(record)
 		elseif record.phase==2 and record.hp<=record.max*0.25 then
 			record.phase=3 record.model:SetAttribute("Phase",3)
-			notify:FireAllClients({kind="bossPhase",text="FÚRIA DA CONVERGÊNCIA: o Arauto ataca sem pausa!",position=record.root.Position})
+			notify:FireAllClients({kind="bossPhase",text=if texts then texts[3] else "FÚRIA DA CONVERGÊNCIA: o Arauto ataca sem pausa!",position=record.root.Position})
 		end
 	end
 	if record.hp==0 then
@@ -892,11 +905,11 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 			end
 			-- Patrulha visível mesmo sem jogadores por perto; raio curto, sem spawn infinito.
 			local patrolAngle=os.clock()*0.13+#r.definition.id
-			local patrol=if r.definition.kind=="Boss" or r.definition.kind=="Herald" then r.origin else r.origin+Vector3.new(math.sin(patrolAngle)*5,0,math.cos(patrolAngle)*5)
+			local patrol=if r.definition.kind=="Boss" or colossus(r) then r.origin else r.origin+Vector3.new(math.sin(patrolAngle)*5,0,math.cos(patrolAngle)*5)
 			local wanted=point or patrol
 			local delta=Vector3.new(wanted.X-r.root.Position.X,0,wanted.Z-r.root.Position.Z)
-			local boss=r.definition.kind=="Boss" or r.definition.kind=="Herald"
-			local kind=r.definition.kind
+			local boss=r.definition.kind=="Boss" or colossus(r)
+			local kind=if colossus(r) then "Herald" else r.definition.kind
 			local now=os.clock()
 			local ready=now>=r.nextCast
 			local sees=target~=nil and (boss or lineOfSight(target :: Player,r))

@@ -40,7 +40,16 @@ return {
 		Wisp = {name = "Eco do Vazio", health = 85, damage = 13, speed = 6, radius = 9, windup = 1.1, cooldown = 3.2, color = Color3.fromRGB(129, 108, 190)},
 		Boss = {name = "Guardião de Raízes", health = 1800, damage = 22, speed = 4, radius = 12, windup = 1.4, cooldown = 3.8, color = Color3.fromRGB(103, 125, 83)},
 		-- Fase 5: chefe que parece ser o último. Vida escala com quem está na arena (solo viável).
-		Herald = {name = "Arauto Partido", health = 2600, healthPerPlayer = 1500, damage = 24, speed = 7, radius = 10, windup = 1.1, cooldown = 2.6, color = Color3.fromRGB(196, 150, 255), big = true},
+		Herald = {name = "Arauto Partido", title = "ARAUTO PARTIDO", health = 2600, healthPerPlayer = 1500, damage = 24, speed = 7, radius = 10, windup = 1.1, cooldown = 2.6, color = Color3.fromRGB(196, 150, 255), big = true},
+		-- Chefões finais das regiões 2–4: mesmo esquema de combate do Arauto (golpes em área
+		-- telegrafados, onda ao redor, três fases), com tema e ritmo próprios. Vida escala por
+		-- participante, então o solo continua viável. Vencer abre a passagem da região.
+		AbyssColossus = {name = "Colosso de Cristal", title = "COLOSSO DE CRISTAL", health = 2000, healthPerPlayer = 1100, damage = 20, speed = 6, radius = 9, windup = 1.25, cooldown = 3.0, color = Color3.fromRGB(150, 210, 255), big = true, ai = "Herald", strikeStyle = "void",
+			phaseTexts = {"O COLOSSO DE CRISTAL desperta. Cada reflexo esconde um golpe!", "O cristal se estilhaça: ecos refletidos surgem na catedral!", "REFRAÇÃO TOTAL: o Colosso brilha sem pausa!"}},
+		HourWarden = {name = "Guardião das Horas", title = "GUARDIÃO DAS HORAS", health = 2200, healthPerPlayer = 1200, damage = 21, speed = 7, radius = 9, windup = 1.15, cooldown = 2.8, color = Color3.fromRGB(240, 190, 110), big = true, ai = "Herald", strikeStyle = "void",
+			phaseTexts = {"O GUARDIÃO DAS HORAS desperta. A areia marca onde ele vai golpear!", "A ampulheta vira: ecos do passado surgem no templo!", "A ÚLTIMA HORA: o Guardião acelera o próprio tempo!"}},
+		EclipseKnight = {name = "Cavaleiro do Eclipse", title = "CAVALEIRO DO ECLIPSE", health = 2400, healthPerPlayer = 1300, damage = 23, speed = 7, radius = 10, windup = 1.1, cooldown = 2.7, color = Color3.fromRGB(170, 120, 240), big = true, ai = "Herald", strikeStyle = "void",
+			phaseTexts = {"O CAVALEIRO DO ECLIPSE desperta. O sol negro aponta o próximo golpe!", "O eclipse se fecha: sentinelas sombrias surgem no pátio!", "NOITE ABSOLUTA: o Cavaleiro não dá trégua!"}},
 	},
 	Encounters = {
 		{id = "FirstSentinel", kind = "Moss", position = Vector3.new(0, 3, -68), leash = 28},
@@ -52,6 +61,10 @@ return {
 		{id = "TempleWisp", kind = "Wisp", position = Vector3.new(32, 3, -358), leash = 22},
 		{id = "RootGuardian", kind = "Boss", position = Vector3.new(0, 7, -550), leash = 48, vision = "Lumen"},
 		-- Arena da Convergência (origem da região 5). Ao cair, abre a fenda do Regente.
+		-- Chefões finais das regiões 2–4, nas arenas dos construtores (slot BossArena; +2 do ajuste de pivô).
+		{id = "AbyssColossus", kind = "AbyssColossus", position = Vector3.new(3000, 133, -435), leash = 38, vision = "CrystalAbyss", region = "CrystalAbyss"},
+		{id = "HourWarden", kind = "HourWarden", position = Vector3.new(-3000, 33, -452), leash = 36, vision = "HourDesert", region = "HourDesert"},
+		{id = "EclipseKnight", kind = "EclipseKnight", position = Vector3.new(0, 29, 2668), leash = 40, vision = "EclipseCitadel", region = "EclipseCitadel"},
 		{id = "Herald", kind = "Herald", position = Vector3.new(3000, 3, 3000), leash = 46, vision = "Convergence", visionStyle = "rift", region = "Convergence"},
 	},
 	Dialogues = {

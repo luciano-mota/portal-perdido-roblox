@@ -44,12 +44,32 @@ return {
 		-- Chefões finais das regiões 2–4: mesmo esquema de combate do Arauto (golpes em área
 		-- telegrafados, onda ao redor, três fases), com tema e ritmo próprios. Vida escala por
 		-- participante, então o solo continua viável. Vencer abre a passagem da região.
-		AbyssColossus = {name = "Colosso de Cristal", title = "COLOSSO DE CRISTAL", health = 2000, healthPerPlayer = 1100, damage = 20, speed = 6, radius = 9, windup = 1.25, cooldown = 3.0, color = Color3.fromRGB(150, 210, 255), big = true, ai = "Herald", strikeStyle = "void",
-			phaseTexts = {"O COLOSSO DE CRISTAL desperta. Cada reflexo esconde um golpe!", "O cristal se estilhaça: ecos refletidos surgem na catedral!", "REFRAÇÃO TOTAL: o Colosso brilha sem pausa!"}},
-		HourWarden = {name = "Guardião das Horas", title = "GUARDIÃO DAS HORAS", health = 2200, healthPerPlayer = 1200, damage = 21, speed = 7, radius = 9, windup = 1.15, cooldown = 2.8, color = Color3.fromRGB(240, 190, 110), big = true, ai = "Herald", strikeStyle = "void",
-			phaseTexts = {"O GUARDIÃO DAS HORAS desperta. A areia marca onde ele vai golpear!", "A ampulheta vira: ecos do passado surgem no templo!", "A ÚLTIMA HORA: o Guardião acelera o próprio tempo!"}},
-		EclipseKnight = {name = "Cavaleiro do Eclipse", title = "CAVALEIRO DO ECLIPSE", health = 2400, healthPerPlayer = 1300, damage = 23, speed = 7, radius = 10, windup = 1.1, cooldown = 2.7, color = Color3.fromRGB(170, 120, 240), big = true, ai = "Herald", strikeStyle = "void",
-			phaseTexts = {"O CAVALEIRO DO ECLIPSE desperta. O sol negro aponta o próximo golpe!", "O eclipse se fecha: sentinelas sombrias surgem no pátio!", "NOITE ABSOLUTA: o Cavaleiro não dá trégua!"}},
+		CrystalWyrm = {name = "Wyrm de Cristal", title = "WYRM DE CRISTAL", health = 2000, healthPerPlayer = 1100, damage = 20, speed = 6, radius = 9, windup = 1.25, cooldown = 3.0, color = Color3.fromRGB(150, 210, 255), big = true, ai = "Herald", region = "CrystalAbyss",
+			phaseTexts = {"O WYRM DE CRISTAL desperta. Cada reflexo esconde um golpe!", "Os cristais do Wyrm se estilhaçam: crias do abismo surgem na catedral!", "REFRAÇÃO TOTAL: o Wyrm ataca sem pausa!"}},
+		SandSphinx = {name = "Esfinge das Horas", title = "ESFINGE DAS HORAS", health = 2200, healthPerPlayer = 1200, damage = 21, speed = 7, radius = 9, windup = 1.15, cooldown = 2.8, color = Color3.fromRGB(240, 190, 110), big = true, ai = "Herald", region = "HourDesert",
+			phaseTexts = {"A ESFINGE DAS HORAS desperta. A areia marca onde ela vai golpear!", "A ampulheta vira: as feras das dunas acorrem ao templo!", "A ÚLTIMA HORA: a Esfinge acelera o próprio tempo!"}},
+		EclipseDragon = {name = "Dragão do Eclipse", title = "DRAGÃO DO ECLIPSE", health = 2400, healthPerPlayer = 1300, damage = 23, speed = 7, radius = 10, windup = 1.1, cooldown = 2.7, color = Color3.fromRGB(170, 120, 240), big = true, ai = "Herald", region = "EclipseCitadel",
+			phaseTexts = {"O DRAGÃO DO ECLIPSE desperta. O sol negro aponta o próximo golpe!", "O eclipse se fecha: as feras da sombra surgem no pátio!", "NOITE ABSOLUTA: o Dragão não dá trégua!"}},
+		-- Criaturas exclusivas de cada região (modelos gerados; ai = comportamento reaproveitado).
+		-- Abismo de Cristal
+		CrystalSpider = {name = "Aranha de Cristal", health = 140, damage = 13, speed = 10, radius = 6, windup = 0.7, cooldown = 2.4, color = Color3.fromRGB(130, 210, 255), ai = "Thorn"},
+		PrismBat = {name = "Morcego Prismático", health = 95, damage = 14, speed = 8, radius = 9, windup = 1.0, cooldown = 3.0, color = Color3.fromRGB(220, 150, 255), ai = "Wisp"},
+		-- Deserto das Horas
+		SandScorpion = {name = "Escorpião das Areias", health = 170, damage = 15, speed = 8, radius = 6, windup = 0.8, cooldown = 2.6, color = Color3.fromRGB(230, 180, 110), ai = "Thorn"},
+		DuneJackal = {name = "Chacal das Dunas", health = 105, damage = 12, speed = 13, radius = 6, windup = 0.55, cooldown = 2.0, color = Color3.fromRGB(200, 150, 90), ai = "Thorn"},
+		-- Cidadela do Eclipse
+		EclipseGargoyle = {name = "Gárgula do Eclipse", health = 130, damage = 15, speed = 8, radius = 9, windup = 0.95, cooldown = 2.8, color = Color3.fromRGB(170, 130, 230), ai = "Wisp"},
+		ShadowHound = {name = "Cão Sombrio", health = 125, damage = 14, speed = 13, radius = 6, windup = 0.6, cooldown = 2.1, color = Color3.fromRGB(150, 110, 230), ai = "Thorn"},
+	},
+	-- Fauna de cada região: encontros comuns (slots "Encounter" dos construtores) e reforços.
+	-- A Convergência mistura criaturas dos quatro mundos.
+	RegionFauna = {
+		Lumen = {"Thorn", "Wisp"},
+		CrystalAbyss = {"CrystalSpider", "PrismBat"},
+		HourDesert = {"SandScorpion", "DuneJackal"},
+		EclipseCitadel = {"ShadowHound", "EclipseGargoyle"},
+		Convergence = {"CrystalSpider", "SandScorpion", "ShadowHound", "Thorn"},
+		VoidDominion = {"ShadowHound", "PrismBat", "EclipseGargoyle"},
 	},
 	Encounters = {
 		{id = "FirstSentinel", kind = "Moss", position = Vector3.new(0, 3, -68), leash = 28},
@@ -62,9 +82,9 @@ return {
 		{id = "RootGuardian", kind = "Boss", position = Vector3.new(0, 7, -550), leash = 48, vision = "Lumen"},
 		-- Arena da Convergência (origem da região 5). Ao cair, abre a fenda do Regente.
 		-- Chefões finais das regiões 2–4, nas arenas dos construtores (slot BossArena; +2 do ajuste de pivô).
-		{id = "AbyssColossus", kind = "AbyssColossus", position = Vector3.new(3000, 133, -435), leash = 38, vision = "CrystalAbyss", region = "CrystalAbyss"},
-		{id = "HourWarden", kind = "HourWarden", position = Vector3.new(-3000, 33, -452), leash = 36, vision = "HourDesert", region = "HourDesert"},
-		{id = "EclipseKnight", kind = "EclipseKnight", position = Vector3.new(0, 29, 2668), leash = 40, vision = "EclipseCitadel", region = "EclipseCitadel"},
+		{id = "CrystalWyrm", kind = "CrystalWyrm", position = Vector3.new(3000, 133, -435), leash = 38, vision = "CrystalAbyss", region = "CrystalAbyss"},
+		{id = "SandSphinx", kind = "SandSphinx", position = Vector3.new(-3000, 33, -452), leash = 36, vision = "HourDesert", region = "HourDesert"},
+		{id = "EclipseDragon", kind = "EclipseDragon", position = Vector3.new(0, 29, 2668), leash = 40, vision = "EclipseCitadel", region = "EclipseCitadel"},
 		{id = "Herald", kind = "Herald", position = Vector3.new(3000, 3, 3000), leash = 46, vision = "Convergence", visionStyle = "rift", region = "Convergence"},
 	},
 	Dialogues = {

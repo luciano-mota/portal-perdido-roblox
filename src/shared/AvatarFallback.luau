@@ -129,13 +129,18 @@ function Fallback.init()
 			local dashProgress=if typeof(dashStarted)=="number" then (time-dashStarted)/Motion.Timing.Dash.duration else 2
 			local dashing=dashProgress>=0 and dashProgress<=1
 			local kickStarted=character:GetAttribute("PortalKickStarted")
-			local kickProgress=if typeof(kickStarted)=="number" then (time-kickStarted)/Motion.Timing.Kick.duration else 2
+			local kickDuration=character:GetAttribute("PortalKickDuration") or Motion.Timing.Kick.duration
+			local kickProgress=if typeof(kickStarted)=="number" then (time-kickStarted)/kickDuration else 2
+			local kicking=kickProgress>=0 and kickProgress<=1
 			-- Defesa (atributo do jogador, replicado): entra rápido e sai suave.
 			local blockingNow=actor.player:GetAttribute("Blocking")==true
 			actor.block=(actor.block or 0)+((if blockingNow then 1 else 0)-(actor.block or 0))*(1-math.exp(-dt*(if blockingNow then 16 else 8)))
+			-- Agachado (atributo do jogador, replicado): desce rápido e sobe suave.
+			local crouchNow=actor.player:GetAttribute("Crouching")==true
+			actor.crouch=(actor.crouch or 0)+((if crouchNow then 1 else 0)-(actor.crouch or 0))*(1-math.exp(-dt*(if crouchNow then 14 else 9)))
 			local striking=progress>=0 and progress<=1
 			-- A habilidade usa o mesmo caminho de "ataque" para travar a mira e sobrepor a parte superior.
-			local attacking=striking or skilling or dashing or actor.block>0.02
+			local attacking=striking or skilling or dashing or kicking or actor.block>0.02 or actor.crouch>0.02
 			local root=character:FindFirstChild("HumanoidRootPart")
 			if actor.player==Players.LocalPlayer then
 				local aim=character:GetAttribute("PortalAimPosition")
@@ -265,7 +270,9 @@ function Fallback.init()
 				combo=character:GetAttribute("PortalCombo") or 1,
 				skill=if skilling then skillProgress else nil,
 				dash=if dashing then dashProgress else nil,
-				kick=if kickProgress>=0 and kickProgress<=1 then kickProgress else nil,
+				kick=if kicking then kickProgress else nil,
+				kickVariant=character:GetAttribute("PortalKickVariant"),
+				crouch=if actor.crouch>0.02 then actor.crouch else nil,
 				dashDir=character:GetAttribute("PortalDashDir"),
 				blocking=if actor.block>0.02 then actor.block else nil,
 			}

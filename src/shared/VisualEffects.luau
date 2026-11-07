@@ -40,6 +40,18 @@ local function arrow(origin: Vector3,target: Vector3,duration: number,arc: numbe
 	fly(shaft,origin,target,duration,arc,onArrive)
 end
 
+-- Nome do golpe especial flutuando sobre o personagem (chute voador, rasteira, Punho Solar…).
+local function moveLabel(position: Vector3,text: string,color: Color3)
+	local anchor=Art.part(container,"MoveLabel",Vector3.new(0.1,0.1,0.1),CFrame.new(position+Vector3.new(0,3.5,0)),color)
+	anchor.Transparency=1 anchor.CanQuery=false anchor.CastShadow=false
+	local gui=Instance.new("BillboardGui") gui.Size=UDim2.fromOffset(220,34) gui.AlwaysOnTop=true gui.MaxDistance=90 gui.Parent=anchor
+	local label=Instance.new("TextLabel") label.Size=UDim2.fromScale(1,1) label.BackgroundTransparency=1 label.Text=text label.Font=Enum.Font.GothamBlack label.TextSize=20
+	label.TextColor3=color label.TextStrokeTransparency=0.2 label.Parent=gui
+	TweenService:Create(anchor,TweenInfo.new(0.9),{Position=position+Vector3.new(0,6,0)}):Play()
+	TweenService:Create(label,TweenInfo.new(0.9,Enum.EasingStyle.Quad,Enum.EasingDirection.In),{TextTransparency=1,TextStrokeTransparency=1}):Play()
+	Debris:AddItem(anchor,1)
+end
+
 local function burst(position: Vector3,color: Color3,size: number,duration: number)
 	local orb=Art.part(container,"Effect",Vector3.new(size,size,size),CFrame.new(position),color,Enum.Material.Neon,Enum.PartType.Ball)
 	orb.CastShadow=false
@@ -269,7 +281,38 @@ function FX.play(data: any)
 	-- Gestos não dependem do orçamento de partículas decorativas.
 	if data.kind=="kick" then
 		local actor=typeof(data.userId)=="number" and Players:GetPlayerByUserId(data.userId)
-		if actor and actor.Character then actor.Character:SetAttribute("PortalKickStarted",os.clock()) end
+		local variant=if typeof(data.variant)=="string" then data.variant else "front"
+		if actor and actor.Character then
+			actor.Character:SetAttribute("PortalKickVariant",variant)
+			actor.Character:SetAttribute("PortalKickDuration",if variant=="sweep" then 0.7 elseif variant=="jump" then 0.55 else 0.6)
+			actor.Character:SetAttribute("PortalKickStarted",os.clock())
+		end
+		local color=if typeof(data.color)=="Color3" then data.color else Color3.fromRGB(235,225,205)
+		if variant=="sweep" and typeof(data.position)=="Vector3" then
+			-- Poeira em círculo rente ao chão acompanhando o giro da perna.
+			task.delay(0.15,function() if container.Parent then ring(data.position-Vector3.new(0,2.6,0),7,color,0.35) end end)
+		elseif variant=="jump" and typeof(data.position)=="Vector3" then
+			task.delay(0.14,function() if container.Parent then burst(data.position,color,0.7,0.2) end end)
+		end
+		if typeof(data.label)=="string" and typeof(data.position)=="Vector3" then moveLabel(data.position,data.label,color) end
+		return
+	end
+	if data.kind=="stun" and typeof(data.position)=="Vector3" then
+		-- Derrubado: três estrelas girando sobre a criatura.
+		local duration=math.clamp(tonumber(data.duration) or 1,0.3,3)
+		for i=1,3 do
+			local star=Art.part(container,"StunStar",Vector3.new(0.5,0.5,0.5),CFrame.new(data.position),Color3.fromRGB(255,230,120),Enum.Material.Neon,Enum.PartType.Ball)
+			star.CastShadow=false
+			local started=os.clock()
+			task.spawn(function()
+				while star.Parent and os.clock()-started<duration do
+					local a=(os.clock()-started)*5+i*math.pi*2/3
+					star.CFrame=CFrame.new(data.position+Vector3.new(math.cos(a)*1.6,3.2,math.sin(a)*1.6))
+					task.wait()
+				end
+				star:Destroy()
+			end)
+		end
 		return
 	end
 	if data.kind=="strike" then
@@ -280,12 +323,20 @@ function FX.play(data: any)
 			local last=actor.Character:GetAttribute("PortalAttackStarted")
 			local combo=actor.Character:GetAttribute("PortalCombo") or 1
 			combo=if typeof(last)=="number" and os.clock()-last<1.3 then combo%3+1 else 1
+			local duration=timing.duration
+			-- Lutador: o servidor diz qual golpe saiu (combo 1–4, aéreo ou ascendente).
+			if data.classId=="Brawler" and typeof(data.move)=="string" then
+				local index=tonumber(string.match(data.move,"^combo(%d)$"))
+				combo=if index then index elseif data.move=="air" then 5 elseif data.move=="low" then 6 else 1
+				if combo>=4 then duration=0.62 end
+			end
 			actor.Character:SetAttribute("PortalCombo",combo)
 			actor.Character:SetAttribute("PortalAimPosition",data.position)
 			actor.Character:SetAttribute("PortalAttackStarted",os.clock())
 			actor.Character:SetAttribute("PortalAttackClass",data.classId)
-			actor.Character:SetAttribute("PortalAttackDuration",timing.duration)
+			actor.Character:SetAttribute("PortalAttackDuration",duration)
 		end
+		if typeof(data.moveName)=="string" and typeof(data.origin)=="Vector3" then moveLabel(data.origin,data.moveName,data.color) end
 		if #container:GetChildren()>60 then return end
 		-- O efeito sai no instante em que a pose solta (corte, corda ou empurrão).
 		task.delay(timing.duration*timing.release,function()
@@ -302,8 +353,10 @@ function FX.play(data: any)
 				arrow(origin,data.position,math.clamp(distance/120,0.08,0.5),math.min(distance*0.04,2.2),function() burst(data.position,Color3.fromRGB(255,230,170),0.4,0.15) end)
 			elseif data.classId=="Brawler" then
 				-- Impacto do soco/chute: anel curto e faíscas solares no ponto atingido.
-				burst(data.position,data.color,0.9,0.16)
-				ring(data.position-Vector3.new(0,2.5,0),2.4,data.color,0.18)
+				local heavy=data.move=="combo4" or data.move=="air" or data.move=="low"
+				burst(data.position,data.color,if heavy then 1.8 else 0.9,if heavy then 0.28 else 0.16)
+				ring(data.position-Vector3.new(0,2.5,0),if heavy then 7 else 2.4,data.color,if heavy then 0.35 else 0.18)
+				if heavy then flash(data.position,data.color,1.3) end
 			elseif data.classId=="Shade" then
 				-- Dois rastros cruzados de adaga no alvo.
 				for k=-1,1,2 do

@@ -7,7 +7,8 @@ local actors: {[Model]: any}={}
 
 local function register(model: Model)
 	if actors[model] or not model.PrimaryPart then return end
-	local kind=model:GetAttribute("EnemyKind") or model:GetAttribute("PresentationKind")
+	-- MotionKind: arquétipo de movimento (criaturas geradas novas reaproveitam as poses existentes).
+	local kind=model:GetAttribute("MotionKind") or model:GetAttribute("EnemyKind") or model:GetAttribute("PresentationKind")
 	if typeof(kind)~="string" then return end
 	local joints={}
 	local eyes={}
@@ -142,7 +143,8 @@ function Presentation.init()
 			local relative=root.CFrame:VectorToObjectSpace(playerRoot.Position-root.Position)
 			local yawTarget=if relative.Magnitude<45 and relative.Z<0 then math.clamp(math.atan2(-relative.X,-relative.Z),-0.6,0.6) else 0
 			local ctx={wind=ease(wind),impact=actor.impactBlend,flinch=1-ease((os.clock()-actor.hitAt)/0.28),
-				death=if actor.deadAt then ease((os.clock()-actor.deadAt)/0.55) else 0,yaw=yawTarget,
+				-- Derrubado (rasteira, chute voador): meia queda enquanto durar o atordoamento.
+				death=if actor.deadAt then ease((os.clock()-actor.deadAt)/0.55) elseif (model:GetAttribute("StunnedUntil") or 0)>now then 0.45 else 0,yaw=yawTarget,
 				castKind=model:GetAttribute("CastKind"),reaching=(model:GetAttribute("ReachUntil") or 0)>now}
 			for _,joint in actor.joints do
 				if not joint.Parent then continue end

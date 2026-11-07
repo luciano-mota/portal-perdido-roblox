@@ -210,3 +210,31 @@ Motivo: o commit `38f908a` passou a exigir o chefão de cada região para abrir 
 - Zero erros Luau no servidor e no cliente.
 
 **Pendente:** combate manual completo contra cada chefe (dificuldade/duração por avaliação humana), Rota B com 4–6 jogadores, Deserto e Cidadela até a derrota, reforços que continuam vivos após a queda do chefe (mesmo comportamento do Arauto), arte gerada/final dos chefes, aparelho móvel físico.
+
+## Monstros exclusivos por região e combate dinâmico — 07/11/2026
+
+Pedido do proprietário: cada mundo com monstros próprios; chefões que sejam monstros de verdade (não bonecos de esferas); todos chutando com combinações (pular + chutar, agachar, rasteira); Lutador com golpes diferenciados e mais fortes.
+
+**Implementado:**
+- 9 criaturas geradas (generate_mesh, partes nomeadas e articuladas em `Art.GENERATED`):
+  - Abismo de Cristal: Aranha de Cristal, Morcego Prismático; chefão **Wyrm de Cristal**.
+  - Deserto das Horas: Escorpião das Areias, Chacal das Dunas; chefão **Esfinge das Horas**.
+  - Cidadela do Eclipse: Cão Sombrio, Gárgula do Eclipse; chefão **Dragão do Eclipse**.
+  - Comportamento reaproveitado por arquétipo (`stats.ai`: Thorn corpo a corpo, Wisp à distância, Herald para chefões); `MotionKind` escolhe as poses no cliente.
+- `Chapter.RegionFauna`: encontros comuns nascem nos slots `Encounter` de cada construtor (líder + 1–2) e os reforços usam a fauna da região. A Convergência mistura criaturas dos quatro mundos. Antes os reforços eram sempre Predador/Eco do Vale.
+- Chutes para todas as classes (`Kick` com variante validada no servidor): frontal (14), **chute voador** (no ar, medido por raycast; 20, avanço e atordoamento) e **rasteira** (agachado; 12, arco largo, derruba todos à frente). Recarga 1,8 s (Lutador 1,0 s e dano dobrado).
+- Agachar: Ctrl (segurar), L3 no controle ou botão AGACHAR (toque alterna). Velocidade 7, sem pulo; pular levanta. Replicado como atributo `Crouching`.
+- Lutador: dano 24 → 36, vida 140, combo de 4 com Punho Solar, Martelo Solar (no ar), Gancho Ascendente (agachado), Chute Sombra 55 → 75. Nome do golpe especial flutua sobre o personagem.
+- Atordoamento: criaturas comuns ficam paradas (estrelas + meia queda); chefões apenas ficam lentos.
+
+**Testado no Studio (Play):**
+- 9 tipos novos nascem com o modelo gerado (`GeneratedCreature=true`), com a cabeça para −Z; contagem por tipo coerente com os slots; zero erros/avisos Luau.
+- Guardião contra Aranha de Cristal: frontal 140→126; agachado (WalkSpeed 7) + rasteira 126→114 com atordoamento; chute voador em Freefall 114→94 com atordoamento; pedido de "jump" sem estar no ar e de "sweep" em pé viram chute frontal.
+- Lutador contra o grupo do aqueduto: socos 36/39/46 e Punho Solar 141 em área; Gancho Ascendente e Rasteira Solar (24) acionados; ataques "air" sem estar no ar viram combo normal.
+- Capturas: Wyrm na catedral; Escorpião, Chacal e Esfinge no deserto; poses de agachar e rasteira.
+- Para o teste a vida do jogador foi elevada a 5000 (somente QA, não persistido).
+
+**Pendente:**
+- **Salvar o lugar (Ctrl+S)** e exportar os 9 `*Template` de `ServerStorage` para `assets/characters/models/` (Save to File) e mapear no `default.project.json`. Até lá existem só no lugar do Studio; sem eles o jogo usa a contingência procedural.
+- Avaliação humana das poses (agachar, rasteira, chute voador, golpes do Lutador) — ângulos estimados, não calibrados como os do Guardião.
+- Dificuldade dos grupos regionais (o Guardião com 150 HP caiu para o grupo da ilha-pilar), monstros da fase 6, celular físico.

@@ -190,6 +190,7 @@ end
 --   joints: peça → {nome do Motor6D, fração da altura da peça para o pivô, peça-base opcional}
 --   baseY: altura da base da malha em relação ao chão (negativo afunda base modelada; positivo flutua)
 --   glow: peças neon extras; "Core"/"Eye" são recoloridas pelo EnemyService na fase 2 do chefe.
+local QUAD={Body={"Waist",0},Head={"Neck",0.3,"Body"},FrontLeftLeg={"LeftFrontHip",0.4},FrontRightLeg={"RightFrontHip",0.4},RearLeftLeg={"LeftRearHip",0.4},RearRightLeg={"RightRearHip",0.4},Tail={"TailRoot",0.3,"Body"}}
 local GENERATED: {[string]: any}={
 	Boss={
 		template="RootGuardianTemplate", scale=1.5, baseY=-0.85,
@@ -217,6 +218,32 @@ local GENERATED: {[string]: any}={
 		joints={Body={"SpiritCore",0},Head={"Neck",-0.4,"Body"},LeftArm={"LeftShoulder",0.3,"Body"},RightArm={"RightShoulder",0.3,"Body"}},
 		bodyLight={on="Body",range=10,brightness=1.2},
 	},
+	-- Fauna das regiões 2–4 (generate_mesh com partes nomeadas; templates em ServerStorage).
+	-- Quadrúpedes usam os nomes de quadril do Predador; o arquétipo de movimento vem de MotionKind.
+	CrystalSpider={template="CrystalSpiderTemplate", scale=1.0, baseY=0, joints=QUAD,
+		bodyLight={on="Body",range=9,brightness=0.9,color=Color3.fromRGB(120,220,255)}},
+	PrismBat={template="PrismBatTemplate", scale=1.1, baseY=2.6,
+		joints={Body={"SpiritCore",0},Head={"Neck",-0.4,"Body"},LeftWing={"LeftShoulder",0,"Body"},RightWing={"RightShoulder",0,"Body"}},
+		bodyLight={on="Body",range=10,brightness=1.1,color=Color3.fromRGB(230,150,255)}},
+	SandScorpion={template="SandScorpionTemplate", scale=1.05, baseY=0, joints=QUAD,
+		bodyLight={on="Tail",range=7,brightness=0.9,color=Color3.fromRGB(255,190,90)}},
+	DuneJackal={template="DuneJackalTemplate", scale=1.15, baseY=0, joints=QUAD},
+	EclipseGargoyle={template="EclipseGargoyleTemplate", scale=1.25, baseY=0,
+		joints={Body={"Waist",-0.3},Head={"Neck",-0.4,"Body"},LeftArm={"LeftShoulder",0.38,"Body"},RightArm={"RightShoulder",0.38,"Body"},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4},Wings={"WingRoot",0,"Body"}},
+		bodyLight={on="Body",range=9,brightness=1,color=Color3.fromRGB(180,120,255)}},
+	ShadowHound={template="ShadowHoundTemplate", scale=1.15, baseY=0, joints=QUAD,
+		bodyLight={on="Body",range=8,brightness=1,color=Color3.fromRGB(160,110,255)}},
+	-- Chefões: monstros de verdade em escala de colosso. Wyrm e Dragão ficam erguidos (patas da
+	-- frente articuladas como braços); a Esfinge é quadrúpede e tem a base de pedra enterrada.
+	CrystalWyrm={template="CrystalWyrmTemplate", scale=1.65, baseY=0,
+		joints={Body={"Waist",-0.35},Head={"Neck",-0.3,"Body"},FrontLeftLeg={"LeftShoulder",0.4,"Body"},FrontRightLeg={"RightShoulder",0.4,"Body"},RearLeftLeg={"LeftHip",0.4},RearRightLeg={"RightHip",0.4}},
+		bodyLight={on="Body",range=22,brightness=1.4,color=Color3.fromRGB(120,220,255)}},
+	SandSphinx={template="SandSphinxTemplate", scale=1.4, baseY=-1.6,
+		joints={Body={"Waist",0},Head={"Neck",0.2,"Body"},FrontLeftLeg={"LeftFrontHip",0.4},FrontRightLeg={"RightFrontHip",0.4},RearLeftLeg={"LeftRearHip",0.4},RearRightLeg={"RightRearHip",0.4},Wings={"WingRoot",0,"Body"}},
+		bodyLight={on="Body",range=22,brightness=1.2,color=Color3.fromRGB(255,200,110)}},
+	EclipseDragon={template="EclipseDragonTemplate", scale=1.45, baseY=0,
+		joints={Body={"Waist",-0.35},Head={"Neck",-0.3,"Body"},FrontLeftLeg={"LeftShoulder",0.4,"Body"},FrontRightLeg={"RightShoulder",0.4,"Body"},RearLeftLeg={"LeftHip",0.4},RearRightLeg={"RightHip",0.4},Wings={"WingRoot",0,"Body"}},
+		bodyLight={on="Body",range=24,brightness=1.5,color=Color3.fromRGB(180,120,255)}},
 	Thorn={
 		-- Quadrúpede de espinhos: nomes de quadril seguem ActorPresentation (Left/Right + Front/Rear).
 		template="ThornStalkerTemplate", scale=1.25, baseY=0,
@@ -272,7 +299,7 @@ end
 function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Color3): Model
 	local m = Instance.new("Model")
 	local boss = kind == "Boss"
-	local regionBoss = kind=="AbyssColossus" or kind=="HourWarden" or kind=="EclipseKnight"
+	local regionBoss = kind=="CrystalWyrm" or kind=="SandSphinx" or kind=="EclipseDragon"
 	local scale = if boss then 2.2 elseif kind=="Herald" or regionBoss then 2.6 else 1
 	local root = Art.part(m,"Root",Vector3.new(4,5,4)*scale,CFrame.new(position),color)
 	root.Transparency = 1
@@ -368,9 +395,9 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 		-- com materiais e adornos do tema da região. Nomes Arm/Leg/Head/Hand/Foot/Eye/Core
 		-- seguem a articulação padrão abaixo.
 		local palette={
-			AbyssColossus={body=Color3.fromRGB(70,78,104),mat=Enum.Material.Slate,trim=Color3.fromRGB(150,220,255),trimMat=Enum.Material.Glass,glow=Color3.fromRGB(120,230,255)},
-			HourWarden={body=Color3.fromRGB(196,160,108),mat=Enum.Material.Sandstone,trim=Color3.fromRGB(214,170,82),trimMat=Enum.Material.Metal,glow=Color3.fromRGB(255,196,96)},
-			EclipseKnight={body=Color3.fromRGB(34,30,48),mat=Enum.Material.Metal,trim=Color3.fromRGB(150,120,200),trimMat=Enum.Material.Metal,glow=Color3.fromRGB(186,120,255)},
+			CrystalWyrm={body=Color3.fromRGB(70,78,104),mat=Enum.Material.Slate,trim=Color3.fromRGB(150,220,255),trimMat=Enum.Material.Glass,glow=Color3.fromRGB(120,230,255)},
+			SandSphinx={body=Color3.fromRGB(196,160,108),mat=Enum.Material.Sandstone,trim=Color3.fromRGB(214,170,82),trimMat=Enum.Material.Metal,glow=Color3.fromRGB(255,196,96)},
+			EclipseDragon={body=Color3.fromRGB(34,30,48),mat=Enum.Material.Metal,trim=Color3.fromRGB(150,120,200),trimMat=Enum.Material.Metal,glow=Color3.fromRGB(186,120,255)},
 		}
 		local c=palette[kind]
 		p("Chest",Vector3.new(3.4,3.1,2.1),Vector3.new(0,0.4,0),c.body,c.mat,Enum.PartType.Ball)
@@ -384,14 +411,14 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 			p("Leg",Vector3.new(1.3,2.2,1.5),Vector3.new(side*0.85,-2.1,0),c.body,c.mat,Enum.PartType.Ball)
 			p("Foot",Vector3.new(1.5,0.7,2.2),Vector3.new(side*0.85,-3,-0.3),c.trim,c.trimMat,Enum.PartType.Ball)
 		end
-		if kind=="AbyssColossus" then
+		if kind=="CrystalWyrm" then
 			-- Cristais brotando dos ombros e das costas.
 			for i,spike in {{-2.3,2.0,0.2,0.3},{2.3,2.0,0.2,-0.3},{-1.0,2.2,1.0,0.25},{1.0,2.3,1.0,-0.2},{0,2.6,1.1,0}} do
 				local part=p("Crystal",Vector3.new(0.7,2.4+i*0.15,0.7),Vector3.new(spike[1],spike[2],spike[3]),c.trim,Enum.Material.Glass)
 				part.CFrame=part.CFrame*CFrame.Angles(-0.35,0,spike[4])
 				part.Transparency=0.15
 			end
-		elseif kind=="HourWarden" then
+		elseif kind=="SandSphinx" then
 			-- Ampulheta no peito e disco solar atrás da cabeça.
 			p("Hourglass",Vector3.new(0.8,0.5,0.4),Vector3.new(0,0.85,-1.05),c.trim,Enum.Material.Metal)
 			p("Hourglass",Vector3.new(0.8,0.5,0.4),Vector3.new(0,-0.05,-1.05),c.trim,Enum.Material.Metal)

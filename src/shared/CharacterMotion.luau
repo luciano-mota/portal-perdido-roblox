@@ -79,6 +79,21 @@ P.Br_JabR={rightshoulder={1.56,0.94,-1.00},rightelbow={0.39,0,0},leftshoulder={1
 P.Br_JabL={leftshoulder={1.56,-0.54,1.00},leftelbow={0.29,0,0},rightshoulder={1.00,1.50,-0.50},rightelbow={1.50,0,0},waist={-0.12,-0.4,0},root={0,0,0,0,-0.1,-0.35},rightknee={-0.3,0,0}}
 P.Br_Chamber={righthip={-1.25,0,0},rightknee={-1.1,0,0},rightankle={0.15,0,0},waist={0.15,-0.12,0},lefthip={0.12,0,0},leftknee={-0.15,0,0},rightshoulder={1.00,1.50,-0.50},rightelbow={1.50,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0}}
 P.Br_Kick=merged("Br_Chamber",{rightknee={0,0,0},waist={0.25,-0.12,0},root={0,0,0,0,0,-0.4}})
+-- Gancho (3º golpe): braço em arco lateral com giro forte do tronco.
+P.Br_HookWind={rightshoulder={0.9,1.9,-0.9},rightelbow={1.7,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0},waist={0.05,-0.5,0}}
+P.Br_Hook={rightshoulder={1.45,0.6,-1.4},rightelbow={1.5,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0},waist={-0.1,0.75,0},root={0,0,0,0,-0.15,-0.3},leftknee={-0.35,0,0}}
+-- Punho Solar (4º golpe): recolhe os dois punhos e explode à frente com avanço profundo.
+P.Br_SolarWind={rightshoulder={1.00,1.50,-0.50},rightelbow={1.9,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.2,0,0},waist={0.15,0,0},root={0,0,0,0,-0.3,0.3},leftknee={-0.5,0,0},rightknee={-0.5,0,0}}
+P.Br_Solar={rightshoulder={1.56,0.94,-1.00},rightelbow={0.2,0,0},leftshoulder={1.56,-0.54,1.00},leftelbow={0.2,0,0},waist={-0.25,0,0},root={0,0,0,0,-0.45,-1.1},leftknee={-0.7,0,0},rightknee={-0.2,0,0}}
+-- Gancho Ascendente (agachado + atacar): sai do agachamento com o punho subindo ao céu.
+P.Br_Low={root={0,0,0,0,-1.1,0},lefthip={-1.0,0,0},righthip={-1.0,0,0},leftknee={-1.6,0,0},rightknee={-1.6,0,0},leftankle={0.6,0,0},rightankle={0.6,0,0},waist={-0.3,0,0},rightshoulder={0.6,0.9,-0.3},rightelbow={2.0,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0}}
+P.Br_Upper={root={0,0,0,0,0.35,-0.2},waist={0.3,0.35,0},rightshoulder={2.9,0.2,-0.3},rightelbow={0.35,0,0},leftshoulder={1.00,-1.25,1.12},leftelbow={2.00,0,0},leftknee={-0.2,0,0}}
+-- Martelo Solar (no ar + atacar): ergue os dois punhos e desce num golpe duplo.
+P.Br_HammerUp={rightshoulder={2.7,0,-0.2},rightelbow={0.4,0,0},leftshoulder={2.7,0,0.2},leftelbow={0.4,0,0},waist={0.25,0,0},leftknee={-0.8,0,0},rightknee={-0.8,0,0}}
+P.Br_HammerDown={rightshoulder={0.7,0,-0.1},rightelbow={0.2,0,0},leftshoulder={0.7,0,0.1},leftelbow={0.2,0,0},waist={-0.5,0,0},root={0,0,0,0,-0.4,-0.3},leftknee={-0.9,0,0},rightknee={-0.6,0,0}}
+
+-- Agachado (todas as classes): quadril desce, coxas à frente, joelhos dobrados, tronco inclinado.
+Motion.Crouch={root={0,0,0,0,-1.1,0},lefthip={-0.95,0,0},righthip={-0.95,0,0},leftknee={-1.55,0,0},rightknee={-1.55,0,0},leftankle={0.6,0,0},rightankle={0.6,0,0},waist={-0.28,0,0}}
 -- Véu: cortes de adaga com a direita e com a esquerda (espelho), e estocada dupla.
 P.Sh_WindR={rightshoulder={2.62,0.10,-0.55},rightelbow={1.41,0,0},waist={0.06,-0.4,0}}
 P.Sh_CutR={rightshoulder={0.81,0.99,0.42},rightelbow={-0.09,0,0},waist={-0.12,0.45,0},root={0,0,0,0,-0.18,-0.55},leftknee={-0.35,0,0}}
@@ -106,7 +121,11 @@ Motion.Clips={
 	Brawler={
 		{{0,"Rest"},{0.25,"Br_Guard"},{0.45,"Br_JabR"},{0.7,"Br_JabR"},{1,"Rest"}},
 		{{0,"Rest"},{0.25,"Br_Guard"},{0.45,"Br_JabL"},{0.7,"Br_JabL"},{1,"Rest"}},
-		{{0,"Rest"},{0.3,"Br_Chamber"},{0.5,"Br_Kick"},{0.75,"Br_Kick"},{1,"Rest"}},
+		{{0,"Rest"},{0.25,"Br_HookWind"},{0.45,"Br_Hook"},{0.72,"Br_Hook"},{1,"Rest"}},
+		{{0,"Rest"},{0.3,"Br_SolarWind"},{0.48,"Br_Solar"},{0.78,"Br_Solar"},{1,"Rest"}},
+		-- 5: Martelo Solar (no ar), 6: Gancho Ascendente (agachado). Escolhidos pelo servidor (move).
+		{{0,"Rest"},{0.3,"Br_HammerUp"},{0.5,"Br_HammerDown"},{0.8,"Br_HammerDown"},{1,"Rest"}},
+		{{0,"Br_Low"},{0.3,"Br_Low"},{0.5,"Br_Upper"},{0.8,"Br_Upper"},{1,"Rest"}},
 	},
 	Arcanist={{{0,"Rest"},{0.4,"F_Charge"},{0.55,"F_Push"},{0.8,"F_Push"},{1,"Rest"}}},
 	Shade={
@@ -152,7 +171,7 @@ local function toCFrame(v: {number}): CFrame
 	return CFrame.new(v[4] or 0,v[5] or 0,v[6] or 0)*CFrame.Angles(v[1] or 0,v[2] or 0,v[3] or 0)
 end
 
-export type Context={classId: string,attack: number?,combo: number?,skill: number?,dash: number?,kick: number?,dashDir: Vector3?,blocking: number?}
+export type Context={classId: string,attack: number?,combo: number?,skill: number?,dash: number?,kick: number?,kickVariant: string?,crouch: number?,dashDir: Vector3?,blocking: number?}
 
 -- Sobreposição de combate para uma articulação, ou nil se nada a mover.
 function Motion.overlay(name: string,ctx: Context): CFrame?
@@ -211,7 +230,42 @@ function Motion.overlay(name: string,ctx: Context): CFrame?
 			result=out
 		end
 	end
-	if ctx.kick then
+	-- Agachado: somado por baixo de golpes de braço; o chute tem pernas próprias.
+	if ctx.crouch and ctx.crouch>0 and not ctx.kick then
+		local c=Motion.Crouch[name]
+		if c then
+			local base=result or zero
+			local out={}
+			for i=1,6 do out[i]=(base[i] or 0)+(c[i] or 0)*ctx.crouch end
+			result=out
+		end
+	end
+	if ctx.kick and ctx.kickVariant=="jump" then
+		-- Chute voador: perna da frente estendida, a de trás recolhida, tronco para trás.
+		local t=ctx.kick
+		local k=ease(t/0.22)*(1-ease((t-0.7)/0.3))
+		if name=="righthip" then result={-1.5*k,0,0}
+		elseif name=="rightknee" then result={-0.1*k,0,0}
+		elseif name=="lefthip" then result={-1.0*k,0,0}
+		elseif name=="leftknee" then result={-1.8*k,0,0}
+		elseif name=="waist" then result={0.4*k,-0.2*k,0}
+		elseif name=="leftshoulder" then result={0.9*k,0,0.5*k}
+		elseif name=="rightshoulder" then result={0.9*k,0,-0.5*k} end
+	elseif ctx.kick and ctx.kickVariant=="sweep" then
+		-- Rasteira: bem agachado, perna direita estendida rente ao chão e giro completo do corpo.
+		local t=ctx.kick
+		local k=ease(t/0.15)*(1-ease((t-0.8)/0.2))
+		local spin=ease((t-0.12)/0.6)*math.pi*2
+		if name=="root" then result={0,spin,0,0,-1.7*k,0}
+		elseif name=="lefthip" then result={-1.3*k,0,0}
+		elseif name=="leftknee" then result={-2.0*k,0,0}
+		elseif name=="leftankle" then result={0.7*k,0,0}
+		elseif name=="righthip" then result={-1.45*k,0,0}
+		elseif name=="rightknee" then result={0,0,0}
+		elseif name=="waist" then result={-0.35*k,0,0}
+		elseif name=="leftshoulder" then result={0.5*k,0,0.9*k}
+		elseif name=="rightshoulder" then result={0.5*k,0,-0.9*k} end
+	elseif ctx.kick then
 		local t=ctx.kick
 		local lift=ease(t/0.28)*(1-ease((t-0.6)/0.4))
 		local extension=ease((t-0.18)/0.18)*(1-ease((t-0.48)/0.28))

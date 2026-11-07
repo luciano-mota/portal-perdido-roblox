@@ -19,6 +19,7 @@ local skillRemote=remotes:WaitForChild("UseSkill") :: RemoteEvent
 local dashRemote=remotes:WaitForChild("Dash") :: RemoteEvent
 local blockRemote=remotes:WaitForChild("Block") :: RemoteEvent
 local kickRemote=remotes:WaitForChild("Kick") :: RemoteEvent
+local crouchRemote=remotes:WaitForChild("Crouch") :: RemoteEvent
 local notify=remotes:WaitForChild("Notify") :: RemoteEvent
 local gui=player:WaitForChild("PlayerGui")
 local old=gui:FindFirstChild("PortalPerdidoHUD") if old then old:Destroy() end
@@ -130,6 +131,8 @@ local dashButton=button(screen,"DashButton","ESQUIVA",UDim2.new(1,-174,1,-142),U
 -- Defesa do Guardião: segurar F ou o botão (toque) mantém o escudo erguido; o servidor valida.
 local blockButton=button(screen,"BlockButton","DEFENDER [F]",UDim2.new(1,-290,1,-142),UDim2.fromOffset(106,42),Color3.fromRGB(46,72,128)) blockButton.Visible=false
 local kickButton=button(screen,"KickButton","CHUTAR [C]",UDim2.new(1,-174,1,-194),UDim2.fromOffset(150,44),ink) kickButton.Visible=false
+-- Agachar: segurar Ctrl (teclado) ou tocar para alternar (toque). Agachado + chutar = rasteira.
+local crouchButton=button(screen,"CrouchButton","AGACHAR [CTRL]",UDim2.new(1,-290,1,-194),UDim2.fromOffset(106,44),ink) crouchButton.Visible=false
 local boss=frame(screen,"BossHealth",UDim2.new(0.86,0,0,40),UDim2.new(0.5,0,0,116),Color3.fromRGB(51,32,41)) boss.AnchorPoint=Vector2.new(0.5,0) limit(boss,500,40) boss.Visible=false
 local bossText=text(boss,"Name","",12,UDim2.new(0.03,0,0,3),UDim2.new(0.94,0,0,20),parchment)
 local bossFill=frame(boss,"Fill",UDim2.new(0.94,0,0,6),UDim2.new(0.03,0,0,28),Color3.fromRGB(196,114,87))
@@ -282,6 +285,9 @@ local function layout()
 	blockButton.Text=if touch then "DEFENDER" else "DEFENDER [F]"
 	kickButton.Position=if touch then UDim2.new(1,-120,1,-236) else UDim2.new(1,-174,1,-194)
 	kickButton.Size=if touch then UDim2.fromOffset(100,48) else UDim2.fromOffset(150,44)
+	crouchButton.Position=if touch then UDim2.new(1,-230,1,-236) else UDim2.new(1,-290,1,-194)
+	crouchButton.Size=if touch then UDim2.fromOffset(100,48) else UDim2.fromOffset(106,44)
+	crouchButton.Text=if touch then "AGACHAR" else "AGACHAR [CTRL]"
 	attackButton.Text=if touch then "ATACAR" else "ATACAR [Q]"
 	journalButton.Text=if touch then "DIÁRIO" else "DIÁRIO [J]"
 	journalButton.Size=UDim2.fromOffset(100,if touch then 44 else 32)
@@ -317,20 +323,78 @@ local function dodgeDirection(): Vector3
 	return Vector3.new(move.X,0,move.Z)
 end
 local lastAttack=-math.huge
+local crouching=false
+local jumpPressedAt=-math.huge
+local function airborneNow(): boolean
+	if not humanoid then return false end
+	local state=humanoid:GetState()
+	return state==Enum.HumanoidStateType.Freefall or state==Enum.HumanoidStateType.Jumping
+end
+local function setCrouch(active: boolean)
+	if active and (not humanoid or humanoid.Health<=0 or dialogue.Visible or journal.Visible or intro.Visible or ending.Visible) then active=false end
+	if crouching==active then return end
+	crouching=active
+	crouchButton.BackgroundColor3=if active then Color3.fromRGB(96,84,60) else ink
+	crouchRemote:FireServer(active)
+end
+-- O servidor zera o agachamento ao renascer: mantém o estado local alinhado.
+player:GetAttributeChangedSignal("Crouching"):Connect(function()
+	if player:GetAttribute("Crouching")~=true and crouching then crouching=false crouchButton.BackgroundColor3=ink end
+end)
+-- Pular levanta do agachamento e marca o instante para o combo pulo + chute.
+UIS.JumpRequest:Connect(function()
+	jumpPressedAt=os.clock()
+	if crouching then setCrouch(false) end
+end)
 local function attack()
 	local id=player:GetAttribute("ClassId")
 	local class=if typeof(id)=="string" then Classes[id] else nil
 	if not class or not humanoid or humanoid.Health<=0 or dialogue.Visible or journal.Visible or intro.Visible or ending.Visible then return end
 	if os.clock()-lastAttack<class.cooldown then return end
-	lastAttack=os.clock() attackRemote:FireServer()
+	-- Lutador: pular + atacar = Martelo Solar; agachado + atacar = Gancho Ascendente.
+	-- O servidor confirma o estado (no ar / agachado) antes de aplicar a variante.
+	local variant=nil
+	if id=="Brawler" then variant=if crouching then "low" elseif airborneNow() then "air" else nil end
+	lastAttack=os.clock() attackRemote:FireServer(variant)
 	attackButton.BackgroundColor3=Color3.fromRGB(103,67,57)
 	task.delay(class.cooldown,function() attackButton.BackgroundColor3=Color3.fromRGB(169,89,65) end)
 end
 attackButton.Activated:Connect(attack)
+-- Chute: em pé = frontal; pulando (ou pulo + chute juntos) = chute voador; agachado = rasteira.
+local kickPending=false
+local function lunge()
+	-- Chute voador: impulso à frente no próprio personagem (física do cliente).
+	local character=player.Character
+	local root=character and character:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		local look=Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z)
+		if look.Magnitude>0.1 then
+			local v=root.AssemblyLinearVelocity
+			root.AssemblyLinearVelocity=Vector3.new(look.Unit.X*30,math.max(v.Y,6),look.Unit.Z*30)
+		end
+	end
+end
 local function kick()
-	if humanoid and humanoid.Health>0 and not dialogue.Visible and not journal.Visible and not intro.Visible and not ending.Visible then kickRemote:FireServer() end
+	if kickPending or not humanoid or humanoid.Health<=0 or dialogue.Visible or journal.Visible or intro.Visible or ending.Visible then return end
+	if crouching then kickRemote:FireServer("sweep") return end
+	if airborneNow() then kickRemote:FireServer("jump") lunge() return end
+	kickPending=true
+	task.spawn(function()
+		-- Janela curta para "pular junto com chutar" (em qualquer ordem).
+		local started=os.clock()
+		while os.clock()-started<0.12 and os.clock()-jumpPressedAt>0.3 do task.wait() end
+		if os.clock()-jumpPressedAt<=0.3 then
+			local waitStart=os.clock()
+			while not airborneNow() and os.clock()-waitStart<0.3 do task.wait() end
+			if airborneNow() then kickRemote:FireServer("jump") lunge() else kickRemote:FireServer("front") end
+		else
+			kickRemote:FireServer("front")
+		end
+		kickPending=false
+	end)
 end
 kickButton.Activated:Connect(kick)
+crouchButton.Activated:Connect(function() setCrouch(not crouching) end)
 skillButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then skillRemote:FireServer() end end)
 dashButton.Activated:Connect(function() if not dialogue.Visible and not journal.Visible then dashRemote:FireServer(dodgeDirection()) end end)
 local blocking=false
@@ -349,6 +413,7 @@ blockButton.InputEnded:Connect(function(input)
 end)
 UIS.InputEnded:Connect(function(input)
 	if input.KeyCode==Enum.KeyCode.F then setBlock(false) end
+	if input.KeyCode==Enum.KeyCode.LeftControl or input.KeyCode==Enum.KeyCode.ButtonL3 then setCrouch(false) end
 end)
 UIS.InputBegan:Connect(function(input,processed)
 	if processed then return end
@@ -357,6 +422,7 @@ UIS.InputBegan:Connect(function(input,processed)
 	elseif input.KeyCode==Enum.KeyCode.R then if not dialogue.Visible and not intro.Visible and not journal.Visible then skillRemote:FireServer() end
 	elseif input.KeyCode==Enum.KeyCode.LeftShift then if not intro.Visible and not dialogue.Visible and not journal.Visible then dashRemote:FireServer(dodgeDirection()) end
 	elseif input.KeyCode==Enum.KeyCode.F then setBlock(true)
+	elseif input.KeyCode==Enum.KeyCode.LeftControl or input.KeyCode==Enum.KeyCode.ButtonL3 then setCrouch(true)
 	elseif input.KeyCode==Enum.KeyCode.J and introDone then journal.Visible=not journal.Visible refresh() end
 end)
 
@@ -375,6 +441,8 @@ refresh=function()
 	local controls=gameplay and not dialogue.Visible and not journal.Visible and not ending.Visible
 	attackButton.Visible=controls skillButton.Visible=controls dashButton.Visible=controls
 	kickButton.Visible=controls
+	crouchButton.Visible=controls
+	if not controls then setCrouch(false) end
 	blockButton.Visible=controls and classId=="Guardian"
 	if not blockButton.Visible then setBlock(false) end
 	if index<=5 then

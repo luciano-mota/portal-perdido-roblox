@@ -9,7 +9,7 @@ Pedido do proprietário:
 
 | Herói | Referência | Kit | Desbloqueio na Rota A |
 | --- | --- | --- | --- |
-| **Lutador Solar** (`Brawler`) | warrior-reference-v1, sem martelo | Socos alternados e chute frontal. Faixas com runas solares acesas nos punhos. **Chute Sombra**: avança até 22 studs e atinge todos no caminho (55), com rastro de imagens. | Concluir o Vale de Lúmen |
+| **Lutador Solar** (`Brawler`) | warrior-reference-v1, sem martelo | O poder dele é lutar: golpes mais fortes que os das outras classes (36 por soco). Combo de 4 (jab, direto, gancho e **Punho Solar** em área, 2×), **Martelo Solar** (pular + atacar, área e atordoamento), **Gancho Ascendente** (agachado + atacar, 1,9×), chutes com o dobro de dano e recarga de 1 s. **Chute Sombra**: avança até 22 studs e atinge todos no caminho (75). | Concluir o Vale de Lúmen |
 | **Arcanista** (`Arcanist`) | mage-reference-v1 | Cajado com orbe solar e esferas de fogo à distância. **Sol Nascente**: um sol cai sobre o inimigo e explode em 14 studs (60). | Concluir o Abismo de Cristal |
 | **Véu** (`Shade`) | veil-reference-v1 | Duas adagas em cortes rápidos. **Passo do Véu**: reaparece atrás do inimigo mais próximo (até 40 studs), golpe crítico (70) e fica velado por 2 s (translúcida, os inimigos a perdem de vista). | Concluir o Deserto das Horas |
 

@@ -75,6 +75,12 @@ local function colossus(record: any): boolean
 	return record.definition.kind=="Herald" or record.stats.ai=="Herald"
 end
 
+-- Comportamento de combate: colossos usam o do Arauto; criaturas novas, o arquétipo em stats.ai.
+local function aiOf(record: any): string
+	if colossus(record) then return "Herald" end
+	return record.stats.ai or record.definition.kind
+end
+
 local function eligible(player: Player, record: any): boolean
 	local root=playerRoot(player)
 	if not root then return false end
@@ -100,11 +106,13 @@ end
 local function makeRecord(definition: any)
 	local kind=Chapter.EnemyTypes[definition.kind]
 	-- Altura pelo piso real do local (platôs, ilha da arena), não por cota fixa.
-	local ground=groundAt(Vector3.new(definition.position.X,200,definition.position.Z))
+	local ground=groundAt(Vector3.new(definition.position.X,definition.groundFromY or 200,definition.position.Z))
 	local origin=Vector3.new(definition.position.X,ground+(if definition.kind=="Boss" or kind.big then 7 else 3),definition.position.Z)
 	local model=Art.enemy(workspace.PortalEnemies,definition.kind,origin,kind.color)
 	model.Name=definition.id
 	model:SetAttribute("EnemyKind",definition.kind)
+	-- Arquétipo de movimento para a apresentação no cliente (criaturas novas reaproveitam poses).
+	model:SetAttribute("MotionKind",kind.ai or definition.kind)
 	model:SetAttribute("EncounterGroup",definition.group or definition.id)
 	model:SetAttribute("DisplayName",kind.name)
 	model:SetAttribute("Health",kind.health)
@@ -132,6 +140,10 @@ local function callReinforcements(record: any)
 	local count=if Expedition.readyCount()>=5 then 3 else 2
 	notify:FireAllClients({kind="toast",text=record.stats.name.." chamou reforços! Protejam os companheiros."})
 	record.model:SetAttribute("ReinforcementsCalled",true)
+	-- Reforços da fauna da região (o Vale usa Predador e Eco; cada mundo tem as suas criaturas).
+	local fauna=Chapter.RegionFauna[record.definition.region or "Lumen"] or Chapter.RegionFauna.Lumen
+	record.waves=(record.waves or 0)+1
+	local wave=record.waves
 	task.delay(2,function()
 		for i=1,count do
 			local a=i*math.pi*2/count+0.8
@@ -139,8 +151,8 @@ local function callReinforcements(record: any)
 			local spread=math.min(10,record.definition.leash*0.6)
 			local pos=record.origin+Vector3.new(math.cos(a)*spread,0,math.sin(a)*spread)
 			-- Novos encontros finitos; nunca renascer o inimigo derrotado.
-			makeRecord({id=record.definition.id.."_Reinforcement_"..i,kind=if i%2==0 then "Wisp" else "Thorn",
-				position=Vector3.new(pos.X,3,pos.Z),leash=record.definition.leash,group=record.definition.id})
+			makeRecord({id=record.definition.id.."_Reinforcement_"..(if wave>1 then wave.."_" else "")..i,kind=fauna[(i-1)%#fauna+1],region=record.definition.region,
+				position=Vector3.new(pos.X,3,pos.Z),leash=record.definition.leash,group=record.definition.id,groundFromY=record.groundY-45})
 		end
 		record.pendingReinforcements=false
 	end)
@@ -177,7 +189,45 @@ local function refreshSpeed(player: Player)
 	local _,humanoid=playerRoot(player)
 	if not humanoid then return end
 	local snared=(player:GetAttribute("SnaredUntil") or 0)>workspace:GetServerTimeNow()
-	humanoid.WalkSpeed=if snared then 3 elseif player:GetAttribute("Blocking")==true then 9 else 16
+	humanoid.WalkSpeed=if snared then 3 elseif player:GetAttribute("Blocking")==true then 9 elseif player:GetAttribute("Crouching")==true then 7 else 16
+	-- Agachado não pula (o pulo cancela o agachamento no cliente).
+	if humanoid.UseJumpPower then humanoid.JumpPower=if player:GetAttribute("Crouching")==true then 0 else 50
+	else humanoid.JumpHeight=if player:GetAttribute("Crouching")==true then 0 else 7.2 end
+end
+
+-- Agachar: estado pedido pelo cliente (segurar Ctrl / botão). Usado pela rasteira e pelo
+-- gancho do Lutador; replicado aos outros clientes como atributo.
+local function setCrouching(player: Player,wanted: any)
+	local root,humanoid=playerRoot(player)
+	local active=wanted==true and root~=nil and humanoid~=nil
+	if (player:GetAttribute("Crouching")==true)==active then return end
+	player:SetAttribute("Crouching",active)
+	refreshSpeed(player)
+end
+
+-- No ar: distância do quadril ao chão maior que a altura em pé (+ folga). O servidor mede;
+-- o cliente só pede a variante do golpe.
+local function airborne(player: Player): boolean
+	local root,humanoid=playerRoot(player)
+	if not root or not humanoid then return false end
+	local params=RaycastParams.new() params.FilterType=Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances={player.Character :: Instance,workspace:FindFirstChild("PortalEnemies") or workspace.Terrain}
+	local standing=humanoid.HipHeight+root.Size.Y*0.5
+	local hit=workspace:Raycast(root.Position,Vector3.new(0,-(standing+12),0),params)
+	return hit==nil or (root.Position.Y-hit.Position.Y)>standing+1.3
+end
+
+-- Atordoamento (rasteira, chute voador, golpes do Lutador). Chefes não caem: só ficam lentos.
+local function stun(record: any,seconds: number)
+	if record.hp<=0 then return end
+	if record.definition.kind=="Boss" or record.stats.big then
+		record.slowUntil=math.max(record.slowUntil,os.clock()+seconds*0.6)
+		return
+	end
+	record.stunUntil=math.max(record.stunUntil or 0,os.clock()+seconds)
+	if record.motion then record.motion:Cancel() end
+	record.model:SetAttribute("StunnedUntil",workspace:GetServerTimeNow()+seconds)
+	notify:FireAllClients({kind="stun",position=record.root.Position,duration=seconds})
 end
 
 local function setBlocking(player: Player,wanted: any)
@@ -302,7 +352,53 @@ local function targets(player: Player,range: number): {any}
 	return result
 end
 
-local function attack(player: Player)
+-- Lutador: o poder dele é lutar. Sequência de 4 golpes (jab, direto, gancho e Punho Solar),
+-- golpe aéreo (pular + atacar) e gancho ascendente (agachar + atacar). Dano maior que o das
+-- outras classes; o servidor decide variante, alvo e dano.
+local brawlerCombo: {[Player]: number}={}
+local BRAWLER_MOVES={
+	{name="Jab",mult=1.0},
+	{name="Direto",mult=1.1},
+	{name="Gancho",mult=1.3,stun=0.35},
+	{name="PUNHO SOLAR",mult=2.0,stun=0.9,radius=7},
+}
+
+local function brawlerAttack(player: Player,root: BasePart,class: any,variant: string)
+	local now=os.clock()
+	local move: any
+	if variant=="air" and airborne(player) then
+		move={name="MARTELO SOLAR",mult=1.6,stun=1.0,radius=9,low=true,id="air"}
+		brawlerCombo[player]=0
+	elseif variant=="low" and player:GetAttribute("Crouching")==true then
+		move={name="GANCHO ASCENDENTE",mult=1.9,stun=1.3,id="low"}
+		brawlerCombo[player]=0
+	else
+		local last=lastAttack[player] or -math.huge
+		local index=if now-last<1.1 then (brawlerCombo[player] or 0)%4+1 else 1
+		brawlerCombo[player]=index
+		move=table.clone(BRAWLER_MOVES[index]) move.id="combo"..index
+	end
+	lastAttack[player]=now
+	local enemy=targets(player,class.range)[1]
+	local point=if enemy then enemy.root.Position else root.Position+root.CFrame.LookVector*6
+	notify:FireAllClients({kind="strike",origin=root.Position,position=point,classId="Brawler",userId=player.UserId,color=class.color,move=move.id,moveName=if move.mult>=1.6 then move.name else nil})
+	local amount=math.floor(class.damage*move.mult)
+	if move.radius then
+		-- Golpe de área ao redor do impacto (Punho Solar / Martelo Solar).
+		local center=if enemy then enemy.root.Position else point
+		for _,record in records do
+			if record.hp>0 and eligible(player,record) and (record.root.Position-center).Magnitude<=move.radius+record.stats.radius*0.3 then
+				damage(player,record,amount)
+				if move.stun then stun(record,move.stun) end
+			end
+		end
+	elseif enemy then
+		damage(player,enemy,amount)
+		if move.stun then stun(enemy,move.stun) end
+	end
+end
+
+local function attack(player: Player,variant: any)
 	if (player:GetAttribute("KickBusyUntil") or 0)>workspace:GetServerTimeNow() then return end
 	local root=playerRoot(player)
 	local p=Data.get(player)
@@ -312,6 +408,10 @@ local function attack(player: Player)
 	if now-(lastAttack[player] or -math.huge)<class.cooldown then return end
 	-- Atacar abaixa o escudo.
 	if player:GetAttribute("Blocking")==true then setBlocking(player,false) end
+	if p.classId=="Brawler" then
+		brawlerAttack(player,root,class,if variant=="air" or variant=="low" then variant else "ground")
+		return
+	end
 	lastAttack[player]=now
 	local enemy=targets(player,class.range)[1]
 	local point=if enemy then enemy.root.Position else root.Position+root.CFrame.LookVector*8
@@ -372,7 +472,7 @@ local function skill(player: Player)
 			local along=math.clamp(offset:Dot(look),0,reach+3)
 			local closest=from+look*along
 			if (record.root.Position-closest).Magnitude<=record.stats.radius*0.5+4 then
-				damage(player,record,55)
+				damage(player,record,75)
 				table.insert(cast.targets,record.root.Position)
 			end
 		end
@@ -760,7 +860,7 @@ local function cast(record: any,target: Player)
 	local root=playerRoot(target)
 	if not root then record.casting=false return end
 	local boss=record.definition.kind=="Boss"
-	local ranged=record.definition.kind=="Wisp" or boss
+	local ranged=aiOf(record)=="Wisp" or boss
 	local centers={if ranged then Vector3.new(root.Position.X,root.Position.Y-2.25,root.Position.Z) else Vector3.new(record.root.Position.X,record.groundY+0.75,record.root.Position.Z)}
 	local radius=if boss and record.phase==2 then 10 else record.stats.radius
 	local windup=if record.phase==2 then 1.2 else record.stats.windup
@@ -822,28 +922,48 @@ local function navigate(record: any,wanted: Vector3): Vector3?
 	return nil
 end
 
-local function kick(player: Player)
+-- Chutes de todas as classes. O cliente pede a variante; o servidor confirma o estado:
+--   front  chute frontal (em pé)
+--   jump   chute voador (no ar, medido por raycast): mais alcance, derruba criaturas comuns
+--   sweep  rasteira (agachado): arco largo, atinge todos à frente e derruba
+-- O Lutador chuta com o dobro de força, recarga menor e encadeia com os socos.
+local KICKS={
+	front={damage=14,reach=7,cone=0.5,slow=1.2,all=false,delay=0.22,label=nil},
+	jump={damage=20,reach=10,cone=0.3,stun=0.8,all=false,delay=0.16,label="CHUTE VOADOR"},
+	sweep={damage=12,reach=8.5,cone=-0.25,stun=1.6,all=true,delay=0.2,label="RASTEIRA"},
+}
+local function kick(player: Player,wanted: any)
 	local root=playerRoot(player)
+	local p=Data.get(player)
 	local now=os.clock()
-	if not root or not Expedition.hasStarted() or now-(lastKick[player] or -math.huge)<2.4 then return end
-	if now-(lastAttack[player] or -math.huge)<0.7 or now-(lastSkill[player] or -math.huge)<0.95 then return end
+	if not root or not p or not Expedition.hasStarted() then return end
+	local fighter=p.classId=="Brawler"
+	local cooldown=if fighter then 1.0 else 1.8
+	if now-(lastKick[player] or -math.huge)<cooldown then return end
+	if now-(lastAttack[player] or -math.huge)<(if fighter then 0.2 else 0.6) or now-(lastSkill[player] or -math.huge)<0.95 then return end
+	local variant="front"
+	if wanted=="sweep" and player:GetAttribute("Crouching")==true then variant="sweep"
+	elseif wanted=="jump" and airborne(player) then variant="jump" end
+	local spec=KICKS[variant]
 	lastKick[player]=now
-	player:SetAttribute("KickReadyAt",workspace:GetServerTimeNow()+2.4)
-	player:SetAttribute("KickBusyUntil",workspace:GetServerTimeNow()+0.6)
+	player:SetAttribute("KickReadyAt",workspace:GetServerTimeNow()+cooldown)
+	player:SetAttribute("KickBusyUntil",workspace:GetServerTimeNow()+(if variant=="sweep" then 0.55 else 0.5))
 	setBlocking(player,false)
 	local character=player.Character
-	notify:FireAllClients({kind="kick",userId=player.UserId,position=root.Position})
+	notify:FireAllClients({kind="kick",userId=player.UserId,position=root.Position,variant=variant,label=if fighter and spec.label then spec.label.." SOLAR" else spec.label,color=if fighter then Classes.Brawler.color else nil})
 	-- O contato acontece na extensão da perna; cliente não escolhe alvo/dano.
-	task.delay(0.22,function()
+	task.delay(spec.delay,function()
 		local current=playerRoot(player)
 		if not current or player.Character~=character then return end
-		for _,enemy in targets(player,7) do
+		local amount=if fighter then spec.damage*2 else spec.damage
+		for _,enemy in targets(player,spec.reach+(if variant=="jump" then 2 else 0)) do
 			local delta=enemy.root.Position-current.Position
 			local flat=Vector3.new(delta.X,0,delta.Z)
-			if flat.Magnitude>0.1 and current.CFrame.LookVector:Dot(flat.Unit)>0.5 then
-				damage(player,enemy,12)
-				if enemy.definition.kind~="Boss" then enemy.slowUntil=os.clock()+1.2 end
-				break
+			if flat.Magnitude>0.1 and current.CFrame.LookVector:Dot(flat.Unit)>spec.cone then
+				damage(player,enemy,amount)
+				if spec.stun then stun(enemy,spec.stun*(if fighter then 1.4 else 1))
+				elseif enemy.definition.kind~="Boss" then enemy.slowUntil=os.clock()+spec.slow end
+				if not spec.all then break end
 			end
 		end
 	end)
@@ -861,21 +981,47 @@ function Service.spawnRegional()
 	for _, definition in Chapter.Encounters do
 		if definition.region and not records[definition.id] then makeRecord(definition) end
 	end
+	-- Encontros comuns das regiões 2–6: cada slot "Encounter" do construtor recebe um grupo da
+	-- fauna local (líder + 1–2 membros). Só o líder chama reforços.
+	local world=workspace:FindFirstChild("PortalChapter")
+	if not world then return end
+	for regionId,fauna in Chapter.RegionFauna do
+		local regionModel=if regionId=="Lumen" then nil else world:FindFirstChild(regionId)
+		if not regionModel then continue end
+		local index=0
+		for _,slot in regionModel:GetDescendants() do
+			if not slot:IsA("BasePart") or slot:GetAttribute("Kind")~="Encounter" then continue end
+			index+=1
+			local radius=tonumber(slot:GetAttribute("Radius")) or 14
+			local leader=regionId.."_"..slot.Name
+			local size=if radius>=16 then 3 else 2
+			for k=1,size do
+				local id=if k==1 then leader else leader.."_"..k
+				if records[id] then continue end
+				local a=k*math.pi*2/size+index
+				local spread=if k==1 then 0 else math.min(6,radius*0.4)
+				local pos=slot.Position+Vector3.new(math.cos(a)*spread,0,math.sin(a)*spread)
+				makeRecord({id=id,kind=fauna[(index+k-2)%#fauna+1],position=pos,leash=radius+6,region=regionId,group=if k==1 then nil else leader,groundFromY=slot.Position.Y-50})
+			end
+		end
+	end
 end
 
-function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRemote: RemoteEvent,notifyRemote: RemoteEvent,questService: any,blockRemote: RemoteEvent?,kickRemote: RemoteEvent?)
+function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRemote: RemoteEvent,notifyRemote: RemoteEvent,questService: any,blockRemote: RemoteEvent?,kickRemote: RemoteEvent?,crouchRemote: RemoteEvent?)
 	notify=notifyRemote quests=questService
 	-- Encontros de outras regiões nascem depois que o cenário delas existe (spawnRegional).
 	for _, definition in Chapter.Encounters do if not definition.region then makeRecord(definition) end end
 	if blockRemote then blockRemote.OnServerEvent:Connect(setBlocking) end
 	if kickRemote then kickRemote.OnServerEvent:Connect(kick) end
-	Players.PlayerAdded:Connect(function(player) player.CharacterAdded:Connect(function() player:SetAttribute("Blocking",false) end) end)
-	for _, player in Players:GetPlayers() do player.CharacterAdded:Connect(function() player:SetAttribute("Blocking",false) end) end
+	if crouchRemote then crouchRemote.OnServerEvent:Connect(setCrouching) end
+	local function reset(player: Player) player:SetAttribute("Blocking",false) player:SetAttribute("Crouching",false) end
+	Players.PlayerAdded:Connect(function(player) player.CharacterAdded:Connect(function() reset(player) end) end)
+	for _, player in Players:GetPlayers() do player.CharacterAdded:Connect(function() reset(player) end) end
 	attackRemote.OnServerEvent:Connect(attack)
 	skillRemote.OnServerEvent:Connect(skill)
 	dashRemote.OnServerEvent:Connect(dash)
 	Players.PlayerRemoving:Connect(function(player)
-		lastAttack[player]=nil lastSkill[player]=nil lastDash[player]=nil lastKick[player]=nil
+		lastAttack[player]=nil lastSkill[player]=nil lastDash[player]=nil lastKick[player]=nil brawlerCombo[player]=nil
 		for _, r in records do r.contributors[player]=nil end
 	end)
 	local elapsed=0
@@ -884,6 +1030,8 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 		local step=math.min(elapsed,0.4) elapsed=0
 		for _, r in records do
 			if r.hp<=0 or r.casting then continue end
+			-- Derrubado (rasteira/chute voador/golpes do Lutador): não anda nem ataca.
+			if (r.stunUntil or 0)>os.clock() then continue end
 			local target=nil local distance=math.huge local point=nil
 			for _, player in Players:GetPlayers() do
 				local root=playerRoot(player)
@@ -909,7 +1057,7 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 			local wanted=point or patrol
 			local delta=Vector3.new(wanted.X-r.root.Position.X,0,wanted.Z-r.root.Position.Z)
 			local boss=r.definition.kind=="Boss" or colossus(r)
-			local kind=if colossus(r) then "Herald" else r.definition.kind
+			local kind=aiOf(r)
 			local now=os.clock()
 			local ready=now>=r.nextCast
 			local sees=target~=nil and (boss or lineOfSight(target :: Player,r))

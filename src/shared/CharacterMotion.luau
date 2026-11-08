@@ -99,7 +99,7 @@ P.Br_HammerDown={rightshoulder={1.15,0.7,-0.9},rightelbow={0.25,0,0},leftshoulde
 -- captura em 07/11/2026: com X− o chute frontal saía para trás e o agachar parecia ajoelhar).
 -- Exausto depois de um chefão: ajoelhado sobre o joelho direito, tronco curvado, mão direita na
 -- cabeça (dor de cabeça), braço esquerdo apoiado na coxa.
-Motion.Exhausted={root={0,0,0,0,-1.25,0},lefthip={1.35,0,0},leftknee={-1.5,0,0},righthip={0.25,0,0},rightknee={-1.9,0,0},rightankle={0.6,0,0},waist={-0.4,0.15,0},neck={-0.35,0,0.1},rightshoulder={2.3,0.7,-0.5},rightelbow={2.1,0,0},leftshoulder={0.7,-0.3,0.4},leftelbow={0.6,0,0}}
+Motion.Exhausted={root={0,0,0,0,-1.25,0},lefthip={1.35,0,0},leftknee={-1.5,0,0},righthip={0.25,0,0},rightknee={-1.9,0,0},rightankle={0.6,0,0},waist={-0.4,0.15,0},neck={-0.35,0,0.1},rightshoulder={1.3,1.8,-0.2},rightelbow={2.6,0,0},leftshoulder={0.7,-0.3,0.4},leftelbow={0.6,0,0}} -- mão na têmpora: calibrado por medição (mão→têmpora 0,40) e captura em 08/11/2026
 Motion.Crouch={root={0,0,0,0,-1.1,0},lefthip={0.95,0,0},righthip={0.95,0,0},leftknee={-1.55,0,0},rightknee={-1.55,0,0},leftankle={0.6,0,0},rightankle={0.6,0,0},waist={-0.28,0,0}}
 -- Véu: cortes de adaga com a direita e com a esquerda (espelho), e estocada dupla.
 P.Sh_WindR={rightshoulder={2.62,0.10,-0.55},rightelbow={1.41,0,0},waist={0.06,-0.4,0}}

@@ -178,15 +178,19 @@ local function exhaustion(onFinish: () -> ())
 	local DURATION=3.4
 	local start=os.clock()
 	local savedFov=camera.FieldOfView
-	local spin=math.random()*math.pi*2
+	-- Câmera de frente para o herói (levemente à direita, lado da mão na cabeça).
+	local facing=Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z)
+	if facing.Magnitude<0.1 then facing=Vector3.new(0,0,-1) end
+	facing=facing.Unit
+	local spin=math.atan2(facing.Z,facing.X)-0.35
 	local connection: RBXScriptConnection
 	connection=RunService.RenderStepped:Connect(function()
 		local t=math.clamp((os.clock()-start)/DURATION,0,1)
 		local center=root.Position
 		local focus=if head and head:IsA("BasePart") then head.Position else center+Vector3.new(0,1.5,0)
 		-- Câmera baixa circulando devagar, aproximando; tremor cresce com a dor.
-		local a=spin+t*1.1
-		local dist=9-4*t
+		local a=spin+t*0.5
+		local dist=8-3.5*t
 		local shake=Vector3.new(math.noise(t*20,1)*0.25,math.noise(t*20,2)*0.25,0)*(0.3+t)
 		camera.CameraType=Enum.CameraType.Scriptable
 		camera.FieldOfView=60-8*t

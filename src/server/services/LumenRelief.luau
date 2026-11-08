@@ -57,16 +57,77 @@ local function disc(parent: Instance,name: string,center: Vector3,radius: number
 end
 
 -- Escada maciça: cada degrau desce até `baseY`, sem vãos por baixo.
-local function stairs(parent: Instance,name: string,start: Vector3,direction: Vector3,steps: number,topY: number,run: number,width: number,baseY: number,material: Enum.Material?)
+-- `style.curve`: desvio lateral máximo no meio do lance (seno; começo e fim ficam no lugar).
+-- `style.cheeks`: pedras irregulares nas laterais, quebrando a parede reta.
+-- Todos os degraus ganham pequena variação de largura, giro e tom (determinística pelo nome),
+-- sem mudar altura nem comprimento do lance.
+local function stairs(parent: Instance,name: string,start: Vector3,direction: Vector3,steps: number,topY: number,run: number,width: number,baseY: number,material: Enum.Material?,style: {curve: number?,cheeks: boolean?}?)
 	local dir=flat(direction).Unit
+	local side=Vector3.new(-dir.Z,0,dir.X)
 	local rise=(topY-start.Y)/steps
+	local rng=Random.new(#name*97+steps)
+	local curve=style and style.curve or 0
 	for i=1,steps do
 		local top=start.Y+rise*i
-		local center=start+dir*(run*(i-0.5))
+		local bend=math.sin(math.pi*(i-0.5)/steps)*curve
+		local center=start+dir*(run*(i-0.5))+side*bend
+		-- Direção local acompanha a curva (derivada do seno), para os degraus "virarem" juntos.
+		local slope=math.cos(math.pi*(i-0.5)/steps)*curve*math.pi/(steps*run)
+		local heading=(dir+side*slope).Unit
 		local height=top-baseY
-		local cf=CFrame.lookAt(Vector3.new(center.X,baseY+height/2,center.Z),Vector3.new(center.X,baseY+height/2,center.Z)+dir)
-		local step=block(parent,name,Vector3.new(width,height,run+0.05),cf,stone:Lerp(darkStone,(i%3)*0.08),material or Enum.Material.Slate)
+		local mid=Vector3.new(center.X,baseY+height/2,center.Z)
+		local cf=CFrame.lookAt(mid,mid+heading)*CFrame.Angles(0,rng:NextNumber(-0.035,0.035),0)
+		local w=width*rng:NextNumber(0.93,1.0)
+		local step=block(parent,name,Vector3.new(w,height,run+0.12),cf,stone:Lerp(darkStone,rng:NextNumber(0,0.22)):Lerp(moss,if rng:NextNumber()<0.15 then 0.18 else 0),material or Enum.Material.Slate)
 		step.CastShadow=i%2==0
+		if style and style.cheeks and i%2==1 then
+			for _,s in {-1,1} do
+				local size=Vector3.new(rng:NextNumber(1.4,2.4),rng:NextNumber(1.6,3.2),run*rng:NextNumber(1.6,2.4))
+				local at=mid+cf.RightVector*s*(w/2+size.X*0.35)
+				local cheek=block(parent,name.."Cheek",Vector3.new(size.X,height+size.Y-1.2,size.Z),CFrame.new(Vector3.new(at.X,baseY+(height+size.Y-1.2)/2,at.Z))*cf.Rotation*CFrame.Angles(rng:NextNumber(-0.05,0.05),rng:NextNumber(-0.25,0.25),rng:NextNumber(-0.06,0.06)),stone:Lerp(darkStone,rng:NextNumber(0.1,0.35)),Enum.Material.Limestone)
+				cheek.CastShadow=true
+			end
+		end
+	end
+end
+
+-- Borda de alvenaria irregular ao redor de uma praça circular: blocos de pedra girados, com
+-- topo um pouco abaixo do piso (não muda onde se pisa), musgo e entulho. Tira a leitura de
+-- "disco" sem alterar a área jogável.
+local function plazaRim(parent: Instance,center: Vector3,radius: number,top: number,depth: number,seed: number)
+	local rng=Random.new(seed)
+	local count=math.floor(radius*1.7)
+	for k=1,count do
+		local a=(k+rng:NextNumber(-0.3,0.3))*math.pi*2/count
+		local r=radius+rng:NextNumber(-0.6,1.4)
+		local len=radius*2*math.pi/count*rng:NextNumber(1.1,1.6)
+		local h=depth+rng:NextNumber(0.5,2.5)
+		local drop=if rng:NextNumber()<0.3 then rng:NextNumber(0.9,1.9) else rng:NextNumber(0.12,0.7)
+		local pos=Vector3.new(center.X+math.cos(a)*r,top-drop-h/2,center.Z+math.sin(a)*r)
+		local cf=CFrame.lookAt(pos,Vector3.new(center.X,pos.Y,center.Z))*CFrame.Angles(rng:NextNumber(-0.08,0.08),math.pi/2+rng:NextNumber(-0.15,0.15),rng:NextNumber(-0.06,0.06))
+		local rim=block(parent,"PlazaRim",Vector3.new(len,h,rng:NextNumber(2.2,3.6)),cf,stone:Lerp(darkStone,rng:NextNumber(0.05,0.4)),if k%3==0 then Enum.Material.Cobblestone else Enum.Material.Limestone)
+		rim.CastShadow=true
+	end
+	-- Musgo avançando sobre o piso perto da borda (fino, sem colisão: não atrapalha a luta).
+	-- Cada mancha são 3–4 placas finas giradas e sobrepostas: contorno irregular, não um disco.
+	for k=1,math.floor(radius*0.45) do
+		local a=rng:NextNumber(0,math.pi*2)
+		local r=radius*rng:NextNumber(0.78,0.98)
+		local at=Vector3.new(center.X+math.cos(a)*r,top+0.03,center.Z+math.sin(a)*r)
+		local tint=moss:Lerp(stone,rng:NextNumber(0.05,0.35))
+		for j=1,rng:NextInteger(3,4) do
+			local offset=Vector3.new(rng:NextNumber(-1.4,1.4),j*0.004,rng:NextNumber(-1.4,1.4))
+			local patch=Art.part(parent,"PlazaMoss",Vector3.new(rng:NextNumber(1.2,2.6),0.06,rng:NextNumber(0.8,1.8)),CFrame.new(at+offset)*CFrame.Angles(0,rng:NextNumber(0,math.pi),0),tint:Lerp(moss,rng:NextNumber(0,0.2)),Enum.Material.Grass,nil,false)
+			patch.CanQuery=false patch.CastShadow=false
+		end
+	end
+	-- Entulho de cantaria espalhado junto à borda.
+	for k=1,math.floor(radius*0.35) do
+		local a=rng:NextNumber(0,math.pi*2)
+		local r=radius*rng:NextNumber(0.8,0.95)
+		local s=rng:NextNumber(0.6,1.3)
+		local rubble=block(parent,"PlazaRubble",Vector3.new(1.4,0.7,1)*s,CFrame.new(center.X+math.cos(a)*r,top+0.35*s,center.Z+math.sin(a)*r)*CFrame.Angles(rng:NextNumber(-0.3,0.3),rng:NextNumber(0,math.pi),rng:NextNumber(-0.3,0.3)),stone:Lerp(darkStone,rng:NextNumber(0,0.3)),Enum.Material.Limestone,false)
+		rubble.CanQuery=false
 	end
 end
 
@@ -239,7 +300,8 @@ function Relief.build(world: Model)
 	-- Colina da Aurora: praça de ruína no topo e escadaria talhada.
 	local dawn=Instance.new("Folder") dawn.Name="DawnHill" dawn.Parent=root
 	disc(dawn,"DawnPlaza",DAWN_CENTER,20,3,H.DawnHill,stone,Enum.Material.Cobblestone)
-	stairs(dawn,"DawnStair",Vector3.new(-12,2,-179),Vector3.new(-1,0,0),20,H.DawnHill,1.3,6,0)
+	plazaRim(dawn,DAWN_CENTER,20,H.DawnHill,3,41)
+	stairs(dawn,"DawnStair",Vector3.new(-12,2,-179),Vector3.new(-1,0,0),20,H.DawnHill,1.3,6,0,nil,{curve=2.2,cheeks=true})
 	for i=1,7 do
 		local a=i*math.pi*2/7+0.4
 		local p=DAWN_CENTER+Vector3.new(math.cos(a)*18,H.DawnHill,math.sin(a)*18)
@@ -248,6 +310,7 @@ function Relief.build(world: Model)
 	-- Mesa da Raiz: seis pilares crescentes; um erro só devolve ao chão da floresta.
 	local rootMesa=Instance.new("Folder") rootMesa.Name="RootMesa" rootMesa.Parent=root
 	disc(rootMesa,"RootPlaza",ROOT_CENTER,14,4,H.RootMesa,stone:Lerp(moss,0.1),Enum.Material.Slate)
+	plazaRim(rootMesa,ROOT_CENTER,14,H.RootMesa,4,52)
 	local pillars={Vector3.new(24,4.5,-243),Vector3.new(29.5,7.5,-247.5),Vector3.new(35,10.5,-243),Vector3.new(40.5,13.5,-248),Vector3.new(45.5,16.5,-244),Vector3.new(50,19.5,-249)}
 	for i,p in pillars do
 		Art.segment(rootMesa,"JumpPillar",Vector3.new(p.X,0,p.Z),Vector3.new(p.X,p.Y-0.6,p.Z),3.6,stone:Lerp(darkStone,0.2+i*0.03),Enum.Material.Limestone,true)
@@ -256,6 +319,7 @@ function Relief.build(world: Model)
 	-- Ilha da Estrela: pedras flutuantes em espiral ao redor da ilha.
 	local star=Instance.new("Folder") star.Name="StarIsland" star.Parent=root
 	disc(star,"StarPlaza",STAR_CENTER,14,3,H.StarIsland,stone,Enum.Material.Cobblestone)
+	plazaRim(star,STAR_CENTER,14,H.StarIsland,3,63)
 	for k=0,8 do
 		local a=0.7-k*0.36
 		floatingStone(star,STAR_CENTER+Vector3.new(math.cos(a)*18,0,math.sin(a)*18),4.5+k*3,2.2,k)

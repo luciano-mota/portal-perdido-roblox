@@ -110,7 +110,20 @@ function Scenery.build(world: Model)
 			low=math.min(low,surface(point.X+offset.X,point.Y+offset.Y).Y)
 		end
 		local top=base.Y+0.8
-		part(scene,"RuinFooting",Vector3.new(14,top-low+1.2,6),Vector3.new(base.X,(top+low-1.2)/2,base.Z),stone,Enum.Material.Limestone,true)
+		-- Base em cantaria irregular: núcleo sólido (sustenta o arco) coberto por pedras de tamanhos,
+		-- giros e tons variados, para não ler como um bloco reto.
+		local core=part(scene,"RuinFooting",Vector3.new(12.6,top-low+1.2,4.8),Vector3.new(base.X,(top+low-1.2)/2,base.Z),stone:Lerp(Color3.fromRGB(96,99,104),0.25),Enum.Material.Limestone,true)
+		core.CastShadow=true
+		local rng=Random.new(810+index)
+		for k=1,9 do
+			local along=-6.3+(k-0.5)*1.4+rng:NextNumber(-0.3,0.3)
+			for _,s in {-1,1} do
+				local h=top-low+rng:NextNumber(0.2,1.4)
+				local size=Vector3.new(rng:NextNumber(1.6,2.6),h,rng:NextNumber(1.2,2))
+				local stoneBlock=part(scene,"RuinFootingStone",size,Vector3.new(base.X+along,low-1.2+h/2,base.Z+s*rng:NextNumber(2,2.8)),stone:Lerp(Color3.fromRGB(96,99,104),rng:NextNumber(0,0.4)):Lerp(Color3.fromRGB(86,122,74),if rng:NextNumber()<0.25 then 0.3 else 0),if k%3==0 then Enum.Material.Cobblestone else Enum.Material.Limestone,true)
+				stoneBlock.CFrame*=CFrame.Angles(rng:NextNumber(-0.06,0.06),rng:NextNumber(-0.2,0.2),rng:NextNumber(-0.05,0.05))
+			end
+		end
 		local ruin=arch(scene,base+Vector3.new(0,0.8,0),5)
 		ruin.Name="RiversideRuin" ruin:SetAttribute("ReferenceImage","02-vale-de-lumen.png")
 		for j=1,3 do

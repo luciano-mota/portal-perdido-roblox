@@ -45,13 +45,13 @@ Veja \`docs/TECHNICAL_PLAN_CHAPTER_01.md\` e \`docs/ART_DIRECTION_SEMIREALISTIC.
 
 O vale em camadas (commit `f496994`, detalhes em `docs/LUMEN_SCENERY_QA.md`) foi validado no Studio e pausado para priorizar a nova introdução da história. Pendências registradas para retomar depois (CPP-006 / CPP-033 / CPP-032 / CPP-023):
 
-- [ ] **FPS válido** — repetir a medição com a janela do Studio em foco (a última ficou limitada a 15–20 FPS por falta de foco) e depois em aparelho móvel físico.
+- [~] **FPS válido** — desktop medido com a janela em foco: 59,8 FPS na vila (07/11/2026). **Aparelho móvel físico pendente.**
 - [ ] **Fidelidade à referência 2** — pôr do sol rosado, montanha com arco de rocha, névoa em camadas.
-- [ ] **Praça da Aurora** — ainda lê como disco; dar forma orgânica.
-- [ ] **Escadarias** — muito retas; quebrar com curvas, patamares e degraus irregulares.
-- [ ] **Bases das ruínas ribeirinhas** — ainda leem como blocos retos.
-- [ ] **Limiar** — testar a passagem pelo ProximityPrompt real (não só teleporte de QA).
-- [ ] **Regressão completa** — passagem inteira do capítulo no relevo novo, solo e com 3+ jogadores.
+- [x] **Praça da Aurora** — borda de cantaria irregular, musgo em manchas e entulho (`plazaRim`; também nas praças da Raiz e da Estrela). Captura 07/11/2026.
+- [x] **Escadarias** — degraus com variação de largura, giro e tom; escada da Aurora em curva com pedras laterais (início/fim preservados; subida testada com MoveTo).
+- [x] **Bases das ruínas ribeirinhas** — núcleo sólido coberto por pedras irregulares empilhadas (captura).
+- [x] **Limiar** — testado pelo ProximityPrompt real: fechado na missão 4; na missão 5 leva ao caminho de pedras flutuantes (0, 30, −463).
+- [~] **Regressão completa** — solo de ponta a ponta feita (ver DEVELOPMENT_STATUS 07/11/2026); **com 3+ jogadores reais pendente**.
 - [x] **Personagens e criaturas** — fauna exclusiva e chefões gerados por região (07/11/2026; ver DEVELOPMENT_STATUS).
 
 

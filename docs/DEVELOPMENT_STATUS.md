@@ -344,3 +344,12 @@ O primeiro acionamento de prompt logo após um teletransporte de QA às vezes n�
 4. Rota B com 4–6 jogadores reais (sorteio, reencontro na fase 5, eliminação).
 5. Salas/fila online e múltiplos lugares: exigem experiência publicada (privada) e autorização (AGENTS.md).
 6. Acabamento do relevo do Vale (Praça da Aurora, escadarias, ruínas) e medição de FPS com a janela em foco.
+
+## Acabamento do Vale, Limiar e FPS — 07/11/2026
+
+- **Praças (Aurora, Raiz, Estrela):** `plazaRim` adiciona borda de cantaria irregular (topo abaixo do piso — a área jogável não muda), musgo em manchas de placas sobrepostas e entulho sem colisão. Captura antes/depois da Colina da Aurora: o disco liso virou praça em ruínas.
+- **Escadarias:** `stairs` ganhou variação determinística de largura/giro/tom em todos os lances e, na escada da Aurora, curva senoidal (começo e fim no lugar) com pedras laterais. Subida verificada com `Humanoid:MoveTo` (topo alcançado em 2,5 s).
+- **Ruínas ribeirinhas:** base retangular trocada por núcleo sólido coberto de pedras irregulares empilhadas (captura).
+- **Limiar do santuário (prompt real):** missão 4 → "O limiar permanece fechado…"; missão 5 → caminho de pedras flutuantes (0, 30, −463) com a dica de salto.
+- **Desempenho (desktop, janela em foco):** 59,8 FPS na vila; 13.643 peças no workspace do servidor. Celular físico continua pendente.
+- Zero erros/avisos Luau.

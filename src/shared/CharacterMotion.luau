@@ -8,7 +8,7 @@
 local Motion={}
 
 Motion.Timing={
-	Guardian={duration=0.62,release=0.5},
+	Guardian={duration=0.42,release=0.45},
 	Explorer={duration=0.7,release=0.74},
 	Artificer={duration=0.56,release=0.5},
 	Brawler={duration=0.42,release=0.45},
@@ -109,6 +109,12 @@ P.Sh_Thrust={rightshoulder={1.56,0.94,-1.00},rightelbow={0.2,0,0},leftshoulder={
 P.A_Follow=merged("A_Strike",{waist={-0.1,0.55,0}})
 P.B_Follow=merged("B_Strike",{waist={0,0.6,0}})
 P.C_Follow=merged("C_Strike",{})
+-- Golpes especiais do Guardião (a partir das poses calibradas de corte e da Égide).
+P.G_Lunge=merged("C_Strike",{root={0,0,0,0,-0.3,-1.3},leftknee={-0.6,0,0},rightknee={-0.15,0,0},waist={-0.12,0.3,0}})
+P.G_Back=merged("A_Strike",{root={0,0,0,0,-0.15,0.7},waist={0.08,0.45,0}})
+P.G_PlungeUp=merged("Aegis",{leftknee={-0.7,0,0},rightknee={-0.7,0,0},waist={0.15,0,0}})
+P.G_PlungeDown=merged("A_Strike",{root={0,0,0,0,-0.55,-0.4},waist={-0.45,0.3,0},leftknee={-0.8,0,0},rightknee={-0.5,0,0}})
+P.G_Low=merged("B_Strike",{root={0,0,0,0,-1.0,0},lefthip={0.9,0,0},righthip={0.9,0,0},leftknee={-1.4,0,0},rightknee={-1.4,0,0},waist={-0.3,0.5,0}})
 
 -- Sequências: {instante normalizado, pose}. "Rest" = sem sobreposição.
 Motion.Clips={
@@ -116,6 +122,12 @@ Motion.Clips={
 		{{0,"Rest"},{0.3,"A_Wind"},{0.5,"A_Strike"},{0.72,"A_Follow"},{1,"Rest"}},
 		{{0,"Rest"},{0.3,"B_Wind"},{0.5,"B_Strike"},{0.72,"B_Follow"},{1,"Rest"}},
 		{{0,"Rest"},{0.36,"C_Wind"},{0.5,"C_Strike"},{0.72,"C_Follow"},{1,"Rest"}},
+		-- 4 Estocada, 5 Giro de Lâmina (giro do corpo no overlay), 6 Corte de Recuo, 7 Queda Astral, 8 Corte Baixo.
+		{{0,"Rest"},{0.25,"C_Wind"},{0.45,"G_Lunge"},{0.75,"G_Lunge"},{1,"Rest"}},
+		{{0,"Rest"},{0.2,"B_Wind"},{0.45,"B_Strike"},{0.8,"B_Follow"},{1,"Rest"}},
+		{{0,"Rest"},{0.25,"A_Wind"},{0.45,"G_Back"},{0.75,"G_Back"},{1,"Rest"}},
+		{{0,"Rest"},{0.3,"G_PlungeUp"},{0.5,"G_PlungeDown"},{0.8,"G_PlungeDown"},{1,"Rest"}},
+		{{0,"Rest"},{0.25,"B_Wind"},{0.45,"G_Low"},{0.75,"G_Low"},{1,"Rest"}},
 	},
 	Explorer={{{0,"Rest"},{0.2,"E_Reach"},{0.36,"E_Nock"},{0.7,"E_Draw"},{0.78,"E_Release"},{0.9,"E_Release"},{1,"Rest"}}},
 	Artificer={{{0,"Rest"},{0.4,"F_Charge"},{0.52,"F_Push"},{0.75,"F_Push"},{1,"Rest"}}},
@@ -192,6 +204,11 @@ function Motion.overlay(name: string,ctx: Context): CFrame?
 		local clips=Motion.Clips[ctx.classId]
 		local clip=clips and clips[((ctx.combo or 1)-1)%#clips+1]
 		if clip then local v,ok=sample(clip,ctx.attack,name) if ok then result=v end end
+		-- Giro de Lâmina (Guardião, golpe 5): uma volta completa do corpo durante o corte.
+		if ctx.classId=="Guardian" and ctx.combo==5 and name=="root" then
+			local base=result or zero
+			result={base[1] or 0,(base[2] or 0)+ease((ctx.attack-0.15)/0.65)*math.pi*2,base[3] or 0,base[4] or 0,base[5] or 0,base[6] or 0}
+		end
 		-- Defesa segurada: depois do golpe volta à guarda, não ao repouso.
 		if ctx.blocking and ctx.blocking>0 and ctx.attack>0.72 then
 			local g=P.Guard[name]

@@ -113,6 +113,7 @@ local function makeRecord(definition: any)
 	model:SetAttribute("EnemyKind",definition.kind)
 	-- Arquétipo de movimento para a apresentação no cliente (criaturas novas reaproveitam poses).
 	model:SetAttribute("MotionKind",kind.ai or definition.kind)
+	if kind.flier then model:SetAttribute("Flier",true) end
 	model:SetAttribute("EncounterGroup",definition.group or definition.id)
 	model:SetAttribute("DisplayName",kind.name)
 	model:SetAttribute("Health",kind.health)
@@ -162,6 +163,9 @@ local function callReinforcements(record: any)
 	end)
 end
 
+-- Definido depois de `stun` (atordoa a criatura que acertou um escudo no tempo certo).
+local onParry: ((Player,Vector3) -> ())?=nil
+
 local function hurtPlayer(player: Player,amount: number,position: Vector3)
 	local root,humanoid=playerRoot(player)
 	if not humanoid or not root then return end
@@ -181,10 +185,19 @@ local function hurtPlayer(player: Player,amount: number,position: Vector3)
 		local look=Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z)
 		if toHit.Magnitude<1.5 or (look.Magnitude>0.1 and look.Unit:Dot(toHit.Unit)>0.35) then blocked=true factor=math.min(factor,0.15) end
 	end
+	-- Aparo: escudo erguido até 0,35 s antes do golpe anula o dano e atordoa quem atacou.
+	local parried=false
+	if blocked then
+		local started=player:GetAttribute("BlockStartedAt")
+		if typeof(started)=="number" and workspace:GetServerTimeNow()-started<=0.35 then parried=true factor=0 end
+	end
 	local damage=math.floor(amount*factor)
-	humanoid:TakeDamage(damage)
+	if damage>0 then humanoid:TakeDamage(damage) end
 	notify:FireClient(player,{kind="hurt",amount=damage,shielded=reduced,blocked=blocked,position=position})
-	if blocked then notify:FireAllClients({kind="block",userId=player.UserId,position=root.Position}) end
+	if parried then
+		notify:FireAllClients({kind="parry",userId=player.UserId,position=root.Position})
+		if onParry then onParry(player,position) end
+	elseif blocked then notify:FireAllClients({kind="block",userId=player.UserId,position=root.Position}) end
 end
 
 -- Defesa com escudo: o cliente pede, o servidor valida classe/vida e aplica a lentidão.
@@ -239,12 +252,20 @@ local function stun(record: any,seconds: number)
 	notify:FireAllClients({kind="stun",position=record.root.Position,duration=seconds})
 end
 
+-- Aparo: atordoa as criaturas comuns que estão bem perto de onde o golpe veio.
+onParry=function(player: Player,position: Vector3)
+	for _,record in records do
+		if record.hp>0 and (record.root.Position-position).Magnitude<=10 then stun(record,1.2) end
+	end
+end
+
 local function setBlocking(player: Player,wanted: any)
 	local root,humanoid=playerRoot(player)
 	local p=Data.get(player)
 	local active=wanted==true and root~=nil and humanoid~=nil and p~=nil and p.classId=="Guardian"
 	if (player:GetAttribute("Blocking")==true)==active then return end
 	player:SetAttribute("Blocking",active)
+	if active then player:SetAttribute("BlockStartedAt",workspace:GetServerTimeNow()) end
 	refreshSpeed(player)
 end
 
@@ -444,6 +465,77 @@ local function brawlerAttack(player: Player,root: BasePart,class: any,variant: s
 	end
 end
 
+-- Guardião: combo de 3 cortes e golpes por direção/estado (frente, lado, trás, no ar, agachado).
+-- O cliente pede a variante; o servidor valida estado (ar/agachado), limita deslocamentos por
+-- raycast e decide alvo e dano. Especiais compartilham recarga curta (1,1 s).
+-- Move o personagem (habilidades de deslocamento), zerando a velocidade.
+local function character_pivot(player: Player,target: CFrame)
+	local character=player.Character
+	local root=character and character:FindFirstChild("HumanoidRootPart")
+	if not character or not root or not root:IsA("BasePart") then return end
+	root.AssemblyLinearVelocity=Vector3.zero
+	character:PivotTo(target)
+end
+
+local guardianCombo: {[Player]: number}={}
+local guardianSpecialAt: {[Player]: number}={}
+local GUARDIAN_MOVES={
+	forward={id="thrust",name="ESTOCADA",mult=1.4,stun=0.4,lunge=6},
+	side={id="spin",name="GIRO DE LÂMINA",mult=0.9,radius=9},
+	back={id="counter",name="CORTE DE RECUO",mult=1.2,lunge=-4},
+	air={id="plunge",name="QUEDA ASTRAL",mult=1.5,radius=7,stun=0.8},
+	low={id="low",name="CORTE BAIXO",mult=1.1,slow=1.6},
+}
+local function guardianAttack(player: Player,root: BasePart,class: any,variant: string)
+	local now=os.clock()
+	local move: any=nil
+	local spec=GUARDIAN_MOVES[variant]
+	if spec and now-(guardianSpecialAt[player] or -math.huge)>=1.1 then
+		local valid=if variant=="air" then airborne(player) elseif variant=="low" then player:GetAttribute("Crouching")==true else true
+		if valid then move=spec guardianSpecialAt[player]=now guardianCombo[player]=0 end
+	end
+	if not move then
+		local index=if now-(lastAttack[player] or -math.huge)<1.0 then (guardianCombo[player] or 0)%3+1 else 1
+		guardianCombo[player]=index
+		move={id="combo"..index,mult=if index==3 then 1.25 else 1}
+	end
+	lastAttack[player]=now
+	-- Avanço/recuo do golpe, sem atravessar paredes.
+	if move.lunge then
+		local look=Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z)
+		if look.Magnitude>0.1 then
+			look=look.Unit*math.sign(move.lunge)
+			local params=RaycastParams.new() params.FilterType=Enum.RaycastFilterType.Exclude
+			params.FilterDescendantsInstances={player.Character :: Instance,workspace:FindFirstChild("PortalEnemies") or workspace.Terrain}
+			local hit=workspace:Raycast(root.Position,look*math.abs(move.lunge),params)
+			local dist=if hit then math.max(0,(hit.Position-root.Position).Magnitude-2) else math.abs(move.lunge)
+			local floor=workspace:Raycast(root.Position+look*dist,Vector3.new(0,-8,0),params)
+			if dist>0.5 and floor then
+				local to=root.Position+look*dist
+				character_pivot(player,CFrame.lookAt(to,to+root.CFrame.LookVector*Vector3.new(1,0,1)))
+			end
+		end
+	end
+	local enemy=targets(player,class.range+(if move.lunge and move.lunge>0 then 2 else 0))[1]
+	local point=if enemy then enemy.root.Position else root.Position+root.CFrame.LookVector*8
+	notify:FireAllClients({kind="strike",origin=root.Position,position=point,classId="Guardian",userId=player.UserId,color=class.color,move=move.id,moveName=move.name})
+	local amount=math.floor(class.damage*move.mult)
+	if move.radius then
+		local center=if move.id=="spin" then root.Position else (if enemy then enemy.root.Position else point)
+		for _,record in records do
+			if record.hp>0 and eligible(player,record) and (record.root.Position-center).Magnitude<=move.radius+record.stats.radius*0.3 then
+				damage(player,record,amount)
+				if move.stun then stun(record,move.stun) end
+			end
+		end
+	elseif enemy then
+		if not move.name and Service.tryEvade and Service.tryEvade(enemy,root) then return end
+		damage(player,enemy,amount)
+		if move.stun then stun(enemy,move.stun) end
+		if move.slow and not (enemy.definition.kind=="Boss" or enemy.stats.big) then enemy.slowUntil=os.clock()+move.slow end
+	end
+end
+
 local function attack(player: Player,variant: any)
 	if (player:GetAttribute("KickBusyUntil") or 0)>workspace:GetServerTimeNow() then return end
 	local root=playerRoot(player)
@@ -458,21 +550,19 @@ local function attack(player: Player,variant: any)
 		brawlerAttack(player,root,class,if variant=="air" or variant=="low" then variant else "ground")
 		return
 	end
+	if p.classId=="Guardian" then
+		guardianAttack(player,root,class,if typeof(variant)=="string" then variant else "ground")
+		return
+	end
 	lastAttack[player]=now
 	local enemy=targets(player,class.range)[1]
 	local point=if enemy then enemy.root.Position else root.Position+root.CFrame.LookVector*8
 	notify:FireAllClients({kind="strike",origin=root.Position,position=point,classId=p.classId,userId=player.UserId,color=class.color})
+	-- Criaturas ágeis às vezes desviam do golpe comum (habilidades e chutes não são esquivados).
+	if enemy and Service.tryEvade and Service.tryEvade(enemy,root) then return end
 	if enemy then damage(player,enemy,class.damage) end
 end
 
--- Move o personagem (habilidades de deslocamento), zerando a velocidade.
-local function character_pivot(player: Player,target: CFrame)
-	local character=player.Character
-	local root=character and character:FindFirstChild("HumanoidRootPart")
-	if not character or not root or not root:IsA("BasePart") then return end
-	root.AssemblyLinearVelocity=Vector3.zero
-	character:PivotTo(target)
-end
 
 local function skill(player: Player)
 	if (player:GetAttribute("KickBusyUntil") or 0)>workspace:GetServerTimeNow() then return end
@@ -491,7 +581,26 @@ local function skill(player: Player)
 			local allyRoot=playerRoot(ally)
 			if allyRoot and (allyRoot.Position-root.Position).Magnitude<=22 then ally:SetAttribute("ShieldUntil",workspace:GetServerTimeNow()+5) ally:SetAttribute("ShieldSourceUserId",player.UserId) end
 		end
-		cast.radius=22
+		-- Onda de choque do escudo: 70 de dano em 14 studs (chefões inclusive) e empurra as
+		-- criaturas comuns para longe. É o especial do Guardião: bate mais que o golpe comum.
+		for _,record in records do
+			if record.hp>0 and eligible(player,record) and (record.root.Position-root.Position).Magnitude<=14+record.stats.radius*0.3 then
+				damage(player,record,70)
+				if record.hp>0 and not (record.definition.kind=="Boss" or record.stats.big) then
+					local away=Vector3.new(record.root.Position.X-root.Position.X,0,record.root.Position.Z-root.Position.Z)
+					if away.Magnitude>0.1 then
+						local pushed=record.root.Position+away.Unit*6
+						if hasFloor(record,pushed) then
+							if record.motion then record.motion:Cancel() end
+							record.motion=TweenService:Create(record.root,TweenInfo.new(0.22,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{CFrame=record.root.CFrame.Rotation+pushed})
+							record.motion:Play()
+						end
+					end
+					stun(record,0.8)
+				end
+			end
+		end
+		cast.radius=22 cast.shockwave=14
 		notify:FireAllClients(cast)
 	elseif p.classId=="Explorer" then
 		local selected=targets(player,class.range)
@@ -770,7 +879,8 @@ local function vineGrab(record: any,target: Player,reach: number)
 	direction=direction.Unit
 	local tip=origin+direction*reach
 	record.model:SetAttribute("ReachTarget",tip)
-	notify:FireAllClients({kind="vineTelegraph",from=origin,to=tip,duration=windup,width=2.4})
+	local web=record.stats.abilities~=nil and record.stats.abilities.webPull==true
+	notify:FireAllClients({kind="vineTelegraph",from=origin,to=tip,duration=windup,width=2.4,style=if web then "web" else nil})
 	record.nextGrab=os.clock()+(if record.definition.kind=="Boss" then 7 else 6)
 	record.nextCast=math.max(record.nextCast,os.clock()+windup+0.6)
 	task.delay(windup,function()
@@ -790,7 +900,7 @@ local function vineGrab(record: any,target: Player,reach: number)
 		end
 		local stop=if caught then origin+direction*caughtAt else tip
 		local caughtCharacter=if caught then caught.Character else nil
-		notify:FireAllClients({kind="vine",from=origin,to=stop,travel=travel,caught=caught and caught.UserId or nil})
+		notify:FireAllClients({kind="vine",from=origin,to=stop,travel=travel,caught=caught and caught.UserId or nil,style=if web then "web" else nil})
 		task.wait(travel)
 		local pulled=false
 		if caught and caught.Parent and record.hp>0 then
@@ -828,7 +938,10 @@ local function vineGrab(record: any,target: Player,reach: number)
 		end
 		record.casting=false
 		-- Chefe: aviso mais longo após o puxão, para a esquiva ser uma resposta possível.
-		if pulled and caught and record.hp>0 then rootBurst(record,caught,if record.definition.kind=="Boss" then 1.0 else 0.55) end
+		-- Teia (aranha): puxa para perto e a mordida vem no próximo instante; vinha: explosão de raízes.
+		if pulled and caught and record.hp>0 then
+			if web then record.nextCast=os.clock()+0.25 else rootBurst(record,caught,if record.definition.kind=="Boss" then 1.0 else 0.55) end
+		end
 	end)
 end
 
@@ -927,6 +1040,106 @@ local function voidStep(record: any,target: Player)
 		record.casting=false
 	end)
 end
+
+-- Projétil mirado (teia, chamas, ferrão): aviso curto, voo visível e acerto na chegada num raio
+-- pequeno ao redor do ponto mirado — sair do lugar ou esquivar evita. `style` escolhe efeito:
+--   web   dano + prende os pés (snare)    fire  explosão em área    sting  dano simples
+local PROJECTILE={
+	web={speed=55,radius=3.2,mult=0.7,snare=1.2,windup=0.45},
+	fire={speed=40,radius=5.5,mult=1.0,windup=0.6},
+	sting={speed=65,radius=3,mult=0.9,windup=0.4},
+}
+local function projectile(record: any,target: Player,style: string)
+	if record.casting or record.hp<=0 then return end
+	local root=playerRoot(target)
+	if not root then return end
+	local spec=PROJECTILE[style]
+	beginCast(record,"Projectile",spec.windup)
+	faceTowards(record,root.Position)
+	-- Mira no chão sob o alvo, com um pouco de antecipação do movimento.
+	local lead=root.AssemblyLinearVelocity*Vector3.new(1,0,1)*0.25
+	local aim=Vector3.new(root.Position.X,root.Position.Y-2.25,root.Position.Z)+lead
+	local from=record.root.Position+record.root.CFrame.LookVector*(record.root.Size.Z*0.5)+Vector3.new(0,record.root.Size.Y*0.15,0)
+	local travel=math.clamp((aim-from).Magnitude/spec.speed,0.15,0.8)
+	notify:FireAllClients({kind="telegraph",position=aim,radius=spec.radius,duration=spec.windup+travel,small=true})
+	record.nextShot=os.clock()+(if style=="fire" then 4.2 else 3.4)
+	record.nextCast=os.clock()+spec.windup+travel+0.5
+	task.delay(spec.windup,function()
+		if record.hp<=0 or not record.model.Parent then record.casting=false return end
+		notify:FireAllClients({kind="projectile",from=from,to=aim,travel=travel,style=style})
+		task.wait(travel)
+		if record.hp>0 then
+			for _,player in Players:GetPlayers() do
+				local part=playerRoot(player)
+				if part and eligible(player,record) then
+					local flat=Vector3.new(part.Position.X,aim.Y,part.Position.Z)
+					if (flat-aim).Magnitude<=spec.radius and math.abs(part.Position.Y-2.25-aim.Y)<6 and not dodging(player) then
+						hurtPlayer(player,math.floor(record.stats.damage*spec.mult),aim)
+						if spec.snare then snare(player,spec.snare,part.Position) end
+					end
+				end
+			end
+			notify:FireAllClients({kind="impact",position=aim,radius=spec.radius,style=style})
+		end
+		record.casting=false
+	end)
+end
+
+-- Bote: agacha (aviso), salta até o alvo e morde na chegada. Quadrúpedes rápidos.
+local function pounce(record: any,target: Player)
+	if record.casting or record.hp<=0 then return end
+	local root=playerRoot(target)
+	if not root then return end
+	local windup=0.45
+	beginCast(record,"Pounce",windup)
+	faceTowards(record,root.Position)
+	local landing=Vector3.new(root.Position.X,record.root.Position.Y,root.Position.Z)
+	local away=Vector3.new(record.root.Position.X-landing.X,0,record.root.Position.Z-landing.Z)
+	if away.Magnitude>0.1 then landing+=away.Unit*2.5 end
+	local fromOrigin=Vector3.new(landing.X-record.origin.X,0,landing.Z-record.origin.Z)
+	if fromOrigin.Magnitude>record.definition.leash or not hasFloor(record,landing) then record.casting=false return end
+	notify:FireAllClients({kind="telegraph",position=Vector3.new(landing.X,record.groundY+0.75,landing.Z),radius=3.5,duration=windup+0.25,small=true})
+	record.nextPounce=os.clock()+5
+	record.nextCast=os.clock()+windup+1.1
+	task.delay(windup,function()
+		if record.hp<=0 or not record.model.Parent then record.casting=false return end
+		if record.motion then record.motion:Cancel() end
+		local look=Vector3.new(root.Position.X,landing.Y,root.Position.Z)
+		record.motion=TweenService:Create(record.root,TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{CFrame=CFrame.lookAt(landing,look)})
+		record.motion:Play()
+		task.wait(0.25)
+		if record.hp>0 then
+			record.model:SetAttribute("ImpactUntil",serverNow()+0.25)
+			for _,player in Players:GetPlayers() do
+				local part=playerRoot(player)
+				if part and eligible(player,record) and (Vector3.new(part.Position.X,landing.Y,part.Position.Z)-landing).Magnitude<=4 and not dodging(player) then
+					hurtPlayer(player,math.floor(record.stats.damage*1.2),landing)
+				end
+			end
+			notify:FireAllClients({kind="bite",position=landing+Vector3.new(0,1.5,0)})
+		end
+		record.casting=false
+	end)
+end
+
+-- Esquiva lateral de criaturas ágeis quando um golpe vem pela frente (chance e recarga).
+local function tryEvade(record: any,attacker: BasePart): boolean
+	if not record.stats.agile or record.casting or record.hp<=0 or (record.stunUntil or 0)>os.clock() then return false end
+	if os.clock()<(record.nextEvade or 0) or math.random()>record.stats.agile then return false end
+	record.nextEvade=os.clock()+4
+	local toward=Vector3.new(attacker.Position.X-record.root.Position.X,0,attacker.Position.Z-record.root.Position.Z)
+	if toward.Magnitude<0.1 then return false end
+	local side=Vector3.new(-toward.Unit.Z,0,toward.Unit.X)*(if math.random()<0.5 then 1 else -1)
+	local wanted=record.root.Position+side*5
+	if not hasFloor(record,wanted) then wanted=record.root.Position-side*5 end
+	if not hasFloor(record,wanted) then return false end
+	if record.motion then record.motion:Cancel() end
+	record.motion=TweenService:Create(record.root,TweenInfo.new(0.18,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{CFrame=CFrame.lookAt(wanted,Vector3.new(attacker.Position.X,wanted.Y,attacker.Position.Z))})
+	record.motion:Play()
+	notify:FireAllClients({kind="evade",position=record.root.Position})
+	return true
+end
+Service.tryEvade=tryEvade
 
 local function cast(record: any,target: Player)
 	if record.casting or record.hp<=0 then return end
@@ -1106,7 +1319,7 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 	skillRemote.OnServerEvent:Connect(skill)
 	dashRemote.OnServerEvent:Connect(dash)
 	Players.PlayerRemoving:Connect(function(player)
-		lastAttack[player]=nil lastSkill[player]=nil lastDash[player]=nil lastKick[player]=nil brawlerCombo[player]=nil brawlerSpecialAt[player]=nil
+		lastAttack[player]=nil lastSkill[player]=nil lastDash[player]=nil lastKick[player]=nil brawlerCombo[player]=nil brawlerSpecialAt[player]=nil guardianCombo[player]=nil guardianSpecialAt[player]=nil
 		for _, r in records do r.contributors[player]=nil end
 	end)
 	local elapsed=0
@@ -1150,14 +1363,13 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 			if target and sees then
 				local t=target :: Player
 				r.pendingTarget=t
-				-- Vez de atacar: no máximo 2 criaturas comuns iniciam golpes contra o mesmo jogador
-				-- ao mesmo tempo; as outras rodeiam e esperam (grupos legíveis, solo viável).
-				if ready and not boss then
-					local busy=0
-					for _,other in records do
-						if other~=r and other.hp>0 and other.lastStrikeTarget==t and os.clock()-(other.lastStrikeAt or -math.huge)<1.6 and not (other.definition.kind=="Boss" or colossus(other)) then busy+=1 end
-					end
-					if busy>=2 then ready=false end
+				-- Habilidades próprias da criatura (stats.abilities), antes do ataque do arquétipo.
+				-- Todas as criaturas podem atacar ao mesmo tempo (sem fila de vez).
+				local abilities=r.stats.abilities
+				if abilities and ready then
+					if abilities.webPull and distance>=10 and distance<=20 and now>=(r.nextGrab or 0) then vineGrab(r,t,20) continue end
+					if abilities.pounce and distance>=6 and distance<=15 and now>=(r.nextPounce or 0) then pounce(r,t) continue end
+					if abilities.shot and distance>=7 and distance<=26 and now>=(r.nextShot or 0) then projectile(r,t,abilities.shot) continue end
 				end
 				if kind=="Moss" then
 					if distance<=r.stats.radius+1 and ready then rootBurst(r,t) continue end

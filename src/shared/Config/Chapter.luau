@@ -36,8 +36,8 @@ return {
 	SealOrder = {"Dawn", "Root", "Star"},
 	EnemyTypes = {
 		Moss = {name = "Sentinela de Musgo", health = 120, damage = 10, speed = 7, radius = 7, windup = 0.9, cooldown = 2.8, color = Color3.fromRGB(74, 117, 86)},
-		Thorn = {name = "Predador de Espinhos", health = 100, damage = 12, speed = 11, radius = 6, windup = 0.7, cooldown = 2.4, color = Color3.fromRGB(126, 106, 76)},
-		Wisp = {name = "Eco do Vazio", health = 85, damage = 13, speed = 6, radius = 9, windup = 1.1, cooldown = 3.2, color = Color3.fromRGB(129, 108, 190)},
+		Thorn = {name = "Predador de Espinhos", health = 100, damage = 12, speed = 12, radius = 6, windup = 0.65, cooldown = 2.2, color = Color3.fromRGB(126, 106, 76), agile = 0.2, abilities = {pounce = true}},
+		Wisp = {name = "Eco do Vazio", health = 85, damage = 13, speed = 7, radius = 9, windup = 1.0, cooldown = 3.0, color = Color3.fromRGB(129, 108, 190), agile = 0.2},
 		Boss = {name = "Guardião de Raízes", health = 1800, damage = 22, speed = 4, radius = 12, windup = 1.4, cooldown = 3.8, color = Color3.fromRGB(103, 125, 83)},
 		-- Fase 5: chefe que parece ser o último. Vida escala com quem está na arena (solo viável).
 		Herald = {name = "Arauto Partido", title = "ARAUTO PARTIDO", health = 2600, healthPerPlayer = 1500, damage = 24, speed = 7, radius = 10, windup = 1.1, cooldown = 2.6, color = Color3.fromRGB(196, 150, 255), big = true},
@@ -57,14 +57,14 @@ return {
 			phaseTexts = {"O REGENTE DO VAZIO baixa o capuz: \"Finalmente, cara a cara.\"", "\"Vocês acham que me venceram nos outros mundos? Eu ESTAVA neles.\" O vazio se abre no átrio!", "\"Se eu cair, Aetherion cai comigo!\" O Regente ataca sem pausa!"}},
 		-- Criaturas exclusivas de cada região (modelos gerados; ai = comportamento reaproveitado).
 		-- Abismo de Cristal
-		CrystalSpider = {name = "Aranha de Cristal", health = 140, damage = 13, speed = 10, radius = 6, windup = 0.7, cooldown = 2.4, color = Color3.fromRGB(130, 210, 255), ai = "Thorn"},
-		PrismBat = {name = "Morcego Prismático", health = 95, damage = 14, speed = 8, radius = 9, windup = 1.0, cooldown = 3.0, color = Color3.fromRGB(220, 150, 255), ai = "Wisp"},
+		CrystalSpider = {name = "Aranha de Cristal", health = 140, damage = 13, speed = 11, radius = 6, windup = 0.6, cooldown = 2.2, color = Color3.fromRGB(130, 210, 255), ai = "Thorn", agile = 0.2, abilities = {shot = "web", webPull = true}},
+		PrismBat = {name = "Dragonete Prismático", health = 95, damage = 14, speed = 9, radius = 9, windup = 0.9, cooldown = 2.8, color = Color3.fromRGB(220, 150, 255), ai = "Wisp", agile = 0.25, flier = true, abilities = {shot = "fire"}},
 		-- Deserto das Horas
-		SandScorpion = {name = "Escorpião das Areias", health = 170, damage = 15, speed = 8, radius = 6, windup = 0.8, cooldown = 2.6, color = Color3.fromRGB(230, 180, 110), ai = "Thorn"},
-		DuneJackal = {name = "Chacal das Dunas", health = 105, damage = 12, speed = 13, radius = 6, windup = 0.55, cooldown = 2.0, color = Color3.fromRGB(200, 150, 90), ai = "Thorn"},
+		SandScorpion = {name = "Escorpião das Areias", health = 170, damage = 15, speed = 8, radius = 6, windup = 0.7, cooldown = 2.4, color = Color3.fromRGB(230, 180, 110), ai = "Thorn", abilities = {shot = "sting"}},
+		DuneJackal = {name = "Chacal das Dunas", health = 105, damage = 12, speed = 14, radius = 6, windup = 0.5, cooldown = 1.9, color = Color3.fromRGB(200, 150, 90), ai = "Thorn", agile = 0.3, abilities = {pounce = true}},
 		-- Cidadela do Eclipse
-		EclipseGargoyle = {name = "Gárgula do Eclipse", health = 130, damage = 15, speed = 8, radius = 9, windup = 0.95, cooldown = 2.8, color = Color3.fromRGB(170, 130, 230), ai = "Wisp"},
-		ShadowHound = {name = "Cão Sombrio", health = 125, damage = 14, speed = 13, radius = 6, windup = 0.6, cooldown = 2.1, color = Color3.fromRGB(150, 110, 230), ai = "Thorn"},
+		EclipseGargoyle = {name = "Gárgula do Eclipse", health = 130, damage = 15, speed = 9, radius = 9, windup = 0.9, cooldown = 2.6, color = Color3.fromRGB(170, 130, 230), ai = "Wisp", agile = 0.2, flier = true, abilities = {shot = "fire"}},
+		ShadowHound = {name = "Cão Sombrio", health = 125, damage = 14, speed = 14, radius = 6, windup = 0.55, cooldown = 2.0, color = Color3.fromRGB(150, 110, 230), ai = "Thorn", agile = 0.3, abilities = {pounce = true}},
 	},
 	-- Fauna de cada região: encontros comuns (slots "Encounter" dos construtores) e reforços.
 	-- A Convergência mistura criaturas dos quatro mundos.

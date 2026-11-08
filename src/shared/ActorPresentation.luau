@@ -17,7 +17,7 @@ local function register(model: Model)
 		if kind=="Ilyra" and item:IsA("BasePart") and (item.Name=="Eye" or item.Name=="Iris" or item.Name=="Pupil") then table.insert(eyes,item) end
 	end
 	local height=math.max(model:GetExtentsSize().Y,2)
-	actors[model]={root=model.PrimaryPart,kind=kind,joints=joints,eyes=eyes,last=model.PrimaryPart.Position,phase=0,stride=0,
+	actors[model]={root=model.PrimaryPart,kind=kind,species=model:GetAttribute("EnemyKind"),flier=model:GetAttribute("Flier")==true,joints=joints,eyes=eyes,last=model.PrimaryPart.Position,phase=0,stride=0,
 		height=height,hp=model:GetAttribute("Health"),hitAt=-math.huge,deadAt=nil,seed=(#joints*0.37+height)%6.28}
 end
 
@@ -69,10 +69,27 @@ local function creaturePose(actor: any,name: string,now: number,ctx: any): CFram
 	elseif name=="SpiritCore" then
 		-- Eco: flutua, oscila e sobe ao conjurar; recua ao ser atingido.
 		local lift=math.sin(now*2+actor.seed)*0.04*h+0.08*h*wind
+		if actor.flier then
+			-- Voadores: o corpo sobe a cada batida de asa e mergulha no sopro.
+			local flap=math.sin(now*9+actor.seed)
+			return CFrame.new(0,-flap*0.05*h+0.06*h*wind,0.06*h*flinch)*CFrame.Angles(0.12*flap-0.3*impact+0.25*flinch,math.sin(now*0.8)*0.12,math.sin(now*1.3)*0.06)
+		end
 		return CFrame.new(0,lift,0.06*h*flinch)*CFrame.Angles(0.25*wind-0.2*impact+0.25*flinch,math.sin(now*0.8)*0.15,math.sin(now*1.3)*0.05)
 	elseif name:find("Hip") then
 		local rear=if name:find("Rear") then -1 else 1
+		if actor.species=="CrystalSpider" then
+			-- Aranha: marcha em tripé (diagonais alternadas), varredura horizontal ampla e elevação
+			-- da pata no avanço; parada, as patas tremem de leve; no bote as dianteiras se erguem.
+			local offset=if side*rear>0 then 0 else math.pi
+			local cycle=phase*1.6+offset
+			local sweep=math.sin(cycle)*0.5*stride+math.sin(now*3.1+actor.seed+offset)*0.05*(1-stride)
+			local lift=math.max(0,math.cos(cycle))*0.4*stride+math.max(0,math.sin(now*2.3+offset))*0.04*(1-stride)
+			if rear>0 then lift+=0.7*wind-0.4*impact end
+			return CFrame.Angles(0,sweep*rear,side*lift)
+		end
 		local swing=math.sin(phase)*stride*side*rear*0.5
+		-- Parado: troca o apoio das patas devagar (respiração), sem ficar congelado.
+		swing+=math.sin(now*1.4+actor.seed+side*0.9+rear*1.7)*0.05*(1-stride)
 		-- Predador: patas dianteiras avançam e traseiras recolhem ao se preparar para o bote.
 		if kind=="Thorn" then
 			if ctx.castKind=="Claw" and side>0 and rear>0 then
@@ -82,6 +99,17 @@ local function creaturePose(actor: any,name: string,now: number,ctx: any): CFram
 			swing+=(if rear<0 then -0.25 else 0.2)*wind
 		end
 		return CFrame.Angles(swing,0,0)
+	elseif name:find("Shoulder") and actor.flier and kind=="Wisp" and actor.species=="PrismBat" then
+		-- Asas (cada asa é um ombro): batida contínua; abre mais ao soprar fogo.
+		local flap=math.sin(now*9+actor.seed)*0.65+0.15
+		return CFrame.Angles(-0.2*wind,0,side*(flap+0.4*wind))
+	elseif name=="WingRoot" then
+		-- Par de asas numa peça só (gárgula, dragão, esfinge, Arauto): batida curta em arfagem.
+		local rate=if actor.flier then 8 else 2.2
+		return CFrame.Angles(math.sin(now*rate+actor.seed)*(if actor.flier then 0.22 else 0.06)-0.15*wind,0,0)
+	elseif name=="TailRoot" then
+		-- Cauda balança com o passo e um pouco parada.
+		return CFrame.Angles(0,math.sin(now*2+actor.seed)*0.12+math.sin(phase)*0.15*stride,0)
 	elseif name:find("Shoulder") then
 		local walk=-math.sin(phase)*stride*side*0.35
 		local x=walk-0.04+breathe*0.03

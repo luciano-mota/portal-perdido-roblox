@@ -186,11 +186,42 @@ function FX.play(data: any)
 			end)
 		end
 		return
+	elseif data.kind=="projectile" and typeof(data.from)=="Vector3" and typeof(data.to)=="Vector3" then
+		-- Teia (bolota branca + fio), chama (bola de fogo com luz e brasas) ou ferrão (dardo âmbar).
+		local style=data.style
+		local color=if style=="fire" then Color3.fromRGB(255,140,50) elseif style=="sting" then Color3.fromRGB(240,190,90) else Color3.fromRGB(235,240,245)
+		local size=if style=="fire" then 1.4 elseif style=="sting" then 0.5 else 0.9
+		local ball=Art.part(container,"Projectile",Vector3.new(size,size,if style=="sting" then 1.6 else size),CFrame.lookAt(data.from,data.to),color,Enum.Material.Neon,if style=="sting" then nil else Enum.PartType.Ball)
+		ball.CastShadow=false
+		if style=="fire" then
+			local light=Instance.new("PointLight") light.Color=color light.Range=12 light.Brightness=3 light.Parent=ball
+			local fire=Instance.new("Fire") fire.Size=3 fire.Heat=6 fire.Color=color fire.SecondaryColor=Color3.fromRGB(255,220,120) fire.Parent=ball
+		end
+		local a0=Instance.new("Attachment") a0.Position=Vector3.new(0,size*0.3,0) a0.Parent=ball
+		local a1=Instance.new("Attachment") a1.Position=Vector3.new(0,-size*0.3,0) a1.Parent=ball
+		local trail=Instance.new("Trail") trail.Attachment0=a0 trail.Attachment1=a1 trail.Lifetime=if style=="web" then 0.5 else 0.25
+		trail.Color=ColorSequence.new(color) trail.Transparency=NumberSequence.new(0.2,1) trail.LightEmission=if style=="web" then 0 else 1 trail.FaceCamera=true trail.Parent=ball
+		local travel=math.clamp(tonumber(data.travel) or 0.3,0.05,1)
+		fly(ball,data.from,data.to,travel,if style=="fire" then 1.2 else 0.5,function()
+			if style=="web" then
+				-- Teia aberta no chão no ponto de impacto.
+				for i=1,6 do
+					local strand=Art.part(container,"WebStrand",Vector3.new(0.08,0.06,3.4),CFrame.new(data.to+Vector3.new(0,0.15,0))*CFrame.Angles(0,i*math.pi/6,0),color,Enum.Material.Neon)
+					strand.CastShadow=false strand.Transparency=0.35
+					TweenService:Create(strand,TweenInfo.new(1.2),{Transparency=1}):Play()
+					Debris:AddItem(strand,1.25)
+				end
+			else
+				burst(data.to,color,if style=="fire" then 2 else 0.7,0.3)
+				if style=="fire" then ring(data.to,5.5,color,0.4) end
+			end
+		end)
+		return
 	elseif data.kind=="vineTelegraph" then
 		-- Linha no chão mostrando o alcance da vinha: sair dela ou esquivar evita o agarrão.
 		local y=groundY(data.from)+0.08
 		local a=Vector3.new(data.from.X,y,data.from.Z) local b=Vector3.new(data.to.X,y,data.to.Z)
-		local strip=Art.part(container,"VineWarning",Vector3.new(data.width,0.06,(b-a).Magnitude),CFrame.lookAt((a+b)/2,b),Color3.fromRGB(176,112,62),Enum.Material.Neon)
+		local strip=Art.part(container,"VineWarning",Vector3.new(data.width,0.06,(b-a).Magnitude),CFrame.lookAt((a+b)/2,b),if data.style=="web" then Color3.fromRGB(225,235,245) else Color3.fromRGB(176,112,62),Enum.Material.Neon)
 		strip.CastShadow=false strip.Transparency=0.75
 		TweenService:Create(strip,TweenInfo.new(data.duration),{Transparency=0.45}):Play()
 		Debris:AddItem(strip,data.duration+0.05)
@@ -198,9 +229,11 @@ function FX.play(data: any)
 	elseif data.kind=="vine" then
 		-- Raiz sai da mão, estica até o alvo (ou o limite) e recolhe; se pegou, recolhe junto.
 		local caughtPlayer=typeof(data.caught)=="number" and Players:GetPlayerByUserId(data.caught)
-		local vine=Art.part(container,"Vine",Vector3.new(0.35,0.35,0.1),CFrame.lookAt(data.from,data.to),bark,Enum.Material.Wood)
+		-- Teia da aranha: fio branco fino e brilhante; vinha: raiz de madeira.
+		local web=data.style=="web"
+		local vine=Art.part(container,"Vine",Vector3.new(0.35,0.35,0.1),CFrame.lookAt(data.from,data.to),if web then Color3.fromRGB(235,240,245) else bark,if web then Enum.Material.Neon else Enum.Material.Wood)
 		vine.CastShadow=false
-		local tip=Art.part(container,"VineTip",Vector3.new(0.9,0.9,0.9),CFrame.new(data.from),moss,Enum.Material.Grass,Enum.PartType.Ball)
+		local tip=Art.part(container,"VineTip",Vector3.new(0.9,0.9,0.9),CFrame.new(data.from),if web then Color3.fromRGB(235,240,245) else moss,if web then Enum.Material.Neon else Enum.Material.Grass,Enum.PartType.Ball)
 		tip.CastShadow=false
 		local total=(data.to-data.from).Magnitude
 		local started=os.clock()
@@ -223,7 +256,7 @@ function FX.play(data: any)
 			if dir.Magnitude<0.05 then dir=Vector3.new(0,0,-1) end
 			local endPoint=from+dir.Unit*math.max(length,0.1)
 			local wave=math.sin(t*30)*0.12
-			vine.Size=Vector3.new(0.32,0.32,math.max(length,0.1))
+			vine.Size=if web then Vector3.new(0.12,0.12,math.max(length,0.1)) else Vector3.new(0.32,0.32,math.max(length,0.1))
 			vine.CFrame=CFrame.lookAt((from+endPoint)/2,endPoint)*CFrame.new(wave,0,0)
 			tip.CFrame=CFrame.new(endPoint)
 			if t>data.travel+hold+0.32 then
@@ -297,6 +330,13 @@ function FX.play(data: any)
 		if typeof(data.label)=="string" and typeof(data.position)=="Vector3" then moveLabel(data.position,data.label,color) end
 		return
 	end
+	if data.kind=="parry" and typeof(data.position)=="Vector3" then
+		-- Aparo perfeito: clarão branco-azulado no escudo e anel curto.
+		flash(data.position+Vector3.new(0,1,0),Color3.fromRGB(190,230,255),1.6)
+		ring(data.position-Vector3.new(0,2.5,0),5,Color3.fromRGB(190,230,255),0.25)
+		moveLabel(data.position,"APARO!",Color3.fromRGB(190,230,255))
+		return
+	end
 	if data.kind=="stun" and typeof(data.position)=="Vector3" then
 		-- Derrubado: três estrelas girando sobre a criatura.
 		local duration=math.clamp(tonumber(data.duration) or 1,0.3,3)
@@ -330,11 +370,25 @@ function FX.play(data: any)
 				combo=if index then index elseif data.move=="air" then 5 elseif data.move=="low" then 6 else 1
 				if combo>=4 then duration=0.62 end
 			end
+			-- Guardião: combo 1–3 e golpes por direção/estado (4 estocada … 8 corte baixo).
+			if data.classId=="Guardian" and typeof(data.move)=="string" then
+				local index=tonumber(string.match(data.move,"^combo(%d)$"))
+				combo=index or ({thrust=4,spin=5,counter=6,plunge=7,low=8})[data.move] or 1
+				if combo>=4 then duration=0.55 end
+			end
+			-- Jogador local: a animação já começou no toque (previsão no cliente). A confirmação do
+			-- servidor só corrige qual golpe saiu, sem reiniciar o movimento.
+			local predicted=actor==Players.LocalPlayer and os.clock()-(actor.Character:GetAttribute("PortalPredictedAt") or -math.huge)<0.45
 			actor.Character:SetAttribute("PortalCombo",combo)
 			actor.Character:SetAttribute("PortalAimPosition",data.position)
-			actor.Character:SetAttribute("PortalAttackStarted",os.clock())
-			actor.Character:SetAttribute("PortalAttackClass",data.classId)
-			actor.Character:SetAttribute("PortalAttackDuration",duration)
+			if predicted then
+				actor.Character:SetAttribute("PortalAttackDuration",duration)
+				actor.Character:SetAttribute("PortalPredictedAt",nil)
+			else
+				actor.Character:SetAttribute("PortalAttackStarted",os.clock())
+				actor.Character:SetAttribute("PortalAttackClass",data.classId)
+				actor.Character:SetAttribute("PortalAttackDuration",duration)
+			end
 		end
 		if typeof(data.moveName)=="string" and typeof(data.origin)=="Vector3" then moveLabel(data.origin,data.moveName,data.color) end
 		if #container:GetChildren()>60 then return end
@@ -406,6 +460,11 @@ function FX.play(data: any)
 				TweenService:Create(dome,TweenInfo.new(0.45,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=Vector3.new(data.radius*2,data.radius*1.2,data.radius*2)}):Play()
 				task.delay(0.6,function() if dome.Parent then TweenService:Create(dome,TweenInfo.new(0.45),{Transparency=1}):Play() end end)
 				ring(data.position-Vector3.new(0,2.5,0),data.radius,data.color,0.6)
+				-- Onda de choque do escudo (dano): anel dourado rápido no chão e clarão.
+				if typeof(data.shockwave)=="number" then
+					ring(data.position-Vector3.new(0,2.5,0),data.shockwave,Color3.fromRGB(255,220,140),0.3)
+					flash(data.position,Color3.fromRGB(255,230,170),2)
+				end
 			end)
 		elseif data.classId=="Explorer" then
 			task.delay(duration*0.48,function()

@@ -9,6 +9,7 @@ local GuiService=game:GetService("GuiService")
 local player=Players.LocalPlayer
 local Chapter=require(ReplicatedStorage.Shared.Config.Chapter)
 local Campaign=require(ReplicatedStorage.Shared.Config.Campaign)
+local Motion=require(ReplicatedStorage.Shared.CharacterMotion)
 local Classes=require(ReplicatedStorage.Shared.Config.Classes)
 local FX=require(ReplicatedStorage.Shared.VisualEffects)
 local Art=require(ReplicatedStorage.Shared.Art)
@@ -377,11 +378,48 @@ local function attack()
 	-- O servidor confirma o estado (no ar / agachado) antes de aplicar a variante.
 	local variant=nil
 	if id=="Brawler" then variant=if crouching then "low" elseif airborneNow() then "air" else nil end
+	-- Guardião: a direção do movimento escolhe o golpe (frente = estocada, lado = giro,
+	-- trás = recuo); no ar = Queda Astral; agachado = Corte Baixo. O servidor valida.
+	if id=="Guardian" then
+		if crouching then variant="low"
+		elseif airborneNow() then variant="air"
+		else
+			local character=player.Character
+			local root=character and character:FindFirstChild("HumanoidRootPart")
+			local move=humanoid.MoveDirection
+			if root and root:IsA("BasePart") and move.Magnitude>0.5 then
+				local look=Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z).Unit
+				local forward=move.Unit:Dot(look)
+				if forward>0.6 then variant="forward" elseif forward< -0.6 then variant="back" else variant="side" end
+			end
+		end
+	end
 	lastAttack=os.clock() attackRemote:FireServer(variant)
+	-- Previsão: a pose começa já no toque; a confirmação do servidor só ajusta qual golpe saiu.
+	local character=player.Character
+	if character then
+		local now=os.clock()
+		local last=character:GetAttribute("PortalAttackStarted")
+		local combo=character:GetAttribute("PortalCombo") or 1
+		combo=if typeof(last)=="number" and now-last<1.1 and combo<=3 then combo%3+1 else 1
+		local special=if id=="Guardian" then ({forward=4,side=5,back=6,air=7,low=8})[variant or ""] elseif id=="Brawler" then ({air=5,low=6})[variant or ""] else nil
+		local timing=Motion.Timing[id] or Motion.Timing.Guardian
+		character:SetAttribute("PortalCombo",special or combo)
+		character:SetAttribute("PortalAttackClass",id)
+		character:SetAttribute("PortalAttackDuration",if special then 0.55 else timing.duration)
+		character:SetAttribute("PortalAttackStarted",now)
+		character:SetAttribute("PortalPredictedAt",now)
+	end
 	attackButton.BackgroundColor3=Color3.fromRGB(103,67,57)
 	task.delay(class.cooldown,function() attackButton.BackgroundColor3=Color3.fromRGB(169,89,65) end)
 end
-attackButton.Activated:Connect(attack)
+-- Toque/clique dispara ao encostar (InputBegan), não ao soltar: resposta mais rápida.
+local function onPress(button: GuiButton,action: () -> ())
+	button.InputBegan:Connect(function(input)
+		if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then action() end
+	end)
+end
+onPress(attackButton,attack)
 -- Chute: em pé = frontal; pulando (ou pulo + chute juntos) = chute voador; agachado = rasteira.
 local kickPending=false
 local function lunge()
@@ -416,7 +454,7 @@ local function kick()
 		kickPending=false
 	end)
 end
-kickButton.Activated:Connect(kick)
+onPress(kickButton,kick)
 crouchButton.Activated:Connect(function() setCrouch(not crouching) end)
 -- Pular pelo botão próprio: mesmo efeito do pulo nativo (inclui o combo pulo + chute).
 jumpButton.InputBegan:Connect(function(input)
@@ -440,8 +478,8 @@ task.spawn(function()
 	hideDefaultJump(touchGui)
 	touchGui.DescendantAdded:Connect(function(item) if item.Name=="JumpButton" then task.defer(hideDefaultJump,touchGui) end end)
 end)
-skillButton.Activated:Connect(function() if not Controls.editing and not dialogue.Visible and not journal.Visible then skillRemote:FireServer() end end)
-dashButton.Activated:Connect(function() if not Controls.editing and not dialogue.Visible and not journal.Visible then dashRemote:FireServer(dodgeDirection()) end end)
+onPress(skillButton,function() if not Controls.editing and not dialogue.Visible and not journal.Visible then skillRemote:FireServer() end end)
+onPress(dashButton,function() if not Controls.editing and not dialogue.Visible and not journal.Visible then dashRemote:FireServer(dodgeDirection()) end end)
 local blocking=false
 local function setBlock(active: boolean)
 	if Controls.editing then active=false end
@@ -619,4 +657,47 @@ if RunService:IsStudio() then
 		end
 	end)
 end
+-- Câmera de combate: perto de uma criatura grande (chefões, colossos, monstros altos) a
+-- câmera recua e abre o campo de visão para enquadrá-la inteira; longe delas, volta ao normal.
+-- Não atua durante cinemáticas/visões (câmera não Custom) nem com o prólogo aberto.
+do
+	local Vision=require(ReplicatedStorage.Shared.RegentVision)
+	local heights: {[Model]: number}={}
+	local wantedZoom,wantedFov=0.5,70
+	local currentZoom,currentFov=0.5,70
+	local scanElapsed=1
+	RunService.RenderStepped:Connect(function(dt)
+		local camera=workspace.CurrentCamera
+		if not camera or camera.CameraType~=Enum.CameraType.Custom or Vision.active or intro.Visible then return end
+		scanElapsed+=dt
+		if scanElapsed>=0.25 then
+			scanElapsed=0
+			wantedZoom,wantedFov=0.5,70
+			local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			local folder=workspace:FindFirstChild("PortalEnemies")
+			if root and root:IsA("BasePart") and folder then
+				local best=0
+				for _,model in folder:GetChildren() do
+					if not model:IsA("Model") or not model.PrimaryPart or (model:GetAttribute("Health") or 0)<=0 then continue end
+					local h=heights[model]
+					if not h then h=model:GetExtentsSize().Y heights[model]=h end
+					local d=(model.PrimaryPart.Position-root.Position).Magnitude
+					-- Só criaturas mais altas que o herói e perto o bastante para a luta.
+					if h>9 and d<h*3+30 then best=math.max(best,h*math.clamp(1.4-(d-h)/(h*3+30),0.6,1.4)) end
+				end
+				if best>0 then
+					wantedZoom=math.clamp(best*0.95+8,14,36)
+					wantedFov=math.clamp(70+best*0.3,70,79)
+				end
+			end
+			for model in heights do if not model.Parent then heights[model]=nil end end
+		end
+		local k=1-math.exp(-dt*3)
+		currentZoom+=(wantedZoom-currentZoom)*k
+		currentFov+=(wantedFov-currentFov)*k
+		player.CameraMinZoomDistance=math.max(0.5,currentZoom)
+		camera.FieldOfView=currentFov
+	end)
+end
+
 layout() refresh()

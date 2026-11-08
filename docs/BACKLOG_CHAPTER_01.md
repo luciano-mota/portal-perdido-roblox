@@ -55,11 +55,11 @@ O vale em camadas (commit `f496994`, detalhes em `docs/LUMEN_SCENERY_QA.md`) foi
 - [x] **Personagens e criaturas** — fauna exclusiva e chefões gerados por região (07/11/2026; ver DEVELOPMENT_STATUS).
 
 
-## Novas entregas P0 (não implementadas neste commit)
+## Novas entregas P0
 - [ ] Salas solo, amigos, código e fila online, com rota congelada por quantidade 1–3/4–6.
 - [x] Heróis 4–6: Lutador, Arcanista e Véu; desbloqueio permanente pelas fases 1–3 (Rota A) e todos disponíveis na Rota B.
-- [x] Cenários das regiões 2–6 e conexões entre as seis fases (ver [REGIONS_SCENERY_QA.md](REGIONS_SCENERY_QA.md)); jogabilidade das regiões 2–6 ainda pendente.
+- [x] Cenários das regiões 2–6 e conexões entre as seis fases (ver [REGIONS_SCENERY_QA.md](REGIONS_SCENERY_QA.md)); jogabilidade das regiões 2–6 concluída (ver item seguinte).
 - [x] Campanha das seis fases: fauna e chefões das regiões 2–6, objetivo por região, recompensa única por fase, progresso persistente e encerramento (Regente). Regressão completa Vale → Domínio pelos portais reais em 07/11/2026.
 - [x] Sorteio autoritativo das quatro regiões, reencontro na fase 5 e eliminação só na Rota B (implementado; **teste com 4–6 jogadores reais pendente**).
-- [ ] Corrigir narrativas do prólogo para despertar por região e testar solo e grupos de 2–6.
+- [x] Narrativa do despertar por região: Rota A "fase a fase, a partir do Vale"; Rota B informa a região sorteada e quantos companheiros despertaram junto (`Expedition.onBegin`). Solo testado; **grupos de 2–6 reais pendentes**.
 - [ ] Integrar múltiplos lugares/teleportes apenas quando houver experiência privada publicada e autorização.

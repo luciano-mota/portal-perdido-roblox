@@ -1,0 +1,38 @@
+{
+  "desktop": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[Portal Perdido] Primeira aventura inicializada: classe, mentora, sentinela e missão.\nContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type\nContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type\nContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type\n[PortalPerdido][MovementDebug] Spawn: WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=0.6358532905578613, 3.9980251789093018, 16.933042526245117 State=Running MoveDirection=0, 0, 0 PlayerModule=StarterPlayer.PlayerModule\n[PortalPerdido][MovementDebug] Key=W Processed=false FocusedTextBox=none MenuOpen=false WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=0.6358532905578613, 3.9980251789093018, 16.933042526245117 State=Running MoveDirection=0, 0, 0\n[PortalPerdido][MovementDebug] AfterInput Key=W Delta=0, -1.654271125793457, -5.785137176513672 WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=0.6358532905578613, 2.3437540531158447, 11.147905349731445 State=Running MoveDirection=0, 0, -1\n[PortalPerdido][MovementDebug] Key=D Processed=false FocusedTextBox=none MenuOpen=false WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=0.6358532905578613, 2.3480255603790283, 5.281243801116943 State=Running MoveDirection=0, 0, -1\n[PortalPerdido][MovementDebug] AfterInput Key=D Delta=5.7318243980407715, -0.3599073886871338, -0.13340044021606445 WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=6.367677688598633, 1.9881181716918945, 5.147843360900879 State=Running MoveDirection=1, 0, -0\n[PortalPerdido][MovementDebug] Key=S Processed=false FocusedTextBox=none MenuOpen=false WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=7.967685222625732, 1.997786521911621, 5.147932529449463 State=Running MoveDirection=1, 0, -0\n[PortalPerdido][MovementDebug] AfterInput Key=S Delta=-0.025719642639160156, -0.0061452388763427734, 5.029895305633545 WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=7.941965579986572, 1.9916412830352783, 10.177827835083008 State=Running MoveDirection=0, 0, 1\n[PortalPerdido][MovementDebug] Key=A Processed=false FocusedTextBox=none MenuOpen=false WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=7.249730110168457, 1.9842414855957031, 11.379142761230469 State=Running MoveDirection=0, 0, 1\n[PortalPerdido][MovementDebug] AfterInput Key=A Delta=-5.787840366363525, 0.3626406192779541, 0.11110115051269531 WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=1.461889624595642, 2.3468821048736572, 11.490243911743164 State=Running MoveDirection=-1, 0, 0\n[PortalPerdido][MovementDebug] Key=Space Processed=false FocusedTextBox=none MenuOpen=false WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=-0.13812260329723358, 2.347998857498169, 11.490132331848145 State=Running MoveDirection=-1, 0, 0\n[PortalPerdido][MovementDebug] AfterInput Key=Space Delta=-1.1299015283584595, 6.450437545776367, -0.00042438507080078125 WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=-1.2680240869522095, 8.798436164855957, 11.489707946777344 State=Freefall MoveDirection=0, 0, 0"
+      }
+    ],
+    "isError": false
+  },
+  "mobile": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[Portal Perdido] Primeira aventura inicializada: classe, mentora, sentinela e missão.\nContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type\nContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type\nContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type\n[PortalPerdido][MovementDebug] Spawn: WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=-3.310190200805664, 3.9980251789093018, 21.573076248168945 State=Running MoveDirection=0, 0, 0 PlayerModule=StarterPlayer.PlayerModule"
+      }
+    ],
+    "isError": false
+  },
+  "multiplayer": {
+    "content": [
+      {
+        "type": "text",
+        "text": "ContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type\n[PortalPerdido][MovementDebug] Spawn: WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=0.13534975051879883, 3.9980251789093018, 18.039949417114258 State=Running MoveDirection=0, 0, 0 PlayerModule=StarterPlayer.PlayerModule\n[PortalPerdido][MovementDebug] Spawn: WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=3.9596242904663086, 3.9980251789093018, 23.22840118408203 State=Running MoveDirection=0, 0, 0 PlayerModule=StarterPlayer.PlayerModule"
+      }
+    ],
+    "isError": false
+  },
+  "finalSmoke": {
+    "content": [
+      {
+        "type": "text",
+        "text": "[Portal Perdido] Primeira aventura inicializada: classe, mentora, sentinela e missão.\nContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type\nContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type\nContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type\n[PortalPerdido][MovementDebug] Spawn: WalkSpeed=16.0 JumpPower=50.0 JumpHeight=7.2 PlatformStand=false Sit=false RootAnchored=false Position=-3.5250403881073, 3.9980251789093018, 24.495834350585938 State=Running MoveDirection=0, 0, 0 PlayerModule=StarterPlayer.PlayerModule"
+      }
+    ],
+    "isError": false
+  }
+}

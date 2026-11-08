@@ -1,0 +1,45 @@
+{
+  "name": "PortalPerdido",
+  "tree": {
+    "$className": "DataModel",
+    "ServerStorage": {
+      "ExplorerTemplate": { "$path": "assets/characters/models/explorer-generated-v1.rbxm" },
+      "SentinelTemplate": { "$path": "assets/characters/models/sentinel-generated-v1.rbxm" },
+      "ArtificerTemplate": { "$path": "assets/characters/models/artificer-generated-v1.rbxm" },
+      "IlyraTemplate": { "$path": "assets/characters/models/ilyra-generated-v1.rbxm" },
+      "GuardianTemplate": { "$path": "assets/characters/models/guardian-generated-v1.rbxm" },
+      "RootGuardianTemplate": { "$path": "assets/characters/models/root-guardian-generated-v1.rbxm" },
+      "VoidEchoTemplate": { "$path": "assets/characters/models/void-echo-generated-v1.rbxm" },
+      "ThornStalkerTemplate": { "$path": "assets/characters/models/thorn-stalker-generated-v1.rbxm" },
+      "LumenArchTemplate": { "$path": "assets/world/models/lumen-arch-v1.rbxm" }
+    },
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "GameServer": {
+        "$path": "src/server/GameServer.server.luau"
+      },
+      "Services": {
+        "$path": "src/server/services"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "GameClient": {
+          "$path": "src/client/GameClient.client.luau"
+        },
+        "$className": "StarterPlayerScripts"
+      }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "LightingStyle": "Realistic",
+        "PrioritizeLightingQuality": true
+      }
+    }
+  }
+}

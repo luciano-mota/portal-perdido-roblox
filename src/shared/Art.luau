@@ -1,0 +1,844 @@
+--!strict
+-- Kit procedural original. Sem modelos externos ou scripts de Toolbox.
+local Face=require(script.Parent.FacePresentation)
+local Art = {}
+Art.ApprovedTemplates = {IlyraTemplate = true}
+
+-- A sincronização ao vivo do Rojo não consegue preencher MeshContent de MeshParts (plugins não
+-- escrevem essa propriedade): um template recriado por ela vira caixas brancas. O lugar salvo e o
+-- `rojo build` têm as malhas. Template incompleto → aviso no Output e contingência procedural.
+local warnedTemplates: {[string]: boolean}={}
+function Art.templateReady(template: Instance?): boolean
+	if not template or not template:IsA("Model") then return false end
+	for _,item in template:GetDescendants() do
+		if item:IsA("MeshPart") and item.MeshId=="" then
+			if not warnedTemplates[template.Name] then
+				warnedTemplates[template.Name]=true
+				warn("[PortalPerdido][Template] "..template.Name.." sem malha (MeshId vazio); usando contingência. Reabra o lugar salvo ou reimporte o .rbxm.")
+			end
+			return false
+		end
+	end
+	return true
+end
+local stone = Color3.fromRGB(119, 124, 134)
+local bark = Color3.fromRGB(86, 72, 59)
+local gold = Color3.fromRGB(191, 157, 99)
+local cyan = Color3.fromRGB(76, 201, 205)
+
+function Art.part(parent: Instance, name: string, size: Vector3, cf: CFrame, color: Color3, material: Enum.Material?, shape: Enum.PartType?, solid: boolean?): Part
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material or Enum.Material.SmoothPlastic
+	p.Shape = shape or Enum.PartType.Block
+	-- PartType.Ball usa o menor eixo; o mesh nativo preserva elipsoides.
+	if shape==Enum.PartType.Ball then
+		local mesh=Instance.new("SpecialMesh") mesh.MeshType=Enum.MeshType.Sphere mesh.Parent=p
+	end
+	p.Anchored = true
+	p.CanCollide = solid == true
+	p.CanTouch = false
+	p.CanQuery = solid == true
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = parent
+	-- A esfera física usa o menor eixo, mas o SpecialMesh desenha um elipsoide.
+	-- Preencher o volume visível com esferas internas evita atravessar as pontas
+	-- de pedras achatadas sem criar uma caixa invisível nas bordas.
+	if shape==Enum.PartType.Ball and solid then
+		local diameter=math.min(size.X,size.Y,size.Z)
+		for _,offset in {Vector3.new((size.X-diameter)*0.5,0,0),Vector3.new(-(size.X-diameter)*0.5,0,0),Vector3.new(0,0,(size.Z-diameter)*0.5),Vector3.new(0,0,-(size.Z-diameter)*0.5)} do
+			if offset.Magnitude>0.1 then
+				local collider=Instance.new("Part") collider.Name="StoneCollision"
+				collider.Shape=Enum.PartType.Ball collider.Size=Vector3.one*diameter
+				collider.CFrame=cf*CFrame.new(offset) collider.Transparency=1
+				collider.Anchored=true collider.CanCollide=true collider.CanQuery=true collider.CanTouch=false
+				collider.CastShadow=false collider.Parent=p
+			end
+		end
+	end
+	return p
+end
+
+function Art.segment(parent: Instance, name: string, a: Vector3, b: Vector3, width: number, color: Color3, material: Enum.Material?, solid: boolean?): Part
+	return Art.part(parent, name, Vector3.new((b-a).Magnitude, width, width), CFrame.lookAt((a+b)*0.5, b)*CFrame.Angles(0, math.pi/2, 0), color, material, Enum.PartType.Cylinder, solid)
+end
+
+local function articulated(base: BasePart,piece: BasePart,pivot: CFrame,name: string): Motor6D
+	piece.Anchored=false piece.Massless=true
+	local joint=Instance.new("Motor6D") joint.Name=name
+	joint.Part0=base joint.Part1=piece
+	joint.C0=base.CFrame:ToObjectSpace(pivot)
+	joint.C1=piece.CFrame:ToObjectSpace(pivot)
+	joint.Parent=piece
+	return joint
+end
+
+local function attach(base: BasePart,piece: BasePart)
+	piece.Anchored=false piece.Massless=true
+	local weld=Instance.new("WeldConstraint") weld.Part0=base weld.Part1=piece weld.Parent=piece
+end
+
+function Art.label(parent: BasePart, title: string, subtitle: string?, color: Color3?, offset: number?)
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "Identity"
+	gui.Size = UDim2.fromOffset(220, 55)
+	gui.StudsOffset = Vector3.new(0, offset or 4, 0)
+	gui.MaxDistance = 65
+	gui.AlwaysOnTop = false
+	gui.Parent = parent
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1,1)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamSemibold
+	label.TextSize = 16
+	label.TextColor3 = color or Color3.fromRGB(244, 232, 203)
+	label.TextStrokeTransparency = 0.4
+	label.Text = title .. (if subtitle then "\n" .. subtitle else "")
+	label.Parent = gui
+end
+
+function Art.npc(parent: Instance, position: Vector3): Model
+	local template=game:GetService("ServerStorage"):FindFirstChild("IlyraTemplate")
+	-- Aprovação versionada no código: revisão visual de 03/11/2026 (ver docs/ILYRA_VISUAL_REVIEW.md).
+	-- O atributo ArtApproved do .rbxm continua aceito para aprovações futuras feitas no Studio.
+	local approved=template~=nil and (Art.ApprovedTemplates[template.Name]==true or template:GetAttribute("ArtApproved")==true)
+	if template and template:IsA("Model") and approved and Art.templateReady(template) then
+		local npc=template:Clone()
+		local root=npc:FindFirstChild("HumanoidRootPart")
+		if root and root:IsA("BasePart") then
+			npc.Name="Ilyra" npc.PrimaryPart=root
+			for _,item in npc:GetDescendants() do
+				if item:IsA("LuaSourceContainer") then item:Destroy()
+				elseif item:IsA("BasePart") then item.Anchored=false item.CanCollide=false item.CanTouch=false item.Massless=true end
+			end
+			root.Anchored=true root.CanCollide=true -- jogadores não atravessam a Ilyra
+			local h=npc:FindFirstChildOfClass("Humanoid")
+			if h then h.DisplayDistanceType=Enum.HumanoidDisplayDistanceType.None h.AutoRotate=false end
+			npc:PivotTo(CFrame.new(position)*CFrame.Angles(0,math.pi,0))
+			local box,size=npc:GetBoundingBox()
+			npc:PivotTo(npc:GetPivot()+Vector3.new(0,position.Y-(box.Position.Y-size.Y/2),0))
+			npc:SetAttribute("PresentationKind","Ilyra")
+			npc:SetAttribute("GeneratedNPC",true)
+			Art.label(root,"ILYRA","Guardiã do Vale",nil,4)
+			npc.Parent=parent
+			return npc
+		end
+		npc:Destroy()
+	end
+	local m = Instance.new("Model")
+	m.Name = "Ilyra"
+	local function p(name: string, size: Vector3, offset: Vector3, color: Color3, material: Enum.Material?, shape: Enum.PartType?)
+		return Art.part(m, name, size, CFrame.new(position+offset), color, material, shape)
+	end
+	local robe = Color3.fromRGB(45, 84, 110)
+	local skin = Color3.fromRGB(211, 174, 145)
+	local hair = Color3.fromRGB(213, 219, 218)
+	local root = p("Root", Vector3.new(2,5,2), Vector3.new(0,3,0), robe)
+	root.Transparency = 1
+	m.PrimaryPart = root
+	p("Robe", Vector3.new(2.7,4.1,1.8), Vector3.new(0,2.2,0), robe, Enum.Material.Fabric, Enum.PartType.Ball)
+	p("Bodice", Vector3.new(2.1,2.2,1.4), Vector3.new(0,4.1,0), robe, Enum.Material.Fabric, Enum.PartType.Ball)
+	p("Mantle", Vector3.new(2.7,0.5,1.7), Vector3.new(0,4.8,0.12), Color3.fromRGB(62,115,119), Enum.Material.Fabric, Enum.PartType.Ball)
+	p("Belt", Vector3.new(2.2,0.22,1.5), Vector3.new(0,3.5,0), bark, Enum.Material.Leather)
+	p("Buckle", Vector3.new(0.35,0.35,0.2), Vector3.new(0,3.5,-0.8), cyan, Enum.Material.Neon, Enum.PartType.Ball)
+	p("Head", Vector3.new(1.25,1.55,1.2), Vector3.new(0,5.95,0), skin, nil, Enum.PartType.Ball)
+	p("Hair", Vector3.new(1.4,1.4,1.35), Vector3.new(0,6.25,0.2), hair, nil, Enum.PartType.Ball)
+	for _, side in {-1,1} do
+		p("Braid", Vector3.new(0.28,2.1,0.32), Vector3.new(side*0.62,5.4,-0.04), hair, nil, Enum.PartType.Ball)
+		p("BraidRing", Vector3.new(0.32,0.14,0.36), Vector3.new(side*0.62,4.65,-0.04), gold, Enum.Material.Metal)
+		p("Eye", Vector3.new(0.25,0.12,0.06), Vector3.new(side*0.24,5.98,-0.56), Color3.fromRGB(238,237,224), nil, Enum.PartType.Ball)
+		p("Iris", Vector3.new(0.1,0.11,0.04), Vector3.new(side*0.24,5.98,-0.6), Color3.fromRGB(60,113,114), nil, Enum.PartType.Ball)
+		local sleeve=Art.segment(m,"Sleeve",position+Vector3.new(side*1.2,4.6,0),position+Vector3.new(side*1.6,3.4,-0.15),0.65,robe,Enum.Material.Fabric)
+		local hand=p("Hand", Vector3.new(0.4,0.57,0.4), Vector3.new(side*1.6,3.05,-0.15), skin, nil, Enum.PartType.Ball)
+		local sideName=if side<0 then "Left" else "Right"
+		sleeve.Name=sideName.."Sleeve" hand.Name=sideName.."Hand"
+		articulated(root,sleeve,CFrame.new(position+Vector3.new(side*1.2,4.6,0)),sideName.."Shoulder")
+		attach(sleeve,hand)
+		p("Boot",Vector3.new(0.65,0.7,1.55),Vector3.new(side*0.6,0.35,-0.6),bark,Enum.Material.Leather,Enum.PartType.Ball)
+		p("Pupil",Vector3.new(0.044,0.085,0.025),Vector3.new(side*0.24,5.98,-0.625),Color3.fromRGB(28,37,42),nil,Enum.PartType.Ball)
+		p("Eyebrow",Vector3.new(0.25,0.045,0.06),Vector3.new(side*0.24,6.12,-0.56),hair,nil,Enum.PartType.Ball)
+		p("Ear",Vector3.new(0.18,0.28,0.22),Vector3.new(side*0.62,5.86,0),skin,nil,Enum.PartType.Ball)
+	end
+	p("Nose",Vector3.new(0.18,0.28,0.22),Vector3.new(0,5.77,-0.59),skin,nil,Enum.PartType.Ball)
+	p("Smile",Vector3.new(0.29,0.045,0.05),Vector3.new(0,5.51,-0.53),Color3.fromRGB(147,99,86))
+	p("Circlet",Vector3.new(1.32,0.11,1.25),Vector3.new(0,6.4,0),gold,Enum.Material.Metal)
+	p("CircletGem",Vector3.new(0.22,0.3,0.15),Vector3.new(0,6.38,-0.65),cyan,Enum.Material.Neon,Enum.PartType.Ball)
+	Art.segment(m,"Staff",position+Vector3.new(1.9,0.1,-0.4),position+Vector3.new(1.9,6.4,-0.4),0.18,bark,Enum.Material.Wood)
+	p("StaffHalo",Vector3.new(0.65,0.65,0.23),Vector3.new(1.9,6.5,-0.4),gold,Enum.Material.Metal,Enum.PartType.Ball)
+	p("StaffLight",Vector3.new(0.35,0.35,0.3),Vector3.new(1.9,6.6,-0.56),cyan,Enum.Material.Neon,Enum.PartType.Ball)
+	local head=m:FindFirstChild("Head") :: BasePart
+	articulated(root,head,CFrame.new(position+Vector3.new(0,5.2,0)),"Neck")
+	local headPieces={Hair=true,Braid=true,BraidRing=true,Eye=true,Iris=true,Pupil=true,Eyebrow=true,Ear=true,Nose=true,Smile=true,Circlet=true,CircletGem=true}
+	for _,piece in m:GetChildren() do
+		if piece:IsA("BasePart") and piece~=root and piece~=head and not piece:FindFirstChildWhichIsA("JointInstance") and not piece:FindFirstChildOfClass("WeldConstraint") then
+			attach(if headPieces[piece.Name] then head else root,piece)
+		end
+	end
+	m:SetAttribute("PresentationKind","Ilyra")
+	Art.label(root,"ILYRA","Guardiã do Vale",nil,5)
+	m:PivotTo(m:GetPivot()*CFrame.Angles(0,math.pi,0))
+	m.Parent = parent
+	return m
+end
+
+-- Criaturas geradas (assets/characters/models/*-generated-v1.rbxm). Templates com frente em −Z e
+-- pivô no centro da caixa. Offsets em unidades do template (antes da escala).
+--   joints: peça → {nome do Motor6D, fração da altura da peça para o pivô, peça-base opcional}
+--   baseY: altura da base da malha em relação ao chão (negativo afunda base modelada; positivo flutua)
+--   glow: peças neon extras; "Core"/"Eye" são recoloridas pelo EnemyService na fase 2 do chefe.
+local QUAD={Body={"Waist",0},Head={"Neck",0.3,"Body"},FrontLeftLeg={"LeftFrontHip",0.4},FrontRightLeg={"RightFrontHip",0.4},RearLeftLeg={"LeftRearHip",0.4},RearRightLeg={"RightRearHip",0.4},Tail={"TailRoot",0.3,"Body"}}
+local GENERATED: {[string]: any}={
+	-- Guardião de Raízes (fase 1): treant gerado em 08/11/2026 (casca, garras de madeira, peito
+	-- aceso). A luz do tronco fica laranja na fase 2 (EnemyService). Sem o template, usa o antigo.
+	Boss={
+		template="RootBeastTemplate", scale=1.65, baseY=0, fallback="BossLegacy",
+		joints={Torso={"Waist",-0.4},Head={"Neck",-0.35,"Torso"},LeftArm={"LeftShoulder",0.4,"Torso"},RightArm={"RightShoulder",0.4,"Torso"},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4}},
+		bodyLight={on="Torso",range=20,brightness=1.8,color=Color3.fromRGB(76,201,205)},
+	},
+	BossLegacy={
+		template="RootGuardianTemplate", scale=1.5, baseY=-0.85,
+		-- Tronco (com a base de pedras modelada) gira a partir de baixo; cabeça e braços acompanham o tronco.
+		joints={Torso={"Waist",-0.45},Head={"Neck",-0.4,"Torso"},LeftArm={"LeftShoulder",0.38,"Torso"},RightArm={"RightShoulder",0.38,"Torso"},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4}},
+		-- Offsets medidos por raycast no template (peito ≈ z −1,1; máscara ≈ z −0,75).
+		glow={
+			{name="Core",size=Vector3.new(1.0,0.95,0.3),offset=Vector3.new(0,0.62,-1.02),shape=Enum.PartType.Ball,on="Torso",light=14},
+			{name="Eye",size=Vector3.new(0.3,0.15,0.08),offset=Vector3.new(-0.3,2.72,-0.74),on="Head"},
+			{name="Eye",size=Vector3.new(0.3,0.15,0.08),offset=Vector3.new(0.3,2.72,-0.74),on="Head"},
+		},
+	},
+	Herald={
+		-- Arauto Partido: criatura alada gerada (cristais do Abismo, halo partido), em escala de colosso.
+		template="HeraldTemplate", scale=1.35, baseY=0,
+		joints={Body={"Waist",-0.35},Head={"Neck",-0.3,"Body"},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4},Wings={"WingRoot",0,"Body"},Tail={"TailRoot",0.3,"Body"}},
+		bodyLight={on="Body",range=22,brightness=1.6,color=Color3.fromRGB(196,150,255)},
+	},
+	Wisp={
+		-- Espectro flutuante: o corpo oscila no motor SpiritCore e leva cabeça e mãos junto.
+		template="VoidEchoTemplate", scale=1.15, baseY=0.7,
+		joints={Body={"SpiritCore",0},Head={"Neck",-0.4,"Body"},LeftArm={"LeftShoulder",0.3,"Body"},RightArm={"RightShoulder",0.3,"Body"}},
+		bodyLight={on="Body",range=10,brightness=1.2},
+	},
+	-- Fauna das regiões 2–4 (generate_mesh com partes nomeadas; templates em ServerStorage).
+	-- Quadrúpedes usam os nomes de quadril do Predador; o arquétipo de movimento vem de MotionKind.
+	CrystalSpider={template="CrystalSpiderTemplate", scale=1.0, baseY=0, joints=QUAD,
+		bodyLight={on="Body",range=9,brightness=0.9,color=Color3.fromRGB(120,220,255)}},
+	PrismBat={template="PrismBatTemplate", scale=1.1, baseY=2.6,
+		joints={Body={"SpiritCore",0},Head={"Neck",-0.4,"Body"},LeftWing={"LeftShoulder",0,"Body"},RightWing={"RightShoulder",0,"Body"}},
+		bodyLight={on="Body",range=10,brightness=1.1,color=Color3.fromRGB(230,150,255)}},
+	SandScorpion={template="SandScorpionTemplate", scale=1.05, baseY=0, joints=QUAD,
+		bodyLight={on="Tail",range=7,brightness=0.9,color=Color3.fromRGB(255,190,90)}},
+	DuneJackal={template="DuneJackalTemplate", scale=1.15, baseY=0, joints=QUAD},
+	EclipseGargoyle={template="EclipseGargoyleTemplate", scale=1.25, baseY=0,
+		joints={Body={"Waist",-0.3},Head={"Neck",-0.4,"Body"},LeftArm={"LeftShoulder",0.38,"Body"},RightArm={"RightShoulder",0.38,"Body"},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4},Wings={"WingRoot",0,"Body"}},
+		bodyLight={on="Body",range=9,brightness=1,color=Color3.fromRGB(180,120,255)}},
+	ShadowHound={template="ShadowHoundTemplate", scale=1.15, baseY=0, joints=QUAD,
+		bodyLight={on="Body",range=8,brightness=1,color=Color3.fromRGB(160,110,255)}},
+	-- Chefões: monstros de verdade em escala de colosso. Wyrm e Dragão ficam erguidos (patas da
+	-- frente articuladas como braços); a Esfinge é quadrúpede e tem a base de pedra enterrada.
+	CrystalWyrm={template="CrystalWyrmTemplate", scale=1.65, baseY=0,
+		joints={Body={"Waist",-0.35},Head={"Neck",-0.3,"Body"},FrontLeftLeg={"LeftShoulder",0.4,"Body"},FrontRightLeg={"RightShoulder",0.4,"Body"},RearLeftLeg={"LeftHip",0.4},RearRightLeg={"RightHip",0.4}},
+		bodyLight={on="Body",range=22,brightness=1.4,color=Color3.fromRGB(120,220,255)}},
+	SandSphinx={template="SandSphinxTemplate", scale=1.4, baseY=-1.6,
+		joints={Body={"Waist",0},Head={"Neck",0.2,"Body"},FrontLeftLeg={"LeftFrontHip",0.4},FrontRightLeg={"RightFrontHip",0.4},RearLeftLeg={"LeftRearHip",0.4},RearRightLeg={"RightRearHip",0.4},Wings={"WingRoot",0,"Body"}},
+		bodyLight={on="Body",range=22,brightness=1.2,color=Color3.fromRGB(255,200,110)}},
+	EclipseDragon={template="EclipseDragonTemplate", scale=1.45, baseY=0,
+		joints={Body={"Waist",-0.35},Head={"Neck",-0.3,"Body"},FrontLeftLeg={"LeftShoulder",0.4,"Body"},FrontRightLeg={"RightShoulder",0.4,"Body"},RearLeftLeg={"LeftHip",0.4},RearRightLeg={"RightHip",0.4},Wings={"WingRoot",0,"Body"}},
+		bodyLight={on="Body",range=24,brightness=1.5,color=Color3.fromRGB(180,120,255)}},
+	-- Regente do Vazio (rig R15 gerado, o mesmo das visões), em escala de colosso e sem capuz.
+	VoidRegent={template="RegentTemplate", scale=3.0, baseY=0, humanoidRig=true,
+		joints={UpperTorso={"Waist",-0.45},Head={"Neck",-0.45,"UpperTorso"},
+			LeftUpperArm={"LeftShoulder",0.4,"UpperTorso"},RightUpperArm={"RightShoulder",0.4,"UpperTorso"},
+			LeftLowerArm={"LeftElbow",0.45,"LeftUpperArm"},RightLowerArm={"RightElbow",0.45,"RightUpperArm"},
+			LeftHand={"LeftWrist",0.5,"LeftLowerArm"},RightHand={"RightWrist",0.5,"RightLowerArm"}},
+		bodyLight={on="UpperTorso",range=26,brightness=1.8,color=Color3.fromRGB(186,110,255)}},
+	Thorn={
+		-- Quadrúpede de espinhos: nomes de quadril seguem ActorPresentation (Left/Right + Front/Rear).
+		template="ThornStalkerTemplate", scale=1.25, baseY=0,
+		joints={Body={"Waist",0},Head={"Neck",0.3,"Body"},FrontLeftLeg={"LeftFrontHip",0.4},FrontRightLeg={"RightFrontHip",0.4},RearLeftLeg={"LeftRearHip",0.4},RearRightLeg={"RightRearHip",0.4}},
+		bodyLight={on="Body",range=7,brightness=0.9,color=Color3.fromRGB(236,160,72)},
+	},
+}
+
+local function buildGenerated(m: Model,root: BasePart,spec: any,template: Model,position: Vector3,parent: Instance,color: Color3): Model
+	local visual=template:Clone()
+	visual:ScaleTo(spec.scale)
+	local _,size=visual:GetBoundingBox()
+	-- Chão medido só contra o cenário (o mundo é construído antes dos inimigos; no reaparecimento
+	-- um jogador pode estar exatamente no ponto de origem).
+	local params=RaycastParams.new() params.FilterType=Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances={workspace:FindFirstChild("PortalChapter") or workspace.Terrain,workspace.Terrain}
+	local hit=workspace:Raycast(position+Vector3.new(0,4,0),Vector3.new(0,-40,0),params)
+	local floorY=if hit then hit.Position.Y else position.Y-2.5
+	local center=CFrame.new(position.X,floorY+size.Y/2+spec.baseY,position.Z)
+	visual:PivotTo(center)
+	-- O pivô de um rig é o HumanoidRootPart, não o centro da caixa: alinha pela caixa.
+	local box=visual:GetBoundingBox()
+	visual:PivotTo(visual:GetPivot()+(center.Position-box.Position))
+	if spec.humanoidRig then
+		-- Rig R15: as articulações próprias e o Humanoid saem; a raiz lógica e os motores do
+		-- EnemyService assumem. Acessórios (manto, coroa) viram peças soldadas ao tronco.
+		for _,item in visual:GetDescendants() do
+			if item:IsA("Motor6D") or item:IsA("Weld") or item:IsA("WeldConstraint") or item:IsA("Attachment") and item.Parent and item.Parent:IsA("Accessory") then item:Destroy() end
+		end
+		for _,accessory in visual:GetChildren() do
+			if accessory:IsA("Accessory") then
+				local handle=accessory:FindFirstChild("Handle")
+				if handle and handle:IsA("BasePart") then handle.Name="Accessory_"..accessory.Name handle.Parent=visual end
+			end
+		end
+		local hrp=visual:FindFirstChild("HumanoidRootPart") if hrp then hrp:Destroy() end
+	end
+	local pieces: {[string]: BasePart}={Root=root}
+	for _,piece in visual:GetChildren() do
+		if piece:IsA("BasePart") then
+			piece.CanCollide=false piece.CanTouch=false piece.CanQuery=false
+			piece.Parent=m
+			pieces[piece.Name]=piece
+		end
+	end
+	visual:Destroy()
+	for name,piece in pieces do
+		if piece==root then continue end
+		local config=spec.joints[name]
+		if config then
+			local base=pieces[config[3] or "Root"] or root
+			articulated(base,piece,CFrame.new(piece.Position+Vector3.new(0,piece.Size.Y*config[2],0)),config[1])
+		elseif name:sub(1,10)=="Accessory_" then attach(pieces.UpperTorso or pieces.Body or root,piece)
+		else attach(root,piece) end
+	end
+	for _,g in spec.glow or {} do
+		local part=Art.part(m,g.name,g.size*spec.scale,center*CFrame.new(g.offset*spec.scale),cyan,Enum.Material.Neon,g.shape)
+		attach(pieces[g.on] or root,part)
+		if g.light then
+			local light=Instance.new("PointLight") light.Color=cyan light.Range=g.light light.Brightness=1.4 light.Shadows=false light.Parent=part
+		end
+	end
+	if spec.bodyLight and pieces[spec.bodyLight.on] then
+		local light=Instance.new("PointLight") light.Color=spec.bodyLight.color or color light.Range=spec.bodyLight.range light.Brightness=spec.bodyLight.brightness light.Shadows=false light.Parent=pieces[spec.bodyLight.on]
+	end
+	m:SetAttribute("GeneratedCreature",true)
+	m.Parent=parent
+	return m
+end
+
+function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Color3): Model
+	local m = Instance.new("Model")
+	local boss = kind == "Boss"
+	local regionBoss = kind=="CrystalWyrm" or kind=="SandSphinx" or kind=="EclipseDragon"
+	local scale = if boss then 2.2 elseif kind=="Herald" or kind=="VoidRegent" or regionBoss then 2.6 else 1
+	local root = Art.part(m,"Root",Vector3.new(4,5,4)*scale,CFrame.new(position),color)
+	root.Transparency = 1
+	root.CanQuery = true
+	m.PrimaryPart = root
+	local function p(name: string, size: Vector3, offset: Vector3, tint: Color3, material: Enum.Material?, shape: Enum.PartType?)
+		return Art.part(m,name,size*scale,CFrame.new(position+offset*scale),tint,material,shape)
+	end
+	if kind=="Moss" then
+		local template=game:GetService("ServerStorage"):FindFirstChild("SentinelTemplate")
+		if template and template:IsA("Model") and Art.templateReady(template) then
+			local visual=template:Clone()
+			visual:ScaleTo(visual:GetScale()*1.3)
+			visual:PivotTo(CFrame.new(position))
+			local joints={['head_geom']={'Head','Neck',-0.55},['left arm_geom']={'LeftArm','LeftShoulder',1.25},['right arm_geom']={'RightArm','RightShoulder',1.25},['left leg_geom']={'LeftLeg','LeftHip',1.15},['right leg_geom']={'RightLeg','RightHip',1.15}}
+			-- Tronco ganha articulação própria (Waist) para balançar/inclinar; cabeça e braços o acompanham.
+			local torso: BasePart?=nil
+			for _,piece in visual:GetDescendants() do
+				if piece:IsA("BasePart") and piece.Name=="torso_geom" then torso=piece end
+			end
+			if torso then
+				torso.Name="Torso" torso.CanCollide=false torso.CanTouch=false torso.CanQuery=false torso.Parent=m
+				articulated(root,torso,CFrame.new(torso.Position-Vector3.new(0,torso.Size.Y*0.4,0)),"Waist")
+			end
+			for _,piece in visual:GetDescendants() do
+				if piece:IsA("BasePart") then
+					piece.CanCollide=false piece.CanTouch=false piece.CanQuery=false
+					local config=joints[piece.Name]
+					piece.Parent=m
+					if config then
+						piece.Name=config[1]
+						local base=if torso and (config[2]=="Neck" or config[2]:find("Shoulder")) then torso else root
+						articulated(base,piece,CFrame.new(piece.Position+Vector3.new(0,config[3],0)),config[2])
+					else attach(root,piece) end
+				end
+			end
+			visual:Destroy()
+			m:SetAttribute("GeneratedCreature",true)
+			m.Parent=parent
+			return m
+		end
+	end
+	local spec=GENERATED[kind]
+	local template=spec and game:GetService("ServerStorage"):FindFirstChild(spec.template)
+	-- Template novo ausente: tenta o modelo de reserva indicado (ex.: Guardião de Raízes antigo).
+	if spec and spec.fallback and not (template and template:IsA("Model") and Art.templateReady(template)) then
+		spec=GENERATED[spec.fallback]
+		template=spec and game:GetService("ServerStorage"):FindFirstChild(spec.template)
+	end
+	if spec and template and template:IsA("Model") and Art.templateReady(template) then
+		return buildGenerated(m,root,spec,template,position,parent,color)
+	end
+	if kind=="VoidRegent" then
+		-- Sem o rig gerado (RegentTemplate ainda não exportado para o Git): figura procedural das
+		-- visões, em escala de colosso. Requerida aqui para não criar dependência circular.
+		local Villain=require(script.Parent.VillainArt)
+		local feet=CFrame.new(position-Vector3.new(0,root.Size.Y*0.5,0))
+		local figure=Villain.regent(m,feet,3.1)
+		for _,piece in figure:GetDescendants() do
+			if piece:IsA("BasePart") then
+				piece.CanCollide=false piece.CanQuery=false piece.CanTouch=false
+				piece.Parent=m
+				attach(root,piece)
+			end
+		end
+		figure:Destroy()
+		m.Parent=parent
+		return m
+	end
+	if kind == "Wisp" then
+		p("Core",Vector3.new(1.6,2.1,1.6),Vector3.zero,color,Enum.Material.Neon,Enum.PartType.Ball)
+		for i=1,5 do
+			local a=i*math.pi*2/5
+			p("Shard",Vector3.new(0.45,2.3,0.6),Vector3.new(math.cos(a)*1.5,-0.2,math.sin(a)*1.5),stone,Enum.Material.Slate)
+		end
+		p("Eye",Vector3.new(0.8,0.2,0.2),Vector3.new(0,0.3,-0.85),Color3.fromRGB(233,212,255),Enum.Material.Neon)
+	elseif kind == "Thorn" then
+		p("Body",Vector3.new(3,2.2,4),Vector3.new(0,-0.5,0),color,Enum.Material.Wood,Enum.PartType.Ball)
+		p("Head",Vector3.new(2,1.7,2),Vector3.new(0,0.1,-2),color,Enum.Material.Slate,Enum.PartType.Ball)
+		for _, side in {-1,1} do
+			for _, z in {-1.2,1.2} do
+				p("Leg",Vector3.new(0.65,1.6,0.7),Vector3.new(side*1.1,-1.6,z),bark,Enum.Material.Wood)
+			end
+			p("Eye",Vector3.new(0.25,0.2,0.1),Vector3.new(side*0.55,0.35,-2.9),Color3.fromRGB(228,180,88),Enum.Material.Neon)
+		end
+		for i=1,5 do p("Thorn",Vector3.new(0.35,1.6,0.4),Vector3.new(0,1,-1.7+i*0.65),Color3.fromRGB(162,146,113),Enum.Material.Wood) end
+	elseif kind == "Herald" then
+		-- Arauto Partido (procedural): cavaleiro feito de pedaços dos quatro mundos. Ombro de cristal
+		-- (Abismo), peitoral do eclipse (Cidadela), ampulheta no peito (Deserto), raízes nas pernas (Vale)
+		-- e um halo partido atrás do elmo.
+		local plate=Color3.fromRGB(38,32,52)
+		local trim=Color3.fromRGB(206,170,100)
+		p("Chest",Vector3.new(3.2,3,2),Vector3.new(0,0.4,0),plate,Enum.Material.Metal,Enum.PartType.Ball)
+		p("ChestTrim",Vector3.new(3.25,0.2,2.05),Vector3.new(0,1.2,0),trim,Enum.Material.Metal)
+		p("Core",Vector3.new(0.5,1.1,0.3),Vector3.new(0,0.4,-1.0),Color3.fromRGB(255,200,110),Enum.Material.Neon,Enum.PartType.Ball)
+		p("Head",Vector3.new(1.5,1.8,1.6),Vector3.new(0,2.4,0),plate,Enum.Material.Metal,Enum.PartType.Ball)
+		p("Eye",Vector3.new(1.0,0.16,0.12),Vector3.new(0,2.5,-0.8),Color3.fromRGB(240,230,255),Enum.Material.Neon)
+		for k=0,7 do
+			if k==5 then continue end
+			local a=k*math.pi/4
+			p("Halo",Vector3.new(0.25,0.9,0.25),Vector3.new(math.cos(a)*1.7,2.6+math.sin(a)*1.7,1),trim,Enum.Material.Neon)
+		end
+		for _, side in {-1,1} do
+			p("Arm",Vector3.new(1.1,2.8,1.2),Vector3.new(side*2.1,0.1,0),plate,Enum.Material.Metal,Enum.PartType.Ball)
+			p("Hand",Vector3.new(1.2,1.1,1.2),Vector3.new(side*2.2,-1.4,0),trim,Enum.Material.Metal,Enum.PartType.Ball)
+			p("Leg",Vector3.new(1.2,2.2,1.4),Vector3.new(side*0.8,-2.1,0),Color3.fromRGB(70,90,60),Enum.Material.Wood,Enum.PartType.Ball)
+			p("Foot",Vector3.new(1.4,0.7,2.1),Vector3.new(side*0.8,-3,-0.3),plate,Enum.Material.Metal,Enum.PartType.Ball)
+		end
+		p("CrystalPauldron",Vector3.new(1.0,2.4,1.0),Vector3.new(-2.2,1.9,0),Color3.fromRGB(150,220,255),Enum.Material.Glass,Enum.PartType.Ball)
+		p("EclipsePauldron",Vector3.new(1.8,0.9,1.6),Vector3.new(2.2,1.6,0),trim,Enum.Material.Metal,Enum.PartType.Ball)
+		Art.segment(m,"Glaive",position+Vector3.new(2.6,-3,-0.6)*scale,position+Vector3.new(2.6,4.2,-0.6)*scale,0.22*scale,Color3.fromRGB(60,50,70),Enum.Material.Metal)
+		p("GlaiveBlade",Vector3.new(0.2,2.2,1.2),Vector3.new(2.6,4.6,-0.9),Color3.fromRGB(200,180,255),Enum.Material.Neon)
+	elseif regionBoss then
+		-- Chefões das regiões 2–4 (procedural, original): mesma silhueta humanoide de colosso,
+		-- com materiais e adornos do tema da região. Nomes Arm/Leg/Head/Hand/Foot/Eye/Core
+		-- seguem a articulação padrão abaixo.
+		local palette={
+			CrystalWyrm={body=Color3.fromRGB(70,78,104),mat=Enum.Material.Slate,trim=Color3.fromRGB(150,220,255),trimMat=Enum.Material.Glass,glow=Color3.fromRGB(120,230,255)},
+			SandSphinx={body=Color3.fromRGB(196,160,108),mat=Enum.Material.Sandstone,trim=Color3.fromRGB(214,170,82),trimMat=Enum.Material.Metal,glow=Color3.fromRGB(255,196,96)},
+			EclipseDragon={body=Color3.fromRGB(34,30,48),mat=Enum.Material.Metal,trim=Color3.fromRGB(150,120,200),trimMat=Enum.Material.Metal,glow=Color3.fromRGB(186,120,255)},
+		}
+		local c=palette[kind]
+		p("Chest",Vector3.new(3.4,3.1,2.1),Vector3.new(0,0.4,0),c.body,c.mat,Enum.PartType.Ball)
+		p("ChestTrim",Vector3.new(3.45,0.22,2.15),Vector3.new(0,1.25,0),c.trim,c.trimMat)
+		p("Core",Vector3.new(0.6,1.0,0.3),Vector3.new(0,0.4,-1.05),c.glow,Enum.Material.Neon,Enum.PartType.Ball)
+		p("Head",Vector3.new(1.6,1.8,1.6),Vector3.new(0,2.45,0),c.body,c.mat,Enum.PartType.Ball)
+		for _, side in {-1,1} do
+			p("Eye",Vector3.new(0.35,0.18,0.12),Vector3.new(side*0.4,2.55,-0.8),c.glow,Enum.Material.Neon)
+			p("Arm",Vector3.new(1.2,2.9,1.3),Vector3.new(side*2.2,0.1,0),c.body,c.mat,Enum.PartType.Ball)
+			p("Hand",Vector3.new(1.3,1.2,1.3),Vector3.new(side*2.3,-1.45,0),c.trim,c.trimMat,Enum.PartType.Ball)
+			p("Leg",Vector3.new(1.3,2.2,1.5),Vector3.new(side*0.85,-2.1,0),c.body,c.mat,Enum.PartType.Ball)
+			p("Foot",Vector3.new(1.5,0.7,2.2),Vector3.new(side*0.85,-3,-0.3),c.trim,c.trimMat,Enum.PartType.Ball)
+		end
+		if kind=="CrystalWyrm" then
+			-- Cristais brotando dos ombros e das costas.
+			for i,spike in {{-2.3,2.0,0.2,0.3},{2.3,2.0,0.2,-0.3},{-1.0,2.2,1.0,0.25},{1.0,2.3,1.0,-0.2},{0,2.6,1.1,0}} do
+				local part=p("Crystal",Vector3.new(0.7,2.4+i*0.15,0.7),Vector3.new(spike[1],spike[2],spike[3]),c.trim,Enum.Material.Glass)
+				part.CFrame=part.CFrame*CFrame.Angles(-0.35,0,spike[4])
+				part.Transparency=0.15
+			end
+		elseif kind=="SandSphinx" then
+			-- Ampulheta no peito e disco solar atrás da cabeça.
+			p("Hourglass",Vector3.new(0.8,0.5,0.4),Vector3.new(0,0.85,-1.05),c.trim,Enum.Material.Metal)
+			p("Hourglass",Vector3.new(0.8,0.5,0.4),Vector3.new(0,-0.05,-1.05),c.trim,Enum.Material.Metal)
+			for k=0,9 do
+				local a=k*math.pi/5
+				p("Halo",Vector3.new(0.22,0.8,0.22),Vector3.new(math.cos(a)*1.6,2.5+math.sin(a)*1.6,1),c.glow,Enum.Material.Neon)
+			end
+			Art.segment(m,"Glaive",position+Vector3.new(2.7,-3,-0.6)*scale,position+Vector3.new(2.7,4,-0.6)*scale,0.2*scale,c.trim,Enum.Material.Metal)
+		else
+			-- Sol negro: disco escuro com aro aceso, elmo com crista e lâmina longa.
+			p("EclipseDisc",Vector3.new(0.3,3.4,3.4),Vector3.new(0,2.6,1.2),Color3.fromRGB(12,10,18),Enum.Material.SmoothPlastic,Enum.PartType.Cylinder).CFrame*=CFrame.Angles(0,math.pi/2,0)
+			for k=0,11 do
+				local a=k*math.pi/6
+				p("Halo",Vector3.new(0.18,0.6,0.18),Vector3.new(math.cos(a)*1.8,2.6+math.sin(a)*1.8,1.25),c.glow,Enum.Material.Neon)
+			end
+			p("Crest",Vector3.new(0.25,0.9,1.6),Vector3.new(0,3.45,0.1),c.trim,c.trimMat)
+			Art.segment(m,"Glaive",position+Vector3.new(2.7,-2.6,-0.6)*scale,position+Vector3.new(2.7,3.2,-0.6)*scale,0.18*scale,c.trim,Enum.Material.Metal)
+			p("GlaiveBlade",Vector3.new(0.2,2.6,1.0),Vector3.new(2.7,4.4,-0.6),c.glow,Enum.Material.Neon)
+		end
+	else
+		p("Chest",Vector3.new(3.3,3.3,2.2),Vector3.new(0,0.1,0),stone,Enum.Material.Slate,Enum.PartType.Ball)
+		p("MossMantle",Vector3.new(3.9,1,2.6),Vector3.new(0,1.4,0),color,Enum.Material.Grass,Enum.PartType.Ball)
+		p("Head",Vector3.new(2,1.8,1.7),Vector3.new(0,2.2,0),stone,Enum.Material.Slate,Enum.PartType.Ball)
+		p("Core",Vector3.new(0.7,1.1,0.28),Vector3.new(0,0.4,-1.15),cyan,Enum.Material.Neon,Enum.PartType.Ball)
+		for _, side in {-1,1} do
+			p("Arm",Vector3.new(1.2,2.8,1.3),Vector3.new(side*2,0,0),color,Enum.Material.Wood,Enum.PartType.Ball)
+			p("Hand",Vector3.new(1.5,1.2,1.5),Vector3.new(side*2,-1.3,0),stone,Enum.Material.Slate,Enum.PartType.Ball)
+			p("Leg",Vector3.new(1.25,2.1,1.45),Vector3.new(side*0.9,-2.1,0),bark,Enum.Material.Wood,Enum.PartType.Ball)
+			p("Foot",Vector3.new(1.6,0.7,2.3),Vector3.new(side*0.9,-3,-0.3),stone,Enum.Material.Slate,Enum.PartType.Ball)
+			p("Eye",Vector3.new(0.35,0.22,0.15),Vector3.new(side*0.5,2.35,-0.85),cyan,Enum.Material.Neon)
+			if boss then
+				Art.segment(m,"CrownRoot",position+Vector3.new(side*0.6,2.8,0)*scale,position+Vector3.new(side*1.9,4.5,0)*scale,0.25*scale,bark,Enum.Material.Wood)
+				Art.segment(m,"CrownBranch",position+Vector3.new(side*1.4,3.9,0)*scale,position+Vector3.new(side*2.5,4.1,0)*scale,0.18*scale,bark,Enum.Material.Wood)
+			end
+		end
+	end
+	local arms: {[number]: BasePart}={}
+	local legs: {[number]: BasePart}={}
+	local head=m:FindFirstChild("Head")
+	for _,piece in m:GetChildren() do
+		if piece:IsA("BasePart") then
+			local off=root.CFrame:PointToObjectSpace(piece.Position)
+			local side=if off.X<0 then -1 else 1
+			if piece.Name=="Arm" then arms[side]=piece elseif piece.Name=="Leg" and kind~="Thorn" then legs[side]=piece end
+		end
+	end
+	for _,piece in m:GetChildren() do
+		if not piece:IsA("BasePart") or piece==root then continue end
+		local off=root.CFrame:PointToObjectSpace(piece.Position)
+		local side=if off.X<0 then -1 else 1
+		local sideName=if side<0 then "Left" else "Right"
+		if piece.Name=="Arm" then
+			articulated(root,piece,CFrame.new(piece.Position+Vector3.new(0,1.2*scale,0)),sideName.."Shoulder")
+		elseif piece.Name=="Leg" then
+			local label=if kind=="Thorn" then (if off.Z<0 then "Front" else "Rear") else ""
+			articulated(root,piece,CFrame.new(piece.Position+Vector3.new(0,0.8*scale,0)),sideName..label.."Hip")
+		elseif piece.Name=="Head" then
+			articulated(root,piece,CFrame.new(piece.Position+Vector3.new(0,-0.65*scale,0)),"Neck")
+		elseif piece.Name=="Core" and kind=="Wisp" then
+			articulated(root,piece,piece.CFrame,"SpiritCore")
+		elseif piece.Name=="Hand" and arms[side] then attach(arms[side],piece)
+		elseif piece.Name=="Foot" and legs[side] then attach(legs[side],piece)
+		elseif (piece.Name=="Eye" or piece.Name=="CrownRoot" or piece.Name=="CrownBranch") and head and head:IsA("BasePart") then attach(head,piece)
+		elseif piece.Name=="Eye" and kind=="Wisp" then attach(m:FindFirstChild("Core") :: BasePart,piece)
+		else attach(root,piece) end
+	end
+
+	m.Parent = parent
+	return m
+end
+
+function Art.tree(parent: Instance, position: Vector3, seed: number, forest: boolean?)
+	local rng=Random.new(seed)
+	local m=Instance.new("Model") m.Name="LumenOak"
+	local height=rng:NextNumber(17,26)
+	local lean=Vector3.new(rng:NextNumber(-2.5,2.5),0,rng:NextNumber(-1.5,1.5))
+	local mid=position+Vector3.new(0,height*0.48,0)+lean*0.35
+	local crown=position+Vector3.new(0,height*0.83,0)+lean
+	Art.segment(m,"LowerTrunk",position,mid,2.3,bark,Enum.Material.Wood,true)
+	Art.segment(m,"UpperTrunk",mid,crown,1.55,bark:Lerp(Color3.fromRGB(110,99,79),0.2),Enum.Material.Wood,true)
+	-- Ramos e copas em alturas diferentes: silhueta assimétrica com vazios de céu.
+	for i=1,7 do
+		local angle=i*2.39996+seed
+		local radius=rng:NextNumber(3,7)
+		local endPoint=crown+Vector3.new(math.cos(angle)*radius,rng:NextNumber(-3,4),math.sin(angle)*radius)
+		local branchBase=mid:Lerp(crown,rng:NextNumber(0.1,0.75))
+		Art.segment(m,"Branch",branchBase,endPoint,0.42+rng:NextNumber()*0.28,bark,Enum.Material.Wood)
+		local tint=if forest then Color3.fromRGB(58,83,51) else Color3.fromRGB(77,101,56)
+		tint=tint:Lerp(Color3.fromRGB(115,132,69),rng:NextNumber(0.05,0.33))
+		local size=Vector3.new(rng:NextNumber(5,8),rng:NextNumber(3,4.8),rng:NextNumber(5,8))
+		Art.part(m,"LeafCluster",size,CFrame.new(endPoint)*CFrame.Angles(rng:NextNumber(-0.45,0.45),angle,rng:NextNumber(-0.3,0.3)),tint,Enum.Material.Grass,Enum.PartType.Ball)
+		if i%2==1 then
+			local tip=endPoint+Vector3.new(math.cos(angle)*2.5,1.3,math.sin(angle)*2.5)
+			Art.segment(m,"Twig",endPoint,tip,0.18,bark,Enum.Material.Wood)
+			Art.part(m,"OuterLeaves",size*0.53,CFrame.new(tip)*CFrame.Angles(0,angle,0.4),tint,Enum.Material.Grass,Enum.PartType.Ball)
+		end
+	end
+	for i=1,4 do
+		local a=i*math.pi/2+seed
+		Art.segment(m,"SurfaceRoot",position+Vector3.new(0,0.7,0),position+Vector3.new(math.cos(a)*rng:NextNumber(2.5,4.2),0.1,math.sin(a)*3.2),0.5,bark,Enum.Material.Wood)
+	end
+	m.Parent=parent
+end
+
+function Art.portal(parent: Instance, position: Vector3, radius: number): Model
+	local m = Instance.new("Model")
+	m.Name = "PortalPrimordial"
+	for i=1,16 do
+		local a=(i/16)*math.pi*2
+		local cf=CFrame.new(position+Vector3.new(math.cos(a)*radius, radius+math.sin(a)*radius,0))*CFrame.Angles(0,0,a+math.pi/2)
+		Art.part(m,"ArchStone",Vector3.new(radius*0.42,3.3,3.6),cf,stone,Enum.Material.Slate,nil,true)
+		Art.part(m,"ArcaneInset",Vector3.new(0.22,1.9,0.12),cf*CFrame.new(-1.1,0,-1.86),cyan,Enum.Material.Neon)
+	end
+	local rift=Art.part(m,"Rift",Vector3.new(radius*1.45,radius*1.7,0.3),CFrame.new(position+Vector3.new(0,radius,0)),cyan,Enum.Material.Neon,Enum.PartType.Ball)
+	rift.Transparency=0.72
+	-- Espirais originais dão profundidade ao portal, evitando um disco neon opaco.
+	-- Geometria estática reutilizável; sem emissores, sombras ou animação por segmento.
+	for arm=1,2 do
+		for step=1,20 do
+			local function point(t: number): Vector3
+				local angle=t*math.pi*3.1+arm*math.pi
+				local reach=radius*(0.08+t*0.62)
+				return position+Vector3.new(math.cos(angle)*reach,radius+math.sin(angle)*reach,-0.36)
+			end
+			local line=Art.segment(m,"PortalSpiral",point((step-1)/20),point(step/20),radius*0.016,if arm==1 then Color3.fromRGB(148,237,239) else Color3.fromRGB(74,157,202),Enum.Material.Neon)
+			line.Transparency=0.22+step/20*0.36 line.CastShadow=false
+		end
+	end
+	local light=Instance.new("PointLight")
+	light.Color=cyan
+	light.Brightness=0.9
+	light.Range=23
+	light.Shadows=false
+	light.Parent=rift
+	m.Parent=parent
+	return m
+end
+
+function Art.equipment(character: Model, classId: string, color: Color3)
+	local old=character:FindFirstChild("ClassEquipment")
+	if old then old:Destroy() end
+	local torso=character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+	if not torso or not torso:IsA("BasePart") then return end
+	local folder=Instance.new("Model")
+	folder.Name="ClassEquipment"
+	local right=character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm") or torso
+	local left=character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm") or torso
+	local function equip(name: string,size: Vector3,offset: CFrame,tint: Color3,material: Enum.Material?,shape: Enum.PartType?,target: Instance?)
+		local base=if target and target:IsA("BasePart") then target else torso
+		local piece=Art.part(folder,name,size,base.CFrame*offset,tint,material,shape)
+		piece.Anchored=false
+		piece.Massless=true
+		local weld=Instance.new("WeldConstraint")
+		weld.Part0=base weld.Part1=piece weld.Parent=piece
+		return piece
+	end
+	-- Camadas leves acompanham o rig; sem colisões ou alteração de movimento.
+	local leather=Color3.fromRGB(91,65,46)
+	local iron=Color3.fromRGB(98,112,119)
+	equip("TravelBelt",Vector3.new(1.95,0.19,1.15),CFrame.new(0,-0.72,0),leather,Enum.Material.Leather)
+	equip("BeltBuckle",Vector3.new(0.26,0.23,0.09),CFrame.new(0,-0.72,-0.62),gold,Enum.Material.Metal)
+	equip("TravelPouch",Vector3.new(0.44,0.56,0.31),CFrame.new(-0.82,-0.65,-0.5),leather,Enum.Material.Leather,Enum.PartType.Ball)
+	if classId=="Guardian" then
+		equip("Breastplate",Vector3.new(1.65,1.3,0.24),CFrame.new(0,0,-0.58),iron,Enum.Material.Metal,Enum.PartType.Ball)
+		for _,side in {-1,1} do
+			equip("Pauldrons",Vector3.new(0.75,0.45,1.1),CFrame.new(side*1.02,0.67,0),iron,Enum.Material.Metal,Enum.PartType.Ball)
+			equip("PlateTrim",Vector3.new(0.08,1.05,0.08),CFrame.new(side*0.6,0,-0.73),gold,Enum.Material.Metal)
+		end
+	elseif classId=="Explorer" then
+		equip("TravelScarf",Vector3.new(1.2,0.28,1),CFrame.new(0,0.82,0),Color3.fromRGB(77,97,60),Enum.Material.Fabric,Enum.PartType.Ball)
+		equip("LeatherBaldric",Vector3.new(0.22,2.2,0.12),CFrame.new(0,0,-0.61)*CFrame.Angles(0,0,-0.5),leather,Enum.Material.Leather)
+		equip("ShortCloak",Vector3.new(1.75,1.65,0.17),CFrame.new(0,-0.12,0.68)*CFrame.Angles(-0.12,0,0),Color3.fromRGB(65,81,52),Enum.Material.Fabric)
+	elseif classId=="Artificer" then
+		equip("WovenStole",Vector3.new(0.42,1.95,0.16),CFrame.new(-0.53,-0.05,-0.63),Color3.fromRGB(91,68,113),Enum.Material.Fabric)
+		for i=1,3 do
+			equip("RunicClasp",Vector3.new(0.18,0.13,0.06),CFrame.new(-0.53,0.65-i*0.38,-0.74),gold,Enum.Material.Metal)
+		end
+		-- Grimório pendurado no quadril, com a capa rente ao corpo, páginas e fecho dourado.
+		local book=CFrame.new(0.8,-1.08,0.1)*CFrame.Angles(0,math.pi/2,-0.08)
+		equip("Grimoire",Vector3.new(0.62,0.82,0.24),book,Color3.fromRGB(71,55,81),Enum.Material.Leather)
+		equip("GrimoirePages",Vector3.new(0.6,0.76,0.2),book*CFrame.new(0.03,0,0),Color3.fromRGB(226,214,186),Enum.Material.SmoothPlastic)
+		equip("GrimoireClasp",Vector3.new(0.12,0.2,0.27),book*CFrame.new(0.3,0,0),gold,Enum.Material.Metal)
+	end
+	equip("Mantle",Vector3.new(2.1,0.35,1.2),CFrame.new(0,0.65,0),color,Enum.Material.Fabric)
+	equip("Crest",Vector3.new(0.35,0.5,0.15),CFrame.new(0,0.4,-0.65),gold,Enum.Material.Metal,Enum.PartType.Ball)
+	if classId=="Guardian" then
+		-- Escudo redondo azul com aro e estrela de oito pontas dourados (referência guardian-reference-v1).
+		-- Preso ao antebraço como um escudo real: o antebraço corre ao longo do eixo Y do escudo,
+		-- logo atrás dele, e duas correias de couro o prendem. Em repouso a face fica para fora,
+		-- ao lado do corpo; na defesa (CharacterMotion) o braço cruza o peito e a face vai para a
+		-- frente. Sem antebraço (boneco da seleção) usa a mão. Coordenadas do escudo: face = −Z,
+		-- antebraço em (0, 0,05, +0,45).
+		local forearm=character:FindFirstChild("LeftLowerArm")
+		local mount: Instance=left
+		local shieldFrame=CFrame.new(-0.25,0,-0.33)
+		-- Malha visível da manopla medida por raycast no rig gerado: raio ≈ 0,25 e comprimento útil
+		-- de −0,3 a +0,3 no eixo Y do antebraço (a caixa da peça é bem maior que a malha).
+		local ARM_RADIUS=0.27
+		local SHIELD_OFFSET=ARM_RADIUS+0.09 -- verso do escudo encostado na manopla
+		if forearm and forearm:IsA("BasePart") then
+			mount=forearm
+			shieldFrame=CFrame.new(-SHIELD_OFFSET,-0.05,0)*CFrame.Angles(0,math.pi/2,0)
+		end
+		local face=CFrame.Angles(0,math.pi/2,0) -- eixo do cilindro ao longo da normal do escudo
+		local royal=Color3.fromRGB(38,58,132)
+		local steel=Color3.fromRGB(196,206,216)
+		if mount==forearm then
+			-- Verso de couro com borda dourada, correias que abraçam o antebraço e alça para a mão.
+			equip("ShieldBack",Vector3.new(0.03,2.12,2.12),shieldFrame*CFrame.new(0,0,0.095)*face,Color3.fromRGB(96,68,45),Enum.Material.Leather,Enum.PartType.Cylinder,mount)
+			local strapColor=Color3.fromRGB(70,48,32)
+			-- Eixos: X do escudo ↔ Z do antebraço; Z do escudo ↔ X do antebraço.
+			-- Laço de couro rente à manopla: laterais do verso até além do braço e travessa por cima.
+			local half=ARM_RADIUS+0.02
+			local armCenter=SHIELD_OFFSET
+			local far=armCenter+ARM_RADIUS+0.03
+			for _,y in {0.23,-0.13} do
+				for _,sx in {-1,1} do
+					equip("ShieldStrap",Vector3.new(0.045,0.15,far-0.08),shieldFrame*CFrame.new(sx*half,y,0.08+(far-0.08)/2),strapColor,Enum.Material.Leather,nil,mount)
+				end
+				equip("ShieldStrap",Vector3.new(half*2+0.045,0.15,0.045),shieldFrame*CFrame.new(0,y,far),strapColor,Enum.Material.Leather,nil,mount)
+				equip("StrapBuckle",Vector3.new(0.12,0.18,0.05),shieldFrame*CFrame.new(half*0.45,y,far+0.03),gold,Enum.Material.Metal,nil,mount)
+			end
+			-- Alça onde a mão fecha (perto do punho), presa por dois pinos ao verso.
+			local handleY=-0.42
+			equip("ShieldHandle",Vector3.new(0.42,0.08,0.08),shieldFrame*CFrame.new(0,handleY,armCenter),strapColor,Enum.Material.Leather,Enum.PartType.Cylinder,mount)
+			for _,sx in {-1,1} do
+				equip("HandlePost",Vector3.new(0.05,0.05,armCenter-0.06),shieldFrame*CFrame.new(sx*0.2,handleY,0.08+(armCenter-0.08)/2),gold,Enum.Material.Metal,nil,mount)
+			end
+		end
+		equip("ShieldRim",Vector3.new(0.16,2.3,2.3),shieldFrame*face,gold,Enum.Material.Metal,Enum.PartType.Cylinder,mount)
+		equip("AstralShield",Vector3.new(0.2,2.08,2.08),shieldFrame*CFrame.new(0,0,-0.04)*face,royal,Enum.Material.Metal,Enum.PartType.Cylinder,mount)
+		for i=0,3 do
+			local long=i%2==0
+			-- Elipsoides afilam nas pontas e formam a estrela de oito pontas.
+			equip("ShieldStar",Vector3.new(if long then 0.3 else 0.2,if long then 1.75 else 1.1,0.05),shieldFrame*CFrame.new(0,0,-0.16)*CFrame.Angles(0,0,i*math.pi/4),gold,Enum.Material.Metal,Enum.PartType.Ball,mount)
+		end
+		equip("ShieldSigil",Vector3.new(0.34,0.34,0.14),shieldFrame*CFrame.new(0,0,-0.19),color,Enum.Material.Neon,Enum.PartType.Ball,mount)
+		-- Espada longa montada no próprio eixo (Y = lâmina) e encaixada no punho fechado:
+		-- o punho cruza a palma e a lâmina sai para frente (−Z da mão), inclinada ~20° para cima.
+		local hold=CFrame.new(0,-0.18,0)*CFrame.Angles(-1.22,0,0)
+		local function sword(name: string,size: Vector3,y: number,tint: Color3,material: Enum.Material,shape: Enum.PartType?,extra: CFrame?)
+			equip(name,size,hold*CFrame.new(0,y,0)*(extra or CFrame.identity),tint,material,shape,right)
+		end
+		sword("SwordGrip",Vector3.new(0.62,0.13,0.13),0,bark,Enum.Material.Leather,Enum.PartType.Cylinder,CFrame.Angles(0,0,math.pi/2))
+		sword("SwordPommel",Vector3.new(0.24,0.24,0.24),-0.38,gold,Enum.Material.Metal,Enum.PartType.Ball)
+		sword("SwordGuard",Vector3.new(0.86,0.12,0.16),0.37,gold,Enum.Material.Metal)
+		for _,side in {-1,1} do sword("SwordGuardCap",Vector3.new(0.16,0.16,0.16),0.37,gold,Enum.Material.Metal,Enum.PartType.Ball,CFrame.new(side*0.45,0,0)) end
+		sword("SwordBlade",Vector3.new(0.2,2.45,0.06),1.65,steel,Enum.Material.Metal)
+		sword("SwordFuller",Vector3.new(0.05,2.05,0.075),1.52,Color3.fromRGB(140,152,166),Enum.Material.Metal)
+		sword("SwordTip",Vector3.new(0.2,0.55,0.06),2.87,steel,Enum.Material.Metal,Enum.PartType.Ball)
+		-- Rastro do corte: desligado; AvatarFallback liga só na fase de golpe do ataque.
+		local blade=folder:FindFirstChild("SwordBlade")
+		if blade then
+			local a0=Instance.new("Attachment") a0.Name="TrailBase" a0.Position=Vector3.new(0,-1.0,0) a0.Parent=blade
+			local a1=Instance.new("Attachment") a1.Name="TrailTip" a1.Position=Vector3.new(0,1.45,0) a1.Parent=blade
+			local trail=Instance.new("Trail") trail.Attachment0=a0 trail.Attachment1=a1 trail.Lifetime=0.16 trail.MinLength=0.05
+			trail.Color=ColorSequence.new(Color3.fromRGB(235,245,255),color) trail.LightEmission=0.8
+			trail.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.25),NumberSequenceKeypoint.new(1,1)})
+			trail.WidthScale=NumberSequence.new(1,0.3) trail.Enabled=false trail.Parent=blade
+		end
+	elseif classId=="Explorer" then
+		-- Aljava de couro encostada nas costas, na diagonal; flechas emplumadas saem do topo.
+		local quiver=CFrame.new(0.32,0.1,0.62)*CFrame.Angles(0,0,1.22)
+		equip("Quiver",Vector3.new(1.7,0.44,0.44),quiver,leather,Enum.Material.Leather,Enum.PartType.Cylinder)
+		equip("QuiverRim",Vector3.new(0.08,0.5,0.5),quiver*CFrame.new(0.82,0,0),gold,Enum.Material.Metal,Enum.PartType.Cylinder)
+		for i,o in {Vector2.new(0.09,0.08),Vector2.new(-0.1,0.05),Vector2.new(0,-0.1)} do
+			equip("Arrow",Vector3.new(0.5,0.05,0.05),quiver*CFrame.new(1.05,o.X,o.Y),Color3.fromRGB(150,118,80),Enum.Material.Wood,Enum.PartType.Cylinder)
+			equip("ArrowFletching",Vector3.new(0.26,0.16,0.03),quiver*CFrame.new(1.2,o.X,o.Y)*CFrame.Angles(i*1.05,0,0),if i==2 then Color3.fromRGB(171,62,49) else Color3.fromRGB(231,224,206),Enum.Material.Fabric,Enum.PartType.Ball)
+		end
+		-- O centro da empunhadura é a mão; a compensação mantém o arco vertical ao mirar.
+		local mount=equip("BowGrip",Vector3.new(0.05,0.05,0.05),CFrame.identity,bark,nil,nil,left)
+		mount.Transparency=1
+		local oldWeld=mount:FindFirstChildOfClass("WeldConstraint") if oldWeld then oldWeld:Destroy() end
+		local mountJoint=Instance.new("Motor6D") mountJoint.Name="BowOrientation" mountJoint.Part0=left :: BasePart mountJoint.Part1=mount mountJoint.Transform=CFrame.Angles(0,-math.pi/2,0) mountJoint.Parent=mount
+		local grip=CFrame.identity
+		local curve={Vector3.new(0.6,-1.3,0),Vector3.new(0.2,-0.9,0),Vector3.zero,Vector3.new(0.2,0.9,0),Vector3.new(0.6,1.3,0)}
+		for i=1,#curve-1 do local a,b=curve[i],curve[i+1] equip("BowLimb",Vector3.new((b-a).Magnitude,0.14,0.14),grip*CFrame.lookAt((a+b)*0.5,b)*CFrame.Angles(0,math.pi/2,0),bark,Enum.Material.Wood,Enum.PartType.Cylinder,mount) end
+		local stringColor=Color3.fromRGB(221,212,182)
+		equip("BowString",Vector3.new(2.6,0.028,0.028),grip*CFrame.new(0.6,0,0)*CFrame.Angles(0,0,math.pi/2),stringColor,Enum.Material.Fabric,Enum.PartType.Cylinder,mount)
+		local function anchor(name: string,offset: CFrame,target: Instance): Attachment
+			local piece=equip(name,Vector3.new(0.05,0.05,0.05),offset,bark,nil,nil,target)
+			piece.Transparency=1
+			local attachment=Instance.new("Attachment") attachment.Parent=piece return attachment
+		end
+		local top=anchor("BowTipTop",grip*CFrame.new(curve[#curve]),mount)
+		local bottom=anchor("BowTipBottom",grip*CFrame.new(curve[1]),mount)
+		local nock=anchor("StringDraw",CFrame.new(0,-0.1,0),right)
+		for _,tip in {top,bottom} do
+			local beam=Instance.new("Beam") beam.Name="DrawnString" beam.Attachment0=tip beam.Attachment1=nock beam.Width0=0.028 beam.Width1=0.028 beam.FaceCamera=true beam.Color=ColorSequence.new(stringColor) beam.Enabled=false beam.Parent=folder
+		end
+
+	elseif classId=="Brawler" then
+		-- Lutador: sem arma. Faixas nos punhos com runas solares acesas; o rastro liga nos golpes.
+		for _,hand in {right,left} do
+			if not hand:IsA("BasePart") then continue end
+			local side=if hand==right then "Right" else "Left"
+			equip(side.."FistWrap",Vector3.new(0.18,0.62,0.62),CFrame.new(0,0.12,0)*CFrame.Angles(0,0,math.pi/2),Color3.fromRGB(228,214,190),Enum.Material.Fabric,Enum.PartType.Cylinder,hand)
+			local rune=equip(side.."FistRune",Vector3.new(0.12,0.66,0.66),CFrame.new(0,0.02,0)*CFrame.Angles(0,0,math.pi/2),color,Enum.Material.Neon,Enum.PartType.Cylinder,hand)
+			rune.Transparency=0.35
+			local a0=Instance.new("Attachment") a0.Name="TrailBase" a0.Position=Vector3.new(0,0.3,0) a0.Parent=rune
+			local a1=Instance.new("Attachment") a1.Name="TrailTip" a1.Position=Vector3.new(0,-0.3,0) a1.Parent=rune
+			local trail=Instance.new("Trail") trail.Name="FistTrail" trail.Attachment0=a0 trail.Attachment1=a1 trail.Lifetime=0.18 trail.LightEmission=1
+			trail.Color=ColorSequence.new(Color3.fromRGB(255,236,180),color) trail.Transparency=NumberSequence.new(0.2,1) trail.Enabled=false trail.Parent=rune
+		end
+	elseif classId=="Arcanist" then
+		-- Cajado solar: haste escura com anéis dourados e orbe de sol numa gaiola de aros.
+		local staff=CFrame.new(0,1.1,-0.05)
+		equip("StaffShaft",Vector3.new(6.2,0.16,0.16),staff*CFrame.Angles(0,0,math.pi/2),Color3.fromRGB(78,40,38),Enum.Material.Wood,Enum.PartType.Cylinder,right)
+		for _,y in {-2.6,-0.2,1.9,2.9} do
+			equip("StaffRing",Vector3.new(0.14,0.24,0.24),staff*CFrame.new(0,y,0)*CFrame.Angles(0,0,math.pi/2),gold,Enum.Material.Metal,Enum.PartType.Cylinder,right)
+		end
+		local top=staff*CFrame.new(0,3.6,0)
+		local orb=equip("SunOrb",Vector3.new(0.62,0.62,0.62),top,Color3.fromRGB(255,214,120),Enum.Material.Neon,Enum.PartType.Ball,right)
+		for k=0,2 do
+			equip("OrbCage",Vector3.new(0.06,1.05,1.05),top*CFrame.Angles(0,k*math.pi/3,0)*CFrame.Angles(0,math.pi/2,0),gold,Enum.Material.Metal,Enum.PartType.Cylinder,right).Transparency=0.15
+		end
+		equip("StaffFinial",Vector3.new(0.14,0.5,0.14),top*CFrame.new(0,0.75,0),gold,Enum.Material.Metal,Enum.PartType.Ball,right)
+		local glow=Instance.new("PointLight") glow.Color=Color3.fromRGB(255,200,110) glow.Range=8 glow.Brightness=1.2 glow.Shadows=false glow.Parent=orb
+	elseif classId=="Shade" then
+		-- Duas adagas com lâmina curta e cristal turquesa no pomo, uma em cada mão.
+		local hold=CFrame.new(0,-0.18,0)*CFrame.Angles(-1.22,0,0)
+		for _,hand in {right,left} do
+			local side=if hand==right then "Right" else "Left"
+			local function dagger(name: string,size: Vector3,y: number,tint: Color3,material: Enum.Material,shape: Enum.PartType?)
+				return equip(side..name,size,hold*CFrame.new(0,y,0),tint,material,shape,hand)
+			end
+			dagger("DaggerGrip",Vector3.new(0.12,0.42,0.12),0,Color3.fromRGB(40,32,44),Enum.Material.Leather)
+			dagger("DaggerGuard",Vector3.new(0.5,0.08,0.12),0.24,Color3.fromRGB(170,170,180),Enum.Material.Metal)
+			local blade=dagger("DaggerBlade",Vector3.new(0.14,1.05,0.04),0.8,Color3.fromRGB(205,212,222),Enum.Material.Metal)
+			dagger("DaggerGem",Vector3.new(0.16,0.2,0.16),-0.26,Color3.fromRGB(110,236,236),Enum.Material.Neon,Enum.PartType.Ball)
+			local a0=Instance.new("Attachment") a0.Name="TrailBase" a0.Position=Vector3.new(0,-0.4,0) a0.Parent=blade
+			local a1=Instance.new("Attachment") a1.Name="TrailTip" a1.Position=Vector3.new(0,0.5,0) a1.Parent=blade
+			local trail=Instance.new("Trail") trail.Name="DaggerTrail" trail.Attachment0=a0 trail.Attachment1=a1 trail.Lifetime=0.14 trail.LightEmission=0.9
+			trail.Color=ColorSequence.new(Color3.fromRGB(200,240,255),color) trail.Transparency=NumberSequence.new(0.25,1) trail.Enabled=false trail.Parent=blade
+		end
+	else
+		-- Cristal de foco flutuando junto aos dedos, para fora do casaco e um pouco à frente.
+		-- Offset medido no Play: em repouso a mão do rig gerado fica girada (+X aponta para fora/baixo),
+		-- e este ponto cai ~1,2 stud à direita e 0,3 à frente da raiz. Neon grande antigo estourava no Bloom.
+		local focus=CFrame.new(0.42,-0.3,-0.28)
+		local core=equip("ArcaneFocus",Vector3.new(0.3,0.38,0.3),focus,color,Enum.Material.Neon,Enum.PartType.Ball,right)
+		local shell=equip("FocusShell",Vector3.new(0.56,0.66,0.56),focus,color:Lerp(Color3.new(1,1,1),0.3),Enum.Material.Glass,Enum.PartType.Ball,right)
+		shell.Transparency=0.5
+		local glow=Instance.new("PointLight") glow.Color=color glow.Range=6 glow.Brightness=1.1 glow.Shadows=false glow.Parent=core
+		equip("Harness",Vector3.new(0.3,2.2,0.1),CFrame.new(0.4,0,-0.65)*CFrame.Angles(0,0,-0.5),gold,Enum.Material.Metal)
+	end
+	if character:GetAttribute("PortalGeneratedRig") then
+		-- Peças já modeladas nos rigs gerados (cinto, capa, armadura do Guardião); armas e foco continuam.
+		local baked={TravelBelt=true,BeltBuckle=true,TravelPouch=true,TravelScarf=true,LeatherBaldric=true,ShortCloak=true,Mantle=true,Crest=true,WovenStole=true,RunicClasp=true,Harness=true,Breastplate=true,Pauldrons=true,PlateTrim=true}
+		for _,piece in folder:GetChildren() do if baked[piece.Name] then piece:Destroy() end end
+	end
+	folder.Parent=character
+end
+
+function Art.classPreview(classId: string,color: Color3): Model
+	local m=Instance.new("Model") m.Name=classId
+	local function p(name: string,size: Vector3,position: Vector3,tint: Color3)
+		return Art.part(m,name,size,CFrame.new(position),tint,Enum.Material.SmoothPlastic,Enum.PartType.Ball)
+	end
+	m.PrimaryPart=p("UpperTorso",Vector3.new(1.9,2,1),Vector3.new(0,3.2,0),color:Lerp(Color3.fromRGB(43,58,69),0.55))
+	local head=p("Head",Vector3.new(1.2,1.4,1.15),Vector3.new(0,4.9,0),Color3.fromRGB(209,176,143))
+	Face.apply(head,classId)
+	p("Hair",Vector3.new(1.25,0.85,1.2),Vector3.new(0,5.3,0.1),Color3.fromRGB(76,61,48))
+	for _, side in {-1,1} do
+		p(if side<0 then "LeftHand" else "RightHand",Vector3.new(0.55,1.9,0.6),Vector3.new(side*1.3,3,0),color)
+		p("Leg",Vector3.new(0.7,2.1,0.8),Vector3.new(side*0.5,1.2,0),Color3.fromRGB(51,60,69))
+	end
+	Art.equipment(m,classId,color)
+	return m
+end
+
+return Art

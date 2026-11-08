@@ -228,7 +228,12 @@ local function stun(record: any,seconds: number)
 		record.slowUntil=math.max(record.slowUntil,os.clock()+seconds*0.6)
 		return
 	end
-	record.stunUntil=math.max(record.stunUntil or 0,os.clock()+seconds)
+	-- Imunidade curta depois de cada atordoamento: rasteiras/ganchos seguidos não travam o
+	-- alvo para sempre.
+	local now=os.clock()
+	if (record.stunImmuneUntil or 0)>now then return end
+	record.stunUntil=now+seconds
+	record.stunImmuneUntil=now+seconds+1.5
 	if record.motion then record.motion:Cancel() end
 	record.model:SetAttribute("StunnedUntil",workspace:GetServerTimeNow()+seconds)
 	notify:FireAllClients({kind="stun",position=record.root.Position,duration=seconds})
@@ -392,6 +397,7 @@ end
 -- golpe aéreo (pular + atacar) e gancho ascendente (agachar + atacar). Dano maior que o das
 -- outras classes; o servidor decide variante, alvo e dano.
 local brawlerCombo: {[Player]: number}={}
+local brawlerSpecialAt: {[Player]: number}={}
 local BRAWLER_MOVES={
 	{name="Jab",mult=1.0},
 	{name="Direto",mult=1.1},
@@ -402,10 +408,14 @@ local BRAWLER_MOVES={
 local function brawlerAttack(player: Player,root: BasePart,class: any,variant: string)
 	local now=os.clock()
 	local move: any
-	if variant=="air" and airborne(player) then
+	-- Golpes especiais têm recarga própria (não seguem a do soco, 0,42 s).
+	local special=brawlerSpecialAt[player] or -math.huge
+	if variant=="air" and airborne(player) and now-special>=1.4 then
+		brawlerSpecialAt[player]=now
 		move={name="MARTELO SOLAR",mult=1.6,stun=1.0,radius=9,low=true,id="air"}
 		brawlerCombo[player]=0
-	elseif variant=="low" and player:GetAttribute("Crouching")==true then
+	elseif variant=="low" and player:GetAttribute("Crouching")==true and now-special>=1.6 then
+		brawlerSpecialAt[player]=now
 		move={name="GANCHO ASCENDENTE",mult=1.9,stun=1.3,id="low"}
 		brawlerCombo[player]=0
 	else
@@ -1086,7 +1096,7 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 	skillRemote.OnServerEvent:Connect(skill)
 	dashRemote.OnServerEvent:Connect(dash)
 	Players.PlayerRemoving:Connect(function(player)
-		lastAttack[player]=nil lastSkill[player]=nil lastDash[player]=nil lastKick[player]=nil brawlerCombo[player]=nil
+		lastAttack[player]=nil lastSkill[player]=nil lastDash[player]=nil lastKick[player]=nil brawlerCombo[player]=nil brawlerSpecialAt[player]=nil
 		for _, r in records do r.contributors[player]=nil end
 	end)
 	local elapsed=0

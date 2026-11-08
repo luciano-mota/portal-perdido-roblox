@@ -302,6 +302,8 @@ local function damage(player: Player,record: any,amount: number)
 		record.phase=2 record.model:SetAttribute("Phase",2)
 		for _, piece in record.model:GetChildren() do
 			if piece:IsA("BasePart") and (piece.Name=="Core" or piece.Name=="Eye") then piece.Color=Color3.fromRGB(225,136,104) end
+			-- Treant: a luz do peito muda de ciano para laranja-brasa.
+			local light=piece:FindFirstChildWhichIsA("PointLight") if light then light.Color=Color3.fromRGB(255,120,70) light.Brightness=2.4 end
 		end
 		notify:FireAllClients({kind="bossPhase",text="O núcleo se rompeu. Fase 2: raízes do vazio!",position=record.root.Position})
 	end
@@ -1346,7 +1348,10 @@ function Service.init(attackRemote: RemoteEvent,skillRemote: RemoteEvent,dashRem
 				if os.clock()-r.idleSince>12 then
 					r.hp=r.max r.phase=1 r.engaged=false r.contributors={}
 					r.model:SetAttribute("Health",r.hp) r.model:SetAttribute("Phase",1)
-					for _, piece in r.model:GetChildren() do if piece:IsA("BasePart") and (piece.Name=="Core" or piece.Name=="Eye") then piece.Color=Color3.fromRGB(76,201,205) end end
+					for _, piece in r.model:GetChildren() do
+						if piece:IsA("BasePart") and (piece.Name=="Core" or piece.Name=="Eye") then piece.Color=Color3.fromRGB(76,201,205) end
+						local light=piece:FindFirstChildWhichIsA("PointLight") if light and r.definition.kind=="Boss" then light.Color=Color3.fromRGB(76,201,205) light.Brightness=1.8 end
+					end
 				end
 			end
 			-- Patrulha visível mesmo sem jogadores por perto; raio curto, sem spawn infinito.

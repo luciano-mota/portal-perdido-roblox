@@ -192,7 +192,14 @@ end
 --   glow: peças neon extras; "Core"/"Eye" são recoloridas pelo EnemyService na fase 2 do chefe.
 local QUAD={Body={"Waist",0},Head={"Neck",0.3,"Body"},FrontLeftLeg={"LeftFrontHip",0.4},FrontRightLeg={"RightFrontHip",0.4},RearLeftLeg={"LeftRearHip",0.4},RearRightLeg={"RightRearHip",0.4},Tail={"TailRoot",0.3,"Body"}}
 local GENERATED: {[string]: any}={
+	-- Guardião de Raízes (fase 1): treant gerado em 08/11/2026 (casca, garras de madeira, peito
+	-- aceso). A luz do tronco fica laranja na fase 2 (EnemyService). Sem o template, usa o antigo.
 	Boss={
+		template="RootBeastTemplate", scale=1.65, baseY=0, fallback="BossLegacy",
+		joints={Torso={"Waist",-0.4},Head={"Neck",-0.35,"Torso"},LeftArm={"LeftShoulder",0.4,"Torso"},RightArm={"RightShoulder",0.4,"Torso"},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4}},
+		bodyLight={on="Torso",range=20,brightness=1.8,color=Color3.fromRGB(76,201,205)},
+	},
+	BossLegacy={
 		template="RootGuardianTemplate", scale=1.5, baseY=-0.85,
 		-- Tronco (com a base de pedras modelada) gira a partir de baixo; cabeça e braços acompanham o tronco.
 		joints={Torso={"Waist",-0.45},Head={"Neck",-0.4,"Torso"},LeftArm={"LeftShoulder",0.38,"Torso"},RightArm={"RightShoulder",0.38,"Torso"},LeftLeg={"LeftHip",0.4},RightLeg={"RightHip",0.4}},
@@ -366,6 +373,11 @@ function Art.enemy(parent: Instance, kind: string, position: Vector3, color: Col
 	end
 	local spec=GENERATED[kind]
 	local template=spec and game:GetService("ServerStorage"):FindFirstChild(spec.template)
+	-- Template novo ausente: tenta o modelo de reserva indicado (ex.: Guardião de Raízes antigo).
+	if spec and spec.fallback and not (template and template:IsA("Model") and Art.templateReady(template)) then
+		spec=GENERATED[spec.fallback]
+		template=spec and game:GetService("ServerStorage"):FindFirstChild(spec.template)
+	end
 	if spec and template and template:IsA("Model") and Art.templateReady(template) then
 		return buildGenerated(m,root,spec,template,position,parent,color)
 	end

@@ -30,6 +30,9 @@ Classes.spawnResolver=Travel.spawnFor
 Expedition.init()
 Classes.init(choose)
 Quests.init(notify,Enemies.isAlive)
+-- Templates das criaturas geradas (inclui o Guardião de Raízes do Vale): reconstruídos dos
+-- dados versionados se faltarem no lugar, antes de criar qualquer encontro.
+require(services.CreatureMeshes).ensure()
 Enemies.init(attack,skill,dash,notify,Quests,block,kick,crouch)
 Data.init(function(player)
 	Classes.register(player)
@@ -37,8 +40,6 @@ Data.init(function(player)
 end)
 -- Regiões 2–6 depois do Vale e dos serviços: quem entra já joga enquanto elas são montadas.
 Regions.build(world)
--- Templates das criaturas geradas: reconstruídos dos dados versionados se faltarem no lugar.
-require(services.CreatureMeshes).ensure()
 Enemies.spawnRegional()
 Travel.init(world,notify)
 

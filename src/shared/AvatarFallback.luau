@@ -140,7 +140,10 @@ function Fallback.init()
 			actor.crouch=(actor.crouch or 0)+((if crouchNow then 1 else 0)-(actor.crouch or 0))*(1-math.exp(-dt*(if crouchNow then 14 else 9)))
 			local striking=progress>=0 and progress<=1
 			-- A habilidade usa o mesmo caminho de "ataque" para travar a mira e sobrepor a parte superior.
-			local attacking=striking or skilling or dashing or kicking or actor.block>0.02 or actor.crouch>0.02
+			-- Exausto depois de um chefão (prelúdio da visão): entra devagar.
+			local exhaustedNow=character:GetAttribute("PortalExhausted")==true
+			actor.exhausted=(actor.exhausted or 0)+((if exhaustedNow then 1 else 0)-(actor.exhausted or 0))*(1-math.exp(-dt*(if exhaustedNow then 4 else 6)))
+			local attacking=striking or skilling or dashing or kicking or actor.block>0.02 or actor.crouch>0.02 or actor.exhausted>0.02
 			local root=character:FindFirstChild("HumanoidRootPart")
 			if actor.player==Players.LocalPlayer then
 				local aim=character:GetAttribute("PortalAimPosition")
@@ -273,6 +276,7 @@ function Fallback.init()
 				kick=if kicking then kickProgress else nil,
 				kickVariant=character:GetAttribute("PortalKickVariant"),
 				crouch=if actor.crouch>0.02 then actor.crouch else nil,
+				exhausted=if actor.exhausted>0.02 then actor.exhausted else nil,
 				dashDir=character:GetAttribute("PortalDashDir"),
 				blocking=if actor.block>0.02 then actor.block else nil,
 			}

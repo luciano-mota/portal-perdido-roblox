@@ -51,18 +51,34 @@ local function regentFigure(parent: Instance,cf: CFrame,scale: number): (Model,B
 		-- Antes da fase final ele nunca mostra o rosto: capuz fundo sobre cabeça e coroa,
 		-- rosto em sombra e só os olhos violeta acesos.
 		if head and head:IsA("BasePart") then
+			-- Capuz (revisado 08/11/2026): a cabeça do modelo fica oculta — nada atravessa o tecido.
+			-- Casca funda atrás, vazio escuro no lugar do rosto, borda de tecido emoldurando a
+			-- abertura e os olhos RECUADOS dentro da sombra (atrás da borda, à frente do vazio).
+			head.Transparency=1
+			for _,item in head:GetDescendants() do if item:IsA("Decal") then item.Transparency=1 end end
 			local size=head.Size
-			local look=cf.LookVector
-			local hoodColor=Color3.fromRGB(30,18,46)
-			local hood=Art.part(m,"VisionHood",Vector3.new(size.X*1.7,size.Y*2.3,size.Z*1.75),CFrame.lookAt(head.Position+Vector3.new(0,size.Y*0.42,0)-look*size.Z*0.18,head.Position+Vector3.new(0,size.Y*0.42,0)+look),hoodColor,Enum.Material.Fabric,Enum.PartType.Ball)
-			hood.CastShadow=false
-			local drape=Art.part(m,"VisionHoodDrape",Vector3.new(size.X*2.4,size.Y*1.2,size.Z*1.9),CFrame.lookAt(head.Position-Vector3.new(0,size.Y*0.55,0)-look*size.Z*0.2,head.Position-Vector3.new(0,size.Y*0.55,0)+look),hoodColor,Enum.Material.Fabric,Enum.PartType.Ball)
+			local basis=CFrame.lookAt(head.Position,head.Position+cf.LookVector)
+			local look,up,right=basis.LookVector,basis.UpVector,basis.RightVector
+			local hoodColor=Color3.fromRGB(34,20,52)
+			local rimColor=Color3.fromRGB(52,32,76)
+			local shell=Art.part(m,"VisionHood",Vector3.new(size.X*1.85,size.Y*2.25,size.Z*1.9),basis*CFrame.new(0,size.Y*0.32,size.Z*0.38),hoodColor,Enum.Material.Fabric,Enum.PartType.Ball)
+			shell.CastShadow=false
+			local drape=Art.part(m,"VisionHoodDrape",Vector3.new(size.X*2.5,size.Y*1.25,size.Z*2),basis*CFrame.new(0,-size.Y*0.6,size.Z*0.3),hoodColor,Enum.Material.Fabric,Enum.PartType.Ball)
 			drape.CastShadow=false
-			local face=Art.part(m,"VisionFaceShadow",Vector3.new(size.X*0.95,size.Y*1.05,size.Z*0.5),CFrame.lookAt(head.Position+look*size.Z*0.42,head.Position+look*2),Color3.fromRGB(6,3,10),Enum.Material.SmoothPlastic,Enum.PartType.Ball)
-			face.CastShadow=false
-			local side=CFrame.lookAt(head.Position,head.Position+look).RightVector
+			local void=Art.part(m,"VisionFaceShadow",Vector3.new(size.X*1.05,size.Y*1.3,size.Z*0.7),basis*CFrame.new(0,size.Y*0.02,-size.Z*0.35),Color3.fromRGB(3,1,6),Enum.Material.SmoothPlastic,Enum.PartType.Ball)
+			void.CastShadow=false
+			-- Borda do capuz: segmentos de tecido num arco (topo e laterais), à frente do vazio.
+			-- Dobra contínua: muitas esferas achatadas e sobrepostas formam uma borda macia de tecido.
+			local segments=30
+			for k=0,segments-1 do
+				local a=math.rad(-125+k*250/(segments-1))
+				local p=head.Position+right*math.sin(a)*size.X*0.56+up*(math.cos(a)*size.Y*0.7+size.Y*0.05)+look*size.Z*0.6
+				local tangent=(right*math.cos(a)-up*math.sin(a))
+				local seg=Art.part(m,"VisionHoodRim",Vector3.new(size.X*0.26,size.Y*0.1,size.Z*0.22),CFrame.fromMatrix(p,tangent,look:Cross(tangent)),rimColor:Lerp(hoodColor,0.55),Enum.Material.Fabric,Enum.PartType.Ball)
+				seg.CastShadow=false
+			end
 			for _,s in {-1,1} do
-				local eye=Art.part(m,"VisionEye",Vector3.new(size.X*0.16,size.Y*0.07,0.05),CFrame.lookAt(head.Position+look*size.Z*0.68+side*s*size.X*0.17+Vector3.new(0,size.Y*0.08,0),head.Position+look*3),Color3.fromRGB(214,160,255),Enum.Material.Neon)
+				local eye=Art.part(m,"VisionEye",Vector3.new(size.X*0.11,size.Y*0.035,0.04),CFrame.lookAt(head.Position+look*size.Z*0.74+right*s*size.X*0.16+up*size.Y*0.1,head.Position+look*4),Color3.fromRGB(214,160,255),Enum.Material.Neon)
 				eye.CastShadow=false
 			end
 		end
@@ -141,11 +157,79 @@ local function restoreCamera()
 	end
 end
 
+-- Prelúdio depois do chefão: o herói, exausto, cai sobre um joelho com a mão na cabeça; a
+-- câmera circula perto dele tremendo (dor de cabeça), a tela pulsa e uma aura violeta envolve
+-- o corpo até o clarão que leva ao flashback. Sem personagem, segue direto.
+local function exhaustion(onFinish: () -> ())
+	local character=Players.LocalPlayer.Character
+	local root=character and character:FindFirstChild("HumanoidRootPart")
+	local head=character and character:FindFirstChild("Head")
+	local camera=workspace.CurrentCamera
+	if not character or not root or not root:IsA("BasePart") or not camera then onFinish() return end
+	character:SetAttribute("PortalExhausted",true)
+	local aura=Art.part(workspace,"ExhaustionAura",Vector3.new(4,6,4),root.CFrame,violet,Enum.Material.ForceField,Enum.PartType.Ball)
+	aura.CanCollide=false aura.CanQuery=false aura.CanTouch=false aura.CastShadow=false aura.Transparency=1
+	local light=Instance.new("PointLight") light.Color=violet light.Range=4 light.Brightness=0 light.Parent=aura
+	local sparks=Instance.new("ParticleEmitter") sparks.Color=ColorSequence.new(violet,C(240,220,255)) sparks.LightEmission=1
+	sparks.Size=NumberSequence.new(0.35,0) sparks.Lifetime=NumberRange.new(0.8,1.4) sparks.Speed=NumberRange.new(2,5)
+	sparks.SpreadAngle=Vector2.new(180,180) sparks.Acceleration=Vector3.new(0,4,0) sparks.Rate=0 sparks.Parent=aura
+	local cc=Instance.new("ColorCorrectionEffect") cc.Name="ExhaustionTint" cc.Parent=camera
+	local blur=Instance.new("BlurEffect") blur.Name="ExhaustionBlur" blur.Size=0 blur.Parent=camera
+	local DURATION=3.4
+	local start=os.clock()
+	local savedFov=camera.FieldOfView
+	local spin=math.random()*math.pi*2
+	local connection: RBXScriptConnection
+	connection=RunService.RenderStepped:Connect(function()
+		local t=math.clamp((os.clock()-start)/DURATION,0,1)
+		local center=root.Position
+		local focus=if head and head:IsA("BasePart") then head.Position else center+Vector3.new(0,1.5,0)
+		-- Câmera baixa circulando devagar, aproximando; tremor cresce com a dor.
+		local a=spin+t*1.1
+		local dist=9-4*t
+		local shake=Vector3.new(math.noise(t*20,1)*0.25,math.noise(t*20,2)*0.25,0)*(0.3+t)
+		camera.CameraType=Enum.CameraType.Scriptable
+		camera.FieldOfView=60-8*t
+		camera.CFrame=CFrame.lookAt(center+Vector3.new(math.cos(a)*dist,1.2-0.6*t,math.sin(a)*dist),focus+Vector3.new(0,-0.2,0))*CFrame.new(shake)
+		-- Pulsação da dor de cabeça e a aura tomando o corpo.
+		local pulse=math.max(0,math.sin(t*math.pi*7))^3
+		cc.Brightness=-0.12*t+0.18*pulse*t
+		cc.Saturation=-0.5*t
+		cc.TintColor=C(255,255,255):Lerp(C(200,160,255),t)
+		blur.Size=4*pulse+10*t^3
+		aura.CFrame=CFrame.new(center)
+		aura.Size=Vector3.new(4,6,4):Lerp(Vector3.new(9,11,9),t)
+		aura.Transparency=1-0.65*math.clamp(t*1.6,0,1)
+		light.Brightness=4*t light.Range=4+10*t
+		sparks.Rate=60*t
+		if t>=1 then
+			connection:Disconnect()
+			-- Clarão: a visão começa.
+			cc.Brightness=1
+			task.delay(0.15,function()
+				aura:Destroy() cc:Destroy() blur:Destroy()
+				camera.FieldOfView=savedFov
+				onFinish()
+			end)
+		end
+	end)
+end
+
 -- Flashback: espaço do vazio isolado (alto no céu), câmera aproxima do rosto do Regente.
 function Vision.flashback(region: string, onDone: (() -> ())?)
 	if Vision.active then return end
 	Vision.active=true
 	hud(false)
+	exhaustion(function()
+		Vision.runFlashback(region,function()
+			local character=Players.LocalPlayer.Character
+			if character then character:SetAttribute("PortalExhausted",nil) end
+			if onDone then onDone() end
+		end)
+	end)
+end
+
+function Vision.runFlashback(region: string, onDone: (() -> ())?)
 	local camera=workspace.CurrentCamera
 	local origin=Vector3.new(0,3400,0)
 	local scene=Instance.new("Model") scene.Name="RegentFlashback" scene.Parent=workspace

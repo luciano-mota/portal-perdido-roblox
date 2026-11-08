@@ -97,6 +97,9 @@ P.Br_HammerDown={rightshoulder={1.15,0.7,-0.9},rightelbow={0.25,0,0},leftshoulde
 -- Agachado (todas as classes): quadril desce, coxas à frente, joelhos dobrados, tronco inclinado.
 -- Nos rigs gerados (AnimationConstraint) X+ no quadril leva a coxa para a FRENTE (verificado por
 -- captura em 07/11/2026: com X− o chute frontal saía para trás e o agachar parecia ajoelhar).
+-- Exausto depois de um chefão: ajoelhado sobre o joelho direito, tronco curvado, mão direita na
+-- cabeça (dor de cabeça), braço esquerdo apoiado na coxa.
+Motion.Exhausted={root={0,0,0,0,-1.25,0},lefthip={1.35,0,0},leftknee={-1.5,0,0},righthip={0.25,0,0},rightknee={-1.9,0,0},rightankle={0.6,0,0},waist={-0.4,0.15,0},neck={-0.35,0,0.1},rightshoulder={2.3,0.7,-0.5},rightelbow={2.1,0,0},leftshoulder={0.7,-0.3,0.4},leftelbow={0.6,0,0}}
 Motion.Crouch={root={0,0,0,0,-1.1,0},lefthip={0.95,0,0},righthip={0.95,0,0},leftknee={-1.55,0,0},rightknee={-1.55,0,0},leftankle={0.6,0,0},rightankle={0.6,0,0},waist={-0.28,0,0}}
 -- Véu: cortes de adaga com a direita e com a esquerda (espelho), e estocada dupla.
 P.Sh_WindR={rightshoulder={2.62,0.10,-0.55},rightelbow={1.41,0,0},waist={0.06,-0.4,0}}
@@ -187,7 +190,7 @@ local function toCFrame(v: {number}): CFrame
 	return CFrame.new(v[4] or 0,v[5] or 0,v[6] or 0)*CFrame.Angles(v[1] or 0,v[2] or 0,v[3] or 0)
 end
 
-export type Context={classId: string,attack: number?,combo: number?,skill: number?,dash: number?,kick: number?,kickVariant: string?,crouch: number?,dashDir: Vector3?,blocking: number?}
+export type Context={classId: string,attack: number?,combo: number?,skill: number?,dash: number?,kick: number?,kickVariant: string?,crouch: number?,exhausted: number?,dashDir: Vector3?,blocking: number?}
 
 -- Sobreposição de combate para uma articulação, ou nil se nada a mover.
 function Motion.overlay(name: string,ctx: Context): CFrame?
@@ -297,6 +300,14 @@ function Motion.overlay(name: string,ctx: Context): CFrame?
 		elseif name=="leftknee" then result={-0.15*lift,0,0}
 		elseif name=="waist" then result={0.15*lift,-0.12*lift,0}
 		elseif name=="root" then result={0,0,0.08*lift,-0.12*lift,-0.06*lift,0} end
+	end
+	-- Exausto (prelúdio da visão do Regente): substitui o resto da pose, misturado pela intensidade.
+	if ctx.exhausted and ctx.exhausted>0 then
+		local e=Motion.Exhausted[name]
+		local base=result or zero
+		local out={}
+		for i=1,6 do out[i]=(base[i] or 0)*(1-ctx.exhausted)+((e and e[i]) or 0)*ctx.exhausted end
+		result=out
 	end
 	return if result then toCFrame(result) else nil
 end

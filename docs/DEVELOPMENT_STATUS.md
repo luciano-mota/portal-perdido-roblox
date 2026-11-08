@@ -378,3 +378,17 @@ Revisão do código desta sessão encontrou combinações que travariam o jogo a
 - O ponto seguro do Átrio fica a ~52 studs do Regente, dentro do alcance da luta: dava para lutar ali e receber vida cheia a cada 20 s.
 - `EnemyService.threatNear`: criatura comum viva a até 40 studs, ou chefão **com a luta em andamento** a até 70, bloqueia a cura. Antes da luta, os pontos seguros perto das arenas continuam curando.
 - Testado no Domínio: ferido antes da luta 40 → 150; com o Regente engajado 40 → 40. Zero erros.
+
+## Pedido de 08/11/2026: monstros hábeis, Guardião, câmera, chefão do Vale e Regente
+
+**Implementado e testado no Studio:**
+- **Monstros atacam ao mesmo tempo** (fila de vez removida) e ficam mais hábeis: esquiva lateral contra golpes comuns (`agile`) e habilidades por espécie (`abilities`): Aranha — tiro de teia (prende os pés) e teia que puxa para perto; Dragonete Prismático e Gárgula — sopro de fogo em área; Escorpião — ferrão à distância; Chacal, Cão Sombrio e Predador — bote. Teste no Abismo (10 s): teia ×1, puxão ×1, fogo ×6, mordidas/garras simultâneas.
+- **Animação:** aranha com marcha em tripé, varredura e elevação das patas; voadores batem as asas e sobem a cada batida; patas e cauda com movimento leve quando paradas.
+- **Guardião:** ataque mais rápido (0,42 s), combo de 3 cortes e golpes por direção — frente = Estocada (avança), lado = Giro de Lâmina (área), trás = Corte de Recuo, no ar = Queda Astral, agachado = Corte Baixo. **Aparo:** erguer o escudo até 0,35 s antes do golpe anula o dano e atordoa o atacante. **Égide** agora causa 70 de dano em área (chefões inclusive) e empurra os monstros comuns, mantendo o escudo nos aliados. Teste: combo 30/30/37, estocada 42, giro 54 em área, Égide 117 no grupo, 4 aparos.
+- **Resposta imediata:** a animação começa no clique/toque (previsão no cliente; o servidor corrige o golpe) e os botões de toque disparam ao encostar, não ao soltar.
+- **Câmera de combate:** perto de criaturas grandes a câmera recua (até 36 studs) e abre o campo de visão; volta ao normal longe delas (testado com a Esfinge).
+- **Guardião de Raízes (fase 1):** novo modelo gerado (treant de casca com garras de madeira e peito aceso que fica laranja na fase 2), ~20 studs; versionado em `CreatureMeshes` (`RootBeastTemplate`) com o antigo como reserva.
+- **Regente nas visões:** capuz refeito — a cabeça do modelo fica oculta, rosto num vazio escuro com borda de tecido macia e olhos estreitos dentro da sombra (antes os olhos atravessavam o capuz).
+- **Depois de cada chefão:** prelúdio de 3,4 s — o herói se ajoelha com a mão na cabeça, a câmera circula tremendo, a tela pulsa (dor de cabeça) e uma aura violeta envolve o corpo até o clarão que abre o flashback.
+
+**Pendente (avaliação humana):** dificuldade com todos atacando juntos, sensação dos novos golpes e do aparo, enquadramento da câmera em arenas apertadas.

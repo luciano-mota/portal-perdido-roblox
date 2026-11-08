@@ -361,3 +361,7 @@ O primeiro acionamento de prompt logo após um teletransporte de QA às vezes n�
 - Quatro bancos de névoa achatados entre o vale e as montanhas (sem colisão, poucos e grandes por desempenho).
 - Capturas antes/depois; 59,8 FPS no desktop; zero erros/avisos.
 - Limite: o céu do Roblox continua azul acima do horizonte; um céu todo rosado como na pintura exige skybox com imagens próprias.
+
+## Lugar salvo versionado — 08/11/2026
+
+O proprietário salvou o lugar (Ctrl+S, 00:30). Cópia byte a byte em `assets/places/portal-perdido-2026-11-08.rbxl` (5,1 MB; mesmo SHA-256 do original no OneDrive), adicionada com `git add -f` como os demais modelos binários. Conferido no Studio antes da cópia: `RegentTemplate`, `BrawlerTemplate`, `ArcanistTemplate`, `ShadeTemplate`, `GuardianTemplate`, `HeraldTemplate` e as criaturas presentes no ServerStorage. **Isto resolve a pendência dos rigs humanoides:** para recuperá-los, abra esse arquivo no Studio e copie os `…Template` do ServerStorage. Os scripts continuam vindo de `src/` (Rojo); o `.rbxl` é cópia de segurança da cena e dos templates.

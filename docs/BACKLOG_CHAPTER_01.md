@@ -46,7 +46,7 @@ Veja \`docs/TECHNICAL_PLAN_CHAPTER_01.md\` e \`docs/ART_DIRECTION_SEMIREALISTIC.
 O vale em camadas (commit `f496994`, detalhes em `docs/LUMEN_SCENERY_QA.md`) foi validado no Studio e pausado para priorizar a nova introdução da história. Pendências registradas para retomar depois (CPP-006 / CPP-033 / CPP-032 / CPP-023):
 
 - [~] **FPS válido** — desktop medido com a janela em foco: 59,8 FPS na vila (07/11/2026). **Aparelho móvel físico pendente.**
-- [ ] **Fidelidade à referência 2** — pôr do sol rosado, montanha com arco de rocha, névoa em camadas.
+- [x] **Fidelidade à referência 2** — hora dourada (17,45) com horizonte rosado e nuvens quentes, arco de rocha natural no pico mais alto (voxels, vão aberto) e quatro bancos de névoa em camadas. Céu inteiramente rosado exigiria skybox com imagens próprias (não há asset).
 - [x] **Praça da Aurora** — borda de cantaria irregular, musgo em manchas e entulho (`plazaRim`; também nas praças da Raiz e da Estrela). Captura 07/11/2026.
 - [x] **Escadarias** — degraus com variação de largura, giro e tom; escada da Aurora em curva com pedras laterais (início/fim preservados; subida testada com MoveTo).
 - [x] **Bases das ruínas ribeirinhas** — núcleo sólido coberto por pedras irregulares empilhadas (captura).

@@ -151,6 +151,32 @@ function Scenery.build(world: Model)
 		terrain:FillBall(peak+Vector3.new(0,9,0),23,Enum.Material.Snow)
 		task.wait()
 	end
+	-- Referência 2: arco de rocha natural no pico mais alto (x 100), em voxels para parecer
+	-- erosão e não alvenaria. Pernas descem até a encosta; topo com um pouco de neve.
+	do
+		local center=Vector3.new(100,150,-825)
+		local radius=28
+		-- Abre o vão (o pico abaixo não pode preencher o arco).
+		terrain:FillBall(center+Vector3.new(0,radius*0.55,0),radius*0.82,Enum.Material.Air)
+		for k=0,24 do
+			local t=k/24*math.pi
+			local p=center+Vector3.new(math.cos(t)*radius,math.sin(t)*radius*1.35,0)
+			terrain:FillBall(p,6.5-math.sin(t)*1.5,Enum.Material.Rock)
+			if math.sin(t)>0.85 then terrain:FillBall(p+Vector3.new(0,4.5,0),3.2,Enum.Material.Snow) end
+		end
+		for _,side in {-1,1} do
+			for y=center.Y,center.Y-60,-6 do
+				terrain:FillBall(Vector3.new(center.X+side*radius,y,center.Z),7.5+(center.Y-y)*0.12,Enum.Material.Rock)
+			end
+		end
+		task.wait()
+	end
+	-- Névoa em camadas entre o vale e as montanhas (bancos achatados, sem colisão, poucos e
+	-- grandes para não pesar no celular).
+	for i,layer in {{y=26,z=-640,w=520,d=70,a=0.74},{y=42,z=-700,w=620,d=90,a=0.76},{y=60,z=-760,w=700,d=80,a=0.8},{y=14,z=-560,w=420,d=50,a=0.8}} do
+		local bank=Art.part(scene,"ValleyFogBank",Vector3.new(layer.w,22+i*4,layer.d),CFrame.new(20,layer.y,layer.z),Color3.fromRGB(246,226,228),Enum.Material.SmoothPlastic,Enum.PartType.Ball)
+		bank.Transparency=layer.a bank.CastShadow=false bank.CanQuery=false bank.CanCollide=false bank.CanTouch=false
+	end
 	-- Portal marco do vale: patamar próprio, fora da passagem do jogador.
 	local old=world.Village:FindFirstChild("PortalPrimordial") if old then old:Destroy() end
 	-- No alto da Mesa do Portal (LumenRelief): `my` eleva a antiga cota do patamar.

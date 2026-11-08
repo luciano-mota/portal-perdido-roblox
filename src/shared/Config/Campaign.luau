@@ -27,9 +27,10 @@ Campaign.Regions={
 	{
 		id="Lumen", order=1, name="VALE DE LÚMEN", subtitle="Fase 1 · Refúgio dos viajantes",
 		origin=Vector3.new(0,0,0), voidY=-40, gateRequiresCompletion=true,
-		atmosphere={clock=16.8, latitude=35, brightness=2.2, exposure=0.18, ambient=C(78,88,105), outdoor=C(115,130,145),
-			density=0.24, offset=0.15, color=C(222,218,202), decay=C(116,139,165), haze=1.1, glare=0.06,
-			cloudCover=0.38, cloudDensity=0.45, cloudColor=C(255,239,216), tint=C(255,247,235), saturation=0.03, contrast=0.08},
+		-- Referência 2: hora dourada com céu rosado (sol baixo, névoa quente, nuvens rosadas).
+		atmosphere={clock=17.45, latitude=35, brightness=2.3, exposure=0.22, ambient=C(92,88,108), outdoor=C(150,128,136),
+			density=0.27, offset=0.18, color=C(246,214,206), decay=C(156,124,168), haze=1.5, glare=0.3,
+			cloudCover=0.46, cloudDensity=0.45, cloudColor=C(255,206,196), tint=C(255,240,230), saturation=0.07, contrast=0.09},
 	},
 	{
 		id="CrystalAbyss", order=2, name="ABISMO DE CRISTAL", subtitle="Fase 2 · Pontes sobre o eco",

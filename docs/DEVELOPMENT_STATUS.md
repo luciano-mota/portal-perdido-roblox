@@ -353,3 +353,11 @@ O primeiro acionamento de prompt logo após um teletransporte de QA às vezes n�
 - **Limiar do santuário (prompt real):** missão 4 → "O limiar permanece fechado…"; missão 5 → caminho de pedras flutuantes (0, 30, −463) com a dica de salto.
 - **Desempenho (desktop, janela em foco):** 59,8 FPS na vila; 13.643 peças no workspace do servidor. Celular físico continua pendente.
 - Zero erros/avisos Luau.
+
+## Referência 2 do Vale: pôr do sol, arco de rocha e névoa — 07/11/2026
+
+- Atmosfera do Vale (`Campaign` Lumen): hora dourada 17,45 (testados 17,3 — ainda de dia — e 17,75 — escuro demais para o combate), luz externa e ambiente mais quentes, névoa e nuvens rosadas, brilho do sol maior.
+- Arco de rocha natural no pico mais alto da cordilheira (x 100, z −825), feito de voxels com o vão aberto por uma esfera de ar (o pico abaixo preenchia o arco na 1ª versão — verificado por raycast e corrigido).
+- Quatro bancos de névoa achatados entre o vale e as montanhas (sem colisão, poucos e grandes por desempenho).
+- Capturas antes/depois; 59,8 FPS no desktop; zero erros/avisos.
+- Limite: o céu do Roblox continua azul acima do horizonte; um céu todo rosado como na pintura exige skybox com imagens próprias.

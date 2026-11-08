@@ -372,3 +372,9 @@ Revisão do código desta sessão encontrou combinações que travariam o jogo a
 - Gancho Ascendente seguia a recarga do soco (0,42 s): ~160 de dano/s e alvo sempre atordoado. Martelo Solar saía até 2× por pulo. Rasteira do Lutador (2,2 s de atordoamento, recarga 1 s) prendia grupos indefinidamente.
 - Correção: recarga própria dos especiais do Lutador (Martelo 1,4 s; Gancho 1,6 s — durante a recarga o pedido vira golpe do combo) e imunidade de 1,5 s após cada atordoamento.
 - Testado (Lutador contra o grupo do aqueduto): 4 pedidos de gancho em 2 s → 1 gancho + socos do combo; 1ª rasteira dentro da imunidade não atordoou, 2ª atordoou. Zero erros.
+
+## Ponto seguro não cura no meio da luta — 08/11/2026
+
+- O ponto seguro do Átrio fica a ~52 studs do Regente, dentro do alcance da luta: dava para lutar ali e receber vida cheia a cada 20 s.
+- `EnemyService.threatNear`: criatura comum viva a até 40 studs, ou chefão **com a luta em andamento** a até 70, bloqueia a cura. Antes da luta, os pontos seguros perto das arenas continuam curando.
+- Testado no Domínio: ferido antes da luta 40 → 150; com o Regente engajado 40 → 40. Zero erros.

@@ -1044,6 +1044,16 @@ local function kick(player: Player,wanted: any)
 	end)
 end
 
+-- Há criatura viva a até `radius` studs? (Pontos seguros não curam no meio de uma luta.)
+function Service.threatNear(position: Vector3,radius: number): boolean
+	for _,record in records do
+		local boss=record.stats.big or record.definition.kind=="Boss"
+		-- Chefões só contam com a luta em andamento: o ponto seguro antes da arena cura normalmente.
+		if record.hp>0 and (not boss or record.engaged) and (record.root.Position-position).Magnitude<=radius+(if boss then 30 else 0) then return true end
+	end
+	return false
+end
+
 -- QA (Studio): dano por um jogador pelo caminho normal (créditos, fases, reforços, visão).
 function Service.debugDamage(player: Player,id: string,amount: number): number?
 	local record=records[id]
